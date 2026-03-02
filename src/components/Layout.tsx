@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, Clock, Users, Zap, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Clock, Users, Zap, LogOut, User, Columns3 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -9,6 +9,7 @@ const navItems = [
   { to: '/novo-chamado', label: 'Novo Chamado', icon: PlusCircle },
   { to: '/historico', label: 'Histórico', icon: Clock },
   { to: '/usuarios', label: 'Usuários', icon: Users },
+  { to: '/kanban', label: 'Kanban', icon: Columns3 },
 ];
 
 interface LayoutProps {
