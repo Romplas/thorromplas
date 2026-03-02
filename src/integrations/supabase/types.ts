@@ -14,16 +14,248 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chamado_historico: {
+        Row: {
+          acao: string
+          chamado_id: number
+          created_at: string
+          descricao: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          chamado_id: number
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          chamado_id?: number
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chamado_historico_chamado_id_fkey"
+            columns: ["chamado_id"]
+            isOneToOne: false
+            referencedRelation: "chamados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamado_historico_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chamados: {
+        Row: {
+          atualizado_por: string | null
+          cliente_id: string | null
+          cliente_nome: string
+          created_at: string
+          descricao: string | null
+          etapa: string | null
+          gestor_id: string | null
+          id: number
+          motivo: string
+          prioridade: Database["public"]["Enums"]["ticket_prioridade"]
+          representante_id: string | null
+          status: Database["public"]["Enums"]["ticket_status"]
+          submotivo: string | null
+          supervisor_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          atualizado_por?: string | null
+          cliente_id?: string | null
+          cliente_nome: string
+          created_at?: string
+          descricao?: string | null
+          etapa?: string | null
+          gestor_id?: string | null
+          id?: never
+          motivo: string
+          prioridade?: Database["public"]["Enums"]["ticket_prioridade"]
+          representante_id?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          submotivo?: string | null
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          atualizado_por?: string | null
+          cliente_id?: string | null
+          cliente_nome?: string
+          created_at?: string
+          descricao?: string | null
+          etapa?: string | null
+          gestor_id?: string | null
+          id?: never
+          motivo?: string
+          prioridade?: Database["public"]["Enums"]["ticket_prioridade"]
+          representante_id?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          submotivo?: string | null
+          supervisor_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chamados_atualizado_por_fkey"
+            columns: ["atualizado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamados_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamados_gestor_id_fkey"
+            columns: ["gestor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamados_representante_id_fkey"
+            columns: ["representante_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamados_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clientes: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      motivos: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          status: string
+          supervisora: string | null
+          telefone: string | null
+          updated_at: string
+          user_id: string
+          usuario: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          nome: string
+          status?: string
+          supervisora?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id: string
+          usuario?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          status?: string
+          supervisora?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string
+          usuario?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "gestor" | "supervisor" | "representante"
+      ticket_prioridade: "Alta" | "Média" | "Baixa"
+      ticket_status: "aberto" | "em_progresso" | "aguardando" | "finalizado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +382,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "gestor", "supervisor", "representante"],
+      ticket_prioridade: ["Alta", "Média", "Baixa"],
+      ticket_status: ["aberto", "em_progresso", "aguardando", "finalizado"],
+    },
   },
 } as const
