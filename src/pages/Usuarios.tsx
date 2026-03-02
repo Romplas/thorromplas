@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UserPlus, Pencil, Trash2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -6,10 +6,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
-import { mockUsers } from '@/data/mockData';
-import { User, UserRole } from '@/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
+import { UserRole } from '@/types';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+
+interface ProfileWithRole {
+  id: string;
+  user_id: string;
+  nome: string;
+  email: string;
+  usuario: string | null;
+  telefone: string | null;
+  supervisora: string | null;
+  status: string;
+  role: UserRole | null;
+}
+
 const roleClasses: Record<UserRole, string> = {
   admin: 'role-admin',
   gestor: 'role-gestor',
@@ -17,11 +32,23 @@ const roleClasses: Record<UserRole, string> = {
   representante: 'role-representante',
 };
 
+const roleLabels: Record<UserRole, string> = {
+  admin: 'Admin',
+  gestor: 'Gestor',
+  supervisor: 'Supervisora',
+  representante: 'Representante',
+};
+
 export default function Usuarios() {
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<ProfileWithRole[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingUser, setEditingUser] = useState<ProfileWithRole | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { role, loading } = useAuth();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<ProfileWithRole | null>(null);
+  const [saving, setSaving] = useState(false);
+  const { role, session } = useAuth();
   const canManage = role === 'admin' || role === 'gestor';
 
   const [formData, setFormData] = useState({
@@ -31,9 +58,29 @@ export default function Usuarios() {
     senha: '',
     telefone: '',
     tipo: '' as UserRole,
+    supervisora: '',
   });
 
-  const openEdit = (user: User) => {
+  const fetchUsers = async () => {
+    setLoading(true);
+    const { data: profiles } = await supabase.from('profiles').select('*').order('nome');
+    const { data: roles } = await supabase.from('user_roles').select('*');
+
+    if (profiles) {
+      const merged: ProfileWithRole[] = profiles.map(p => ({
+        ...p,
+        role: roles?.find(r => r.user_id === p.user_id)?.role as UserRole | null ?? null,
+      }));
+      setUsers(merged);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const openEdit = (user: ProfileWithRole) => {
     setEditingUser(user);
     setFormData({
       nome: user.nome,
@@ -41,23 +88,140 @@ export default function Usuarios() {
       usuario: user.usuario || '',
       senha: '',
       telefone: user.telefone || '',
-      tipo: user.tipo,
+      tipo: user.role || 'representante',
+      supervisora: user.supervisora || '',
     });
     setSheetOpen(true);
   };
 
-  const handleSave = () => {
-    if (!editingUser) return;
-    setUsers(prev =>
-      prev.map(u =>
-        u.id === editingUser.id
-          ? { ...u, nome: formData.nome, email: formData.email, usuario: formData.usuario, telefone: formData.telefone, tipo: formData.tipo }
-          : u
-      )
-    );
-    setSheetOpen(false);
-    setEditingUser(null);
+  const openCreate = () => {
+    setFormData({ nome: '', email: '', usuario: '', senha: '', telefone: '', tipo: 'representante', supervisora: '' });
+    setCreateOpen(true);
   };
+
+  const handleSave = async () => {
+    if (!editingUser || !session) return;
+    setSaving(true);
+    try {
+      const res = await supabase.functions.invoke('update-user', {
+        body: {
+          user_id: editingUser.user_id,
+          nome: formData.nome,
+          email: formData.email,
+          usuario: formData.usuario,
+          senha: formData.senha || undefined,
+          telefone: formData.telefone,
+          tipo: formData.tipo,
+          supervisora: formData.supervisora,
+        },
+      });
+      if (res.error) throw new Error(res.error.message);
+      const data = res.data as { error?: string };
+      if (data?.error) throw new Error(data.error);
+      toast.success('Usuário atualizado com sucesso');
+      setSheetOpen(false);
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao atualizar usuário');
+    }
+    setSaving(false);
+  };
+
+  const handleCreate = async () => {
+    if (!session) return;
+    if (!formData.nome || !formData.email || !formData.senha || !formData.tipo) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await supabase.functions.invoke('create-user', {
+        body: {
+          nome: formData.nome,
+          email: formData.email,
+          usuario: formData.usuario,
+          senha: formData.senha,
+          telefone: formData.telefone,
+          tipo: formData.tipo,
+          supervisora: formData.supervisora,
+        },
+      });
+      if (res.error) throw new Error(res.error.message);
+      const data = res.data as { error?: string };
+      if (data?.error) throw new Error(data.error);
+      toast.success('Usuário criado com sucesso');
+      setCreateOpen(false);
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao criar usuário');
+    }
+    setSaving(false);
+  };
+
+  const confirmDelete = (user: ProfileWithRole) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!userToDelete || !session) return;
+    setSaving(true);
+    try {
+      const res = await supabase.functions.invoke('delete-user', {
+        body: { user_id: userToDelete.user_id },
+      });
+      if (res.error) throw new Error(res.error.message);
+      const data = res.data as { error?: string };
+      if (data?.error) throw new Error(data.error);
+      toast.success('Usuário excluído com sucesso');
+      setDeleteDialogOpen(false);
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao excluir usuário');
+    }
+    setSaving(false);
+  };
+
+  const UserForm = ({ isCreate }: { isCreate: boolean }) => (
+    <div className="space-y-4 py-6">
+      <div className="space-y-2">
+        <Label>Nome *</Label>
+        <Input value={formData.nome} onChange={e => setFormData(p => ({ ...p, nome: e.target.value }))} />
+      </div>
+      <div className="space-y-2">
+        <Label>Email *</Label>
+        <Input type="email" value={formData.email} onChange={e => setFormData(p => ({ ...p, email: e.target.value }))} />
+      </div>
+      <div className="space-y-2">
+        <Label>Usuário</Label>
+        <Input value={formData.usuario} onChange={e => setFormData(p => ({ ...p, usuario: e.target.value }))} />
+      </div>
+      <div className="space-y-2">
+        <Label>{isCreate ? 'Senha *' : 'Nova Senha (deixe vazio para manter)'}</Label>
+        <Input type="password" value={formData.senha} onChange={e => setFormData(p => ({ ...p, senha: e.target.value }))} />
+      </div>
+      <div className="space-y-2">
+        <Label>Telefone</Label>
+        <Input value={formData.telefone} onChange={e => setFormData(p => ({ ...p, telefone: e.target.value }))} />
+      </div>
+      <div className="space-y-2">
+        <Label>Supervisora</Label>
+        <Input value={formData.supervisora} onChange={e => setFormData(p => ({ ...p, supervisora: e.target.value }))} />
+      </div>
+      <div className="space-y-2">
+        <Label>Tipo de Usuário *</Label>
+        <Select value={formData.tipo} onValueChange={(val) => setFormData(p => ({ ...p, tipo: val as UserRole }))}>
+          <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="admin">Admin</SelectItem>
+            <SelectItem value="gestor">Gestor</SelectItem>
+            <SelectItem value="supervisor">Supervisora</SelectItem>
+            <SelectItem value="representante">Representante</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
 
   return (
     <Layout>
@@ -70,7 +234,7 @@ export default function Usuarios() {
           </div>
         </div>
         {canManage && (
-          <Button>
+          <Button onClick={openCreate}>
             <UserPlus className="h-4 w-4 mr-2" />
             Novo Usuário
           </Button>
@@ -91,122 +255,93 @@ export default function Usuarios() {
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => (
-              <tr key={user.id} className="border-b hover:bg-muted/20">
-                <td className="p-4"><Checkbox /></td>
-                <td className="p-4 font-medium text-primary">{user.nome}</td>
-                <td className="p-4 text-muted-foreground">{user.email}</td>
-                <td className="p-4">
-                  <span className={`status-badge ${roleClasses[user.tipo]}`}>
-                    {user.tipo === 'admin' ? 'Admin' : user.tipo === 'gestor' ? 'Gestor' : user.tipo === 'supervisor' ? 'Supervisora' : 'Representante'}
-                  </span>
-                </td>
-                <td className="p-4 text-muted-foreground">{user.supervisora || '-'}</td>
-                <td className="p-4">
-                  <span className="status-badge status-done">Ativo</span>
-                </td>
-                {canManage && (
-                <td className="p-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      className="text-muted-foreground hover:text-foreground"
-                      onClick={() => openEdit(user)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button className="text-destructive hover:text-destructive/80">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-                )}
-              </tr>
-            ))}
+            {loading ? (
+              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Carregando...</td></tr>
+            ) : users.length === 0 ? (
+              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Nenhum usuário encontrado</td></tr>
+            ) : (
+              users.map((user) => (
+                <tr key={user.id} className="border-b hover:bg-muted/20">
+                  <td className="p-4"><Checkbox /></td>
+                  <td className="p-4 font-medium text-primary">{user.nome}</td>
+                  <td className="p-4 text-muted-foreground">{user.email}</td>
+                  <td className="p-4">
+                    {user.role && (
+                      <span className={`status-badge ${roleClasses[user.role]}`}>
+                        {roleLabels[user.role]}
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-4 text-muted-foreground">{user.supervisora || '-'}</td>
+                  <td className="p-4">
+                    <span className="status-badge status-done">Ativo</span>
+                  </td>
+                  {canManage && (
+                    <td className="p-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button className="text-muted-foreground hover:text-foreground" onClick={() => openEdit(user)}>
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button className="text-destructive hover:text-destructive/80" onClick={() => confirmDelete(user)}>
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
-      {/* Sheet de Edição */}
+      {/* Edit Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent className="sm:max-w-md overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Editar Usuário</SheetTitle>
             <SheetDescription>Atualize os dados do usuário.</SheetDescription>
           </SheetHeader>
-
-          <div className="space-y-4 py-6">
-            <div className="space-y-2">
-              <Label htmlFor="edit-nome">Nome *</Label>
-              <Input
-                id="edit-nome"
-                value={formData.nome}
-                onChange={e => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-email">Email *</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                value={formData.email}
-                onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-usuario">Usuário</Label>
-              <Input
-                id="edit-usuario"
-                value={formData.usuario}
-                onChange={e => setFormData(prev => ({ ...prev, usuario: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-senha">Nova Senha (deixe vazio para manter)</Label>
-              <Input
-                id="edit-senha"
-                type="password"
-                value={formData.senha}
-                onChange={e => setFormData(prev => ({ ...prev, senha: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-telefone">Telefone</Label>
-              <Input
-                id="edit-telefone"
-                value={formData.telefone}
-                onChange={e => setFormData(prev => ({ ...prev, telefone: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Tipo de Usuário *</Label>
-              <Select
-                value={formData.tipo}
-                onValueChange={(val) => setFormData(prev => ({ ...prev, tipo: val as UserRole }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="gestor">Gestor</SelectItem>
-                  <SelectItem value="supervisor">Supervisora</SelectItem>
-                  <SelectItem value="representante">Representante</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
+          <UserForm isCreate={false} />
           <SheetFooter>
             <Button variant="outline" onClick={() => setSheetOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave}>Salvar</Button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* Create Sheet */}
+      <Sheet open={createOpen} onOpenChange={setCreateOpen}>
+        <SheetContent className="sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Novo Usuário</SheetTitle>
+            <SheetDescription>Preencha os dados para criar um novo usuário.</SheetDescription>
+          </SheetHeader>
+          <UserForm isCreate={true} />
+          <SheetFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreate} disabled={saving}>{saving ? 'Criando...' : 'Criar'}</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* Delete Confirmation */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir o usuário <strong>{userToDelete?.nome}</strong>? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={saving}>
+              {saving ? 'Excluindo...' : 'Excluir'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
