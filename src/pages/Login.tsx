@@ -4,29 +4,89 @@ import { Zap, FileText, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import loginBg from '@/assets/login-bg.jpg';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [tab, setTab] = useState<'entrar' | 'cadastrar'>('entrar');
+  const [usuario, setUsuario] = useState('');
   const [email, setEmail] = useState('');
+  const [nome, setNome] = useState('');
   const [senha, setSenha] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: integrate with Supabase auth
-    navigate('/');
+    if (!usuario || !senha) {
+      toast({ title: 'Preencha todos os campos', variant: 'destructive' });
+      return;
+    }
+    setLoading(true);
+    try {
+      // Buscar email pelo username
+      const { data: emailResult, error: lookupError } = await supabase.rpc('get_email_by_username', {
+        _username: usuario,
+      });
+
+      if (lookupError || !emailResult) {
+        toast({ title: 'Usuário não encontrado', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: emailResult as string,
+        password: senha,
+      });
+
+      if (error) {
+        toast({ title: 'Credenciais inválidas', description: error.message, variant: 'destructive' });
+      } else {
+        navigate('/');
+      }
+    } catch {
+      toast({ title: 'Erro ao fazer login', variant: 'destructive' });
+    }
+    setLoading(false);
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nome || !email || !usuario || !senha) {
+      toast({ title: 'Preencha todos os campos', variant: 'destructive' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password: senha,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { nome, usuario },
+        },
+      });
+
+      if (error) {
+        toast({ title: 'Erro ao cadastrar', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Conta criada!', description: 'Verifique seu email para confirmar.' });
+        setTab('entrar');
+      }
+    } catch {
+      toast({ title: 'Erro ao cadastrar', variant: 'destructive' });
+    }
+    setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex">
       {/* Left side - image + branding */}
       <div className="hidden lg:flex lg:w-1/2 relative items-end p-12">
-        <img
-          src={loginBg}
-          alt="Business professional"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        <img src={loginBg} alt="Business professional" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
         <div className="relative z-10 text-white">
           <div className="flex items-center gap-3 mb-6">
@@ -38,9 +98,7 @@ export default function Login() {
               <p className="text-sm text-white/80">Gerenciador de Chamados</p>
             </div>
           </div>
-          <h1 className="text-2xl font-bold mb-6">
-            Sistema completo para gestão de solicitações
-          </h1>
+          <h1 className="text-2xl font-bold mb-6">Sistema completo para gestão de solicitações</h1>
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <FileText className="h-5 w-5 text-white/80" />
@@ -87,31 +145,54 @@ export default function Login() {
             </button>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="senha">Senha</Label>
-              <Input
-                id="senha"
-                type="password"
-                placeholder="••••••••"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-              />
-            </div>
-            <Button type="submit" className="w-full">
-              {tab === 'entrar' ? 'Entrar' : 'Cadastrar'}
-            </Button>
-          </form>
+          {tab === 'entrar' ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <Label htmlFor="usuario">Usuário</Label>
+                <Input
+                  id="usuario"
+                  placeholder="seu.usuario"
+                  value={usuario}
+                  onChange={(e) => setUsuario(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="senha">Senha</Label>
+                <Input
+                  id="senha"
+                  type="password"
+                  placeholder="••••••"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Entrando...' : 'Entrar'}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleSignup} className="space-y-4">
+              <div>
+                <Label htmlFor="nome">Nome</Label>
+                <Input id="nome" placeholder="Seu nome" value={nome} onChange={(e) => setNome(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="signup-email">Email</Label>
+                <Input id="signup-email" type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="signup-usuario">Usuário</Label>
+                <Input id="signup-usuario" placeholder="seu.usuario" value={usuario} onChange={(e) => setUsuario(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="signup-senha">Senha</Label>
+                <Input id="signup-senha" type="password" placeholder="••••••" value={senha} onChange={(e) => setSenha(e.target.value)} />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Cadastrando...' : 'Cadastrar'}
+              </Button>
+            </form>
+          )}
         </div>
       </div>
     </div>
