@@ -45,7 +45,7 @@ export default function Login() {
       if (error) {
         toast({ title: 'Credenciais inválidas', description: error.message, variant: 'destructive' });
       } else {
-        navigate('/');
+        navigate('/dashboard');
       }
     } catch {
       toast({ title: 'Erro ao fazer login', variant: 'destructive' });
