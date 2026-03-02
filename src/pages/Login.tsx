@@ -28,7 +28,7 @@ export default function Login() {
     try {
       // Buscar email pelo username
       const { data: emailResult, error: lookupError } = await supabase.rpc('get_email_by_username', {
-        _username: usuario,
+        _username: usuario
       });
 
       if (lookupError || !emailResult) {
@@ -39,7 +39,7 @@ export default function Login() {
 
       const { error } = await supabase.auth.signInWithPassword({
         email: emailResult as string,
-        password: senha,
+        password: senha
       });
 
       if (error) {
@@ -66,8 +66,8 @@ export default function Login() {
         password: senha,
         options: {
           emailRedirectTo: window.location.origin,
-          data: { nome, usuario },
-        },
+          data: { nome, usuario }
+        }
       });
 
       if (error) {
@@ -85,8 +85,9 @@ export default function Login() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - image + branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative items-end p-12 bg-primary/10">
-        <div className="absolute inset-0 bg-gradient-to-t from-primary/30 via-primary/10 to-transparent" />
+      <div className="hidden lg:flex lg:w-1/2 relative items-end p-12">
+        <img src={loginBg} alt="Business professional" className="absolute inset-0 w-full h-full object-cover bg-secondary-foreground" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
         <div className="relative z-10 text-white">
           <div className="flex items-center gap-3 mb-6">
             <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center">
@@ -128,49 +129,49 @@ export default function Login() {
           <div className="flex mb-6 border rounded-lg overflow-hidden">
             <button
               className={`flex-1 py-2 text-sm font-medium transition-colors ${
-                tab === 'entrar' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'
-              }`}
-              onClick={() => setTab('entrar')}
-            >
+              tab === 'entrar' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'}`
+              }
+              onClick={() => setTab('entrar')}>
+              
               Entrar
             </button>
             <button
               className={`flex-1 py-2 text-sm font-medium transition-colors ${
-                tab === 'cadastrar' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'
-              }`}
-              onClick={() => setTab('cadastrar')}
-            >
+              tab === 'cadastrar' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'}`
+              }
+              onClick={() => setTab('cadastrar')}>
+              
               Cadastrar
             </button>
           </div>
 
-          {tab === 'entrar' ? (
-            <form onSubmit={handleLogin} className="space-y-4">
+          {tab === 'entrar' ?
+          <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <Label htmlFor="usuario">Usuário</Label>
                 <Input
-                  id="usuario"
-                  placeholder="seu.usuario"
-                  value={usuario}
-                  onChange={(e) => setUsuario(e.target.value)}
-                />
+                id="usuario"
+                placeholder="seu.usuario"
+                value={usuario}
+                onChange={(e) => setUsuario(e.target.value)} />
+              
               </div>
               <div>
                 <Label htmlFor="senha">Senha</Label>
                 <Input
-                  id="senha"
-                  type="password"
-                  placeholder="••••••"
-                  value={senha}
-                  onChange={(e) => setSenha(e.target.value)}
-                />
+                id="senha"
+                type="password"
+                placeholder="••••••"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)} />
+              
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Entrando...' : 'Entrar'}
               </Button>
-            </form>
-          ) : (
-            <form onSubmit={handleSignup} className="space-y-4">
+            </form> :
+
+          <form onSubmit={handleSignup} className="space-y-4">
               <div>
                 <Label htmlFor="nome">Nome</Label>
                 <Input id="nome" placeholder="Seu nome" value={nome} onChange={(e) => setNome(e.target.value)} />
@@ -191,9 +192,9 @@ export default function Login() {
                 {loading ? 'Cadastrando...' : 'Cadastrar'}
               </Button>
             </form>
-          )}
+          }
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
