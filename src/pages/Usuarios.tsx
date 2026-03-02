@@ -263,6 +263,7 @@ export default function Usuarios() {
               <th className="p-4 w-10"><Checkbox /></th>
               <th className="text-left p-4 font-medium">Nome</th>
               <th className="text-left p-4 font-medium">Email</th>
+              <th className="text-left p-4 font-medium">Usuário</th>
               <th className="text-left p-4 font-medium">Tipo</th>
               <th className="text-left p-4 font-medium">Supervisora</th>
               <th className="text-left p-4 font-medium">Status</th>
@@ -271,15 +272,16 @@ export default function Usuarios() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Carregando...</td></tr>
+              <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Carregando...</td></tr>
             ) : users.length === 0 ? (
-              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Nenhum usuário encontrado</td></tr>
+              <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Nenhum usuário encontrado</td></tr>
             ) : (
               users.map((user) => (
                 <tr key={user.id} className="border-b hover:bg-muted/20">
                   <td className="p-4"><Checkbox /></td>
                   <td className="p-4 font-medium text-primary">{user.nome}</td>
                   <td className="p-4 text-muted-foreground">{user.email}</td>
+                  <td className="p-4 text-muted-foreground">{user.usuario || '-'}</td>
                   <td className="p-4">
                     {user.role && (
                       <span className={`status-badge ${roleClasses[user.role]}`}>
