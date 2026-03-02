@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFo
 import { mockUsers } from '@/data/mockData';
 import { User, UserRole } from '@/types';
 import Layout from '@/components/Layout';
-
+import { useAuth } from '@/contexts/AuthContext';
 const roleClasses: Record<UserRole, string> = {
   admin: 'role-admin',
   gestor: 'role-gestor',
@@ -21,6 +21,8 @@ export default function Usuarios() {
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const { role } = useAuth();
+  const canManage = role === 'admin' || role === 'gestor';
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -67,10 +69,12 @@ export default function Usuarios() {
             <p className="text-sm text-muted-foreground">Configure roles e vínculos de usuários</p>
           </div>
         </div>
-        <Button>
-          <UserPlus className="h-4 w-4 mr-2" />
-          Novo Usuário
-        </Button>
+        {canManage && (
+          <Button>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Novo Usuário
+          </Button>
+        )}
       </div>
 
       <div className="bg-card border rounded-lg overflow-hidden">
@@ -83,7 +87,7 @@ export default function Usuarios() {
               <th className="text-left p-4 font-medium">Tipo</th>
               <th className="text-left p-4 font-medium">Supervisora</th>
               <th className="text-left p-4 font-medium">Status</th>
-              <th className="text-right p-4 font-medium">Ações</th>
+              {canManage && <th className="text-right p-4 font-medium">Ações</th>}
             </tr>
           </thead>
           <tbody>
@@ -101,6 +105,7 @@ export default function Usuarios() {
                 <td className="p-4">
                   <span className="status-badge status-done">Ativo</span>
                 </td>
+                {canManage && (
                 <td className="p-4 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <button
@@ -109,11 +114,12 @@ export default function Usuarios() {
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
-                    <button className="text-red-400 hover:text-red-600">
+                    <button className="text-destructive hover:text-destructive/80">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </td>
+                )}
               </tr>
             ))}
           </tbody>
