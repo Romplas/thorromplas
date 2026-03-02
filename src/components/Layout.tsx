@@ -1,5 +1,6 @@
+import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, Clock, Users, Zap, LogOut } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Clock, Users, Zap, LogOut, User } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const navItems = [
@@ -15,6 +16,18 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -43,11 +56,39 @@ export default function Layout({ children }: LayoutProps) {
             ))}
           </nav>
         </div>
-        <div className="flex items-center gap-3">
-          <Avatar className="h-7 w-7 bg-white/20">
-            <AvatarFallback className="bg-white/20 text-primary-foreground text-xs">A</AvatarFallback>
-          </Avatar>
-          <span className="text-sm font-medium">Administrador</span>
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="flex items-center gap-3 cursor-pointer hover:opacity-90 transition-opacity"
+          >
+            <Avatar className="h-7 w-7 bg-white/20">
+              <AvatarFallback className="bg-white/20 text-primary-foreground text-xs">A</AvatarFallback>
+            </Avatar>
+            <span className="text-sm font-medium">Administrador</span>
+          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 top-full mt-2 w-48 bg-card border rounded-lg shadow-lg z-50 py-2">
+              <div className="px-4 py-2 border-b">
+                <p className="text-sm font-semibold">Administrador</p>
+                <span className="status-badge role-admin text-xs">Admin</span>
+              </div>
+              <button
+                onClick={() => { setMenuOpen(false); }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+              >
+                <User className="h-4 w-4" />
+                Meu Perfil
+              </button>
+              <button
+                onClick={() => { setMenuOpen(false); navigate('/login'); }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-destructive hover:bg-muted/50 transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
+              </button>
+            </div>
+          )}
         </div>
       </header>
       <main className="p-6">{children}</main>
