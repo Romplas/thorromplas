@@ -1,10 +1,10 @@
 import { User, Ticket } from '@/types';
 
 export const mockUsers: User[] = [
-  { id: '1', nome: 'Administrador', email: 'admin@gmail.com', tipo: 'admin', status: 'ativo' },
-  { id: '2', nome: 'Gestor', email: 'gestor@gmail.com', tipo: 'gestor', status: 'ativo' },
-  { id: '3', nome: 'Representante', email: 'representante@gmail.com', tipo: 'representante', status: 'ativo' },
-  { id: '4', nome: 'Supervisor', email: 'supervisor@gmail.com', tipo: 'supervisor', supervisora: 'Supervisora', status: 'ativo' },
+  { id: '1', nome: 'Administrador Romplas', email: 'admin@romplas.com.br', usuario: 'admin', telefone: '419853008469', tipo: 'admin', status: 'ativo' },
+  { id: '2', nome: 'Gestor', email: 'gestor@gmail.com', usuario: 'gestor', telefone: '', tipo: 'gestor', status: 'ativo' },
+  { id: '3', nome: 'Representante', email: 'representante@gmail.com', usuario: 'representante', telefone: '', tipo: 'representante', status: 'ativo' },
+  { id: '4', nome: 'Supervisor', email: 'supervisor@gmail.com', usuario: 'supervisor', telefone: '', tipo: 'supervisor', supervisora: 'Supervisora', status: 'ativo' },
 ];
 
 export const mockTickets: Ticket[] = [

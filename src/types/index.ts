@@ -6,6 +6,9 @@ export interface User {
   id: string;
   nome: string;
   email: string;
+  usuario?: string;
+  senha?: string;
+  telefone?: string;
   tipo: UserRole;
   supervisora?: string;
   status: 'ativo' | 'inativo';
