@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { UserPlus, Pencil, Trash2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types';
 import Layout from '@/components/Layout';
@@ -158,6 +159,20 @@ export default function Usuarios() {
     setSaving(false);
   };
 
+  const handleToggleStatus = async (user: ProfileWithRole, active: boolean) => {
+    const newStatus = active ? 'ativo' : 'inativo';
+    const { error } = await supabase
+      .from('profiles')
+      .update({ status: newStatus })
+      .eq('id', user.id);
+    if (error) {
+      toast.error('Erro ao alterar status');
+    } else {
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: newStatus } : u));
+      toast.success(`Usuário ${active ? 'ativado' : 'desativado'}`);
+    }
+  };
+
   const confirmDelete = (user: ProfileWithRole) => {
     setUserToDelete(user);
     setDeleteDialogOpen(true);
@@ -274,7 +289,16 @@ export default function Usuarios() {
                   </td>
                   <td className="p-4 text-muted-foreground">{user.supervisora || '-'}</td>
                   <td className="p-4">
-                    <span className="status-badge status-done">Ativo</span>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={user.status === 'ativo'}
+                        onCheckedChange={(checked) => handleToggleStatus(user, checked)}
+                        disabled={!canManage}
+                      />
+                      <span className={`text-xs font-medium ${user.status === 'ativo' ? 'text-green-600' : 'text-muted-foreground'}`}>
+                        {user.status === 'ativo' ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </div>
                   </td>
                   {canManage && (
                     <td className="p-4 text-right">
