@@ -19,11 +19,8 @@ serve(async (req) => {
 
     // Verify caller
     const authHeader = req.headers.get("Authorization")!;
-    const { data: { user: caller } } = await createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    ).auth.getUser();
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user: caller } } = await supabaseAdmin.auth.getUser(token);
 
     if (!caller) {
       return new Response(JSON.stringify({ error: "Não autorizado" }), {
