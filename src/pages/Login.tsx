@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import loginBg from '@/assets/login-bg.jpg';
+import loginBg from '@/assets/login-bg.png';
 
 export default function Login() {
   const navigate = useNavigate();
