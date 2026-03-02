@@ -6,10 +6,10 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/kanban', label: 'Kanban', icon: Columns3 },
   { to: '/novo-chamado', label: 'Novo Chamado', icon: PlusCircle },
   { to: '/historico', label: 'Histórico', icon: Clock },
   { to: '/usuarios', label: 'Usuários', icon: Users },
-  { to: '/kanban', label: 'Kanban', icon: Columns3 },
 ];
 
 interface LayoutProps {
