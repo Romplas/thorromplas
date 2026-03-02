@@ -85,9 +85,8 @@ export default function Login() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - image + branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative items-end p-12">
-        <img src={loginBg} alt="Business professional" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+      <div className="hidden lg:flex lg:w-1/2 relative items-end p-12 bg-primary/10">
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/30 via-primary/10 to-transparent" />
         <div className="relative z-10 text-white">
           <div className="flex items-center gap-3 mb-6">
             <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center">
