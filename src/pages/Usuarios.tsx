@@ -21,7 +21,7 @@ export default function Usuarios() {
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { role } = useAuth();
+  const { role, loading } = useAuth();
   const canManage = role === 'admin' || role === 'gestor';
 
   const [formData, setFormData] = useState({
