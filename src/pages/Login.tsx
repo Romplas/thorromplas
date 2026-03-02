@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import loginBg from '@/assets/login-bg.png';
+import loginBg from '@/assets/login-bg.jpg';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -85,32 +85,33 @@ export default function Login() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - image + branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative items-end p-12 bg-muted/20">
-        <img src={loginBg} alt="Business professional" className="absolute bottom-0 right-0 w-3/4 h-auto object-contain" />
-        <div className="relative z-10 text-foreground">
+      <div className="hidden lg:flex lg:w-1/2 relative items-end p-12">
+        <img src={loginBg} alt="Business professional" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+        <div className="relative z-10 text-white">
           <div className="flex items-center gap-3 mb-6">
             <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center">
               <Zap className="h-6 w-6 text-white" />
             </div>
             <div>
               <h2 className="text-2xl font-bold">THOR</h2>
-              <p className="text-sm text-muted-foreground">Gerenciador de Chamados</p>
+              <p className="text-sm text-white/80">Gerenciador de Chamados</p>
             </div>
           </div>
           <h1 className="text-2xl font-bold mb-6">Sistema completo para gestão de solicitações</h1>
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <FileText className="h-5 w-5 text-muted-foreground" />
+              <FileText className="h-5 w-5 text-white/80" />
               <div>
                 <p className="font-semibold text-sm">Chamados organizados</p>
-                <p className="text-xs text-muted-foreground">Crie, acompanhe e gerencie solicitações</p>
+                <p className="text-xs text-white/70">Crie, acompanhe e gerencie solicitações</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Shield className="h-5 w-5 text-muted-foreground" />
+              <Shield className="h-5 w-5 text-white/80" />
               <div>
                 <p className="font-semibold text-sm">Controle de acesso</p>
-                <p className="text-xs text-muted-foreground">Representantes, supervisores e admin</p>
+                <p className="text-xs text-white/70">Representantes, supervisores e admin</p>
               </div>
             </div>
           </div>
