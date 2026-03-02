@@ -182,7 +182,7 @@ export default function Usuarios() {
     setSaving(false);
   };
 
-  const UserForm = ({ isCreate }: { isCreate: boolean }) => (
+  const renderFormFields = (isCreate: boolean) => (
     <div className="space-y-4 py-6">
       <div className="space-y-2">
         <Label>Nome *</Label>
@@ -302,7 +302,7 @@ export default function Usuarios() {
             <SheetTitle>Editar Usuário</SheetTitle>
             <SheetDescription>Atualize os dados do usuário.</SheetDescription>
           </SheetHeader>
-          <UserForm isCreate={false} />
+          {renderFormFields(false)}
           <SheetFooter>
             <Button variant="outline" onClick={() => setSheetOpen(false)}>Cancelar</Button>
             <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
@@ -317,7 +317,7 @@ export default function Usuarios() {
             <SheetTitle>Novo Usuário</SheetTitle>
             <SheetDescription>Preencha os dados para criar um novo usuário.</SheetDescription>
           </SheetHeader>
-          <UserForm isCreate={true} />
+          {renderFormFields(true)}
           <SheetFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
             <Button onClick={handleCreate} disabled={saving}>{saving ? 'Criando...' : 'Criar'}</Button>
