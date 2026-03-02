@@ -183,7 +183,7 @@ export default function NovoChamado() {
               Limpar
             </Button>
             <Button size="sm">
-              Salvar
+              Criar Chamado
             </Button>
           </div>
         </div>
