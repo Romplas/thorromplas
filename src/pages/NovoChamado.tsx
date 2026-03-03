@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2, Eye, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -43,6 +44,7 @@ function formatFileSize(bytes: number) {
 
 export default function NovoChamado() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [motivos, setMotivos] = useState<Motivo[]>([]);
   const [submotivos, setSubmotivos] = useState<Submotivo[]>([]);
@@ -214,6 +216,7 @@ export default function NovoChamado() {
         supervisor_id: selectedSupervisor || null,
         representante_id: selectedRepresentante || null,
         prioridade: 'Média',
+        gestor_id: profile?.id || null,
       }).select('id').single();
 
       if (error) throw error;
