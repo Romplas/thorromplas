@@ -107,16 +107,28 @@ export default function Kanban() {
     ]);
 
     const profileMap = new Map<string, string>();
+    const profileByUserIdMap = new Map<string, string>();
     if (profilesRes.data) {
-      profilesRes.data.forEach((p) => profileMap.set(p.id, p.nome));
+      profilesRes.data.forEach((p) => {
+        profileMap.set(p.id, p.nome);
+        profileByUserIdMap.set(p.user_id, p.nome);
+      });
       setProfiles(profilesRes.data);
+    }
+
+    // Also build a map from representantes table
+    const repMap = new Map<string, string>();
+    if (repRes.data) {
+      repRes.data.forEach((r) => repMap.set(r.id, r.nome));
     }
 
     if (chamadosRes.data) {
       const mapped = chamadosRes.data.map((c) => ({
         ...c,
-        representante_nome: c.representante_id ? profileMap.get(c.representante_id) || 'N/A' : 'N/A',
-        gestor_nome: c.gestor_id ? profileMap.get(c.gestor_id) || '' : '',
+        representante_nome: c.representante_id
+          ? profileMap.get(c.representante_id) || profileByUserIdMap.get(c.representante_id) || repMap.get(c.representante_id) || 'N/A'
+          : 'N/A',
+        gestor_nome: c.gestor_id ? profileMap.get(c.gestor_id) || profileByUserIdMap.get(c.gestor_id) || '' : '',
       }));
       setChamados(mapped);
     }
@@ -336,14 +348,14 @@ export default function Kanban() {
           <div className="text-center py-12 text-muted-foreground">Carregando chamados...</div>
         ) : (
           <div className="overflow-x-auto pb-4">
-            <div className="flex gap-3" style={{ minWidth: `${columns.length * 220}px` }}>
+            <div className="flex gap-3" style={{ minWidth: `${columns.length * 280}px` }}>
               {columns.map((col) => {
                 const tickets = filteredChamados.filter((c) => getTicketColumn(c) === col.key);
                 const isOver = dragOverCol === col.key;
                 return (
                   <div
                     key={col.key}
-                    className={`flex-shrink-0 w-52 space-y-2 transition-all ${isOver ? 'ring-2 ring-primary/50 rounded-lg' : ''}`}
+                    className={`flex-shrink-0 w-64 space-y-2 transition-all ${isOver ? 'ring-2 ring-primary/50 rounded-lg' : ''}`}
                     onDragOver={(e) => handleDragOver(e, col.key)}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, col.key)}
