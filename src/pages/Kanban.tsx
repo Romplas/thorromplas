@@ -25,10 +25,17 @@ interface ProfileOption {
 }
 
 const columns = [
-  { key: 'thor', label: 'THOR', colorClass: 'kanban-column-thor', cardClass: 'ticket-card-red' },
-  { key: 'aguardando', label: 'Aguardando Resposta', colorClass: 'kanban-column-aguardando', cardClass: 'ticket-card-blue' },
-  { key: 'retorno', label: 'Retorno Interno Romplas', colorClass: 'kanban-column-retorno', cardClass: 'ticket-card-orange' },
-  { key: 'completo', label: 'Completo', colorClass: 'kanban-column-completo', cardClass: 'ticket-card-green' },
+  { key: 'thor', label: 'THOR', bg: 'bg-red-600', card: 'bg-red-50 border-red-200' },
+  { key: 'aguardando', label: 'Aguardando Resposta', bg: 'bg-purple-600', card: 'bg-purple-50 border-purple-200' },
+  { key: 'retorno', label: 'Retorno Interno Romplas', bg: 'bg-blue-600', card: 'bg-blue-50 border-blue-200' },
+  { key: 'negociacao', label: 'Em Negociação', bg: 'bg-yellow-500', card: 'bg-yellow-50 border-yellow-200' },
+  { key: 'alteracao', label: 'Alteração', bg: 'bg-teal-500', card: 'bg-teal-50 border-teal-200' },
+  { key: 'completo', label: 'Completo', bg: 'bg-green-500', card: 'bg-green-50 border-green-200' },
+  { key: 'perdido', label: 'Perdido', bg: 'bg-black', card: 'bg-gray-100 border-gray-300' },
+  { key: 'rnc', label: 'RNC', bg: 'bg-pink-500', card: 'bg-pink-50 border-pink-200' },
+  { key: 'sdp', label: 'SDP', bg: 'bg-orange-500', card: 'bg-orange-50 border-orange-200' },
+  { key: 'amostras', label: 'Amostras', bg: 'bg-blue-900', card: 'bg-blue-50 border-blue-300' },
+  { key: 'book', label: 'Book', bg: 'bg-lime-500', card: 'bg-lime-50 border-lime-200' },
 ];
 
 const statusToColumn: Record<string, string> = {
@@ -36,6 +43,16 @@ const statusToColumn: Record<string, string> = {
   em_progresso: 'aguardando',
   aguardando: 'retorno',
   finalizado: 'completo',
+};
+
+const etapaToColumn: Record<string, string> = {
+  negociacao: 'negociacao',
+  alteracao: 'alteracao',
+  perdido: 'perdido',
+  rnc: 'rnc',
+  sdp: 'sdp',
+  amostras: 'amostras',
+  book: 'book',
 };
 
 export default function Kanban() {
@@ -205,16 +222,20 @@ export default function Kanban() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             {columns.map((col) => {
-              const tickets = filteredChamados.filter((c) => statusToColumn[c.status] === col.key);
+              const tickets = filteredChamados.filter((c) => {
+                const colByStatus = statusToColumn[c.status];
+                const colByEtapa = c.etapa ? etapaToColumn[c.etapa] : undefined;
+                return colByEtapa === col.key || (!colByEtapa && colByStatus === col.key);
+              });
               return (
                 <div key={col.key} className="space-y-3">
-                  <div className={`${col.colorClass} text-white text-center py-2 rounded-lg font-semibold text-sm`}>
+                  <div className={`${col.bg} text-white text-center py-2 rounded-lg font-semibold text-sm`}>
                     {col.label}{' '}
                     <span className="ml-1 bg-white/30 px-1.5 rounded-full text-xs">{tickets.length}</span>
                   </div>
                   <div className="space-y-2 max-h-[600px] overflow-y-auto">
                     {tickets.map((ticket) => (
-                      <div key={ticket.id} className={`${col.cardClass} rounded-lg p-3 space-y-1.5`}>
+                      <div key={ticket.id} className={`${col.card} border rounded-lg p-3 space-y-1.5`}>
                         <p className="font-bold text-sm">TicketID: {ticket.id}</p>
                         <p className="text-xs">
                           <span className="font-medium">Representante:</span> {ticket.representante_nome}
