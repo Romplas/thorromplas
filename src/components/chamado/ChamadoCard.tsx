@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil, Save, X, Paperclip } from 'lucide-react';
+import { Pencil, Save, X, Paperclip, Download, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+export interface AnexoFile {
+  nome: string;
+  path: string;
+}
 
 export interface ChamadoCriado {
   id: number;
@@ -32,6 +37,7 @@ export interface ChamadoCriado {
   descricao: string;
   criadoEm: string;
   anexosNomes?: string[];
+  anexos?: AnexoFile[];
 }
 
 interface ChamadoCardProps {
@@ -50,9 +56,21 @@ function ReadOnlyField({ label, value, className }: { label: string; value: stri
   );
 }
 
+function getFileUrl(path: string): string {
+  const { data } = supabase.storage.from('chamado-anexos').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+function isPreviewable(nome: string): boolean {
+  const ext = nome.toLowerCase().split('.').pop() || '';
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'].includes(ext);
+}
+
 export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
   const [editing, setEditing] = useState(false);
   const [showAnexos, setShowAnexos] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewName, setPreviewName] = useState('');
   const [draft, setDraft] = useState(chamado);
   const [saving, setSaving] = useState(false);
 
@@ -88,6 +106,27 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
     }
   };
 
+  const handleView = (anexo: AnexoFile) => {
+    const url = getFileUrl(anexo.path);
+    if (isPreviewable(anexo.nome)) {
+      setPreviewName(anexo.nome);
+      setPreviewUrl(url);
+    } else {
+      window.open(url, '_blank');
+    }
+  };
+
+  const handleDownload = (anexo: AnexoFile) => {
+    const url = getFileUrl(anexo.path);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = anexo.nome;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const statusColor = {
     aberto: 'bg-amber-100 text-amber-800 border-amber-300',
     em_progresso: 'bg-blue-100 text-blue-800 border-blue-300',
@@ -97,6 +136,7 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
   const etapaColor = chamado.etapa === 'THOR' ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground';
 
   const c = editing ? draft : chamado;
+  const hasAnexos = (chamado.anexos && chamado.anexos.length > 0) || (chamado.anexosNomes && chamado.anexosNomes.length > 0);
 
   return (
     <>
@@ -112,10 +152,10 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
             <span className="text-xs text-muted-foreground">Criado em {chamado.criadoEm}</span>
           </div>
           <div className="flex items-center gap-2">
-            {chamado.anexosNomes && chamado.anexosNomes.length > 0 && (
+            {hasAnexos && (
               <Button variant="outline" size="sm" onClick={() => setShowAnexos(true)}>
                 <Paperclip className="h-4 w-4 mr-1.5" />
-                Anexos ({chamado.anexosNomes.length})
+                Anexos ({chamado.anexos?.length || chamado.anexosNomes?.length || 0})
               </Button>
             )}
             {editing ? (
@@ -135,7 +175,7 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
           </div>
         </div>
 
-        {/* Row 1 - same layout as creation form */}
+        {/* Row 1 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <ReadOnlyField label="Supervisor" value={c.supervisor} />
           <ReadOnlyField label="Representante" value={c.representante} />
@@ -176,7 +216,7 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
           <ReadOnlyField label="Status Agendamento" value={c.statusAgendamento} />
         </div>
 
-        {/* Row 4 - Descrição */}
+        {/* Row 4 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {editing ? (
             <div>
@@ -202,21 +242,55 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
 
       {/* Anexos Dialog */}
       <Dialog open={showAnexos} onOpenChange={setShowAnexos}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Anexos do Chamado #{chamado.id}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
-            {chamado.anexosNomes && chamado.anexosNomes.length > 0 ? (
+            {chamado.anexos && chamado.anexos.length > 0 ? (
+              chamado.anexos.map((anexo, i) => (
+                <div key={i} className="flex items-center justify-between gap-2 p-3 bg-muted rounded-md">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Paperclip className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-sm truncate">{anexo.nome}</span>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleView(anexo)} title="Visualizar">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(anexo)} title="Baixar">
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            ) : chamado.anexosNomes && chamado.anexosNomes.length > 0 ? (
               chamado.anexosNomes.map((nome, i) => (
-                <div key={i} className="flex items-center gap-2 p-2 bg-muted rounded-md text-sm">
+                <div key={i} className="flex items-center gap-2 p-3 bg-muted rounded-md text-sm">
                   <Paperclip className="h-4 w-4 text-muted-foreground" />
                   <span>{nome}</span>
+                  <span className="text-xs text-muted-foreground ml-auto">(sem link)</span>
                 </div>
               ))
             ) : (
               <p className="text-sm text-muted-foreground">Nenhum anexo.</p>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview Dialog */}
+      <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>{previewName}</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center overflow-auto max-h-[70vh]">
+            {previewUrl && previewName.toLowerCase().endsWith('.pdf') ? (
+              <iframe src={previewUrl} className="w-full h-[70vh] border-0 rounded" />
+            ) : previewUrl ? (
+              <img src={previewUrl} alt={previewName} className="max-w-full max-h-[70vh] object-contain rounded" />
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>
