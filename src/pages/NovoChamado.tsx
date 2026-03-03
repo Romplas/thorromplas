@@ -211,8 +211,8 @@ export default function NovoChamado() {
         descricao: descricao || null,
         status: 'aberto',
         etapa: 'THOR',
-        supervisor_id: null,
-        representante_id: null,
+        supervisor_id: selectedSupervisor || null,
+        representante_id: selectedRepresentante || null,
         prioridade: 'Média',
       }).select('id').single();
 
