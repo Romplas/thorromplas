@@ -218,6 +218,21 @@ export default function NovoChamado() {
 
       if (error) throw error;
 
+      // Upload attachments to Supabase Storage
+      const uploadedFiles: { nome: string; path: string }[] = [];
+      for (const file of anexos) {
+        const filePath = `${data.id}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('chamado-anexos')
+          .upload(filePath, file);
+        if (uploadError) {
+          console.error('Erro ao enviar anexo:', uploadError);
+          toast.error(`Erro ao enviar ${file.name}`);
+        } else {
+          uploadedFiles.push({ nome: file.name, path: filePath });
+        }
+      }
+
       const novoChamado: ChamadoCriado = {
         id: data.id,
         status: 'aberto',
@@ -239,6 +254,7 @@ export default function NovoChamado() {
         statusAgendamento,
         descricao,
         anexosNomes: anexos.map(f => f.name),
+        anexos: uploadedFiles,
         criadoEm: new Date().toLocaleString('pt-BR'),
       };
 
