@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Eye, CheckCircle, Clock, Trash2, GripVertical, Pencil } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Eye, CheckCircle, Clock, Trash2, GripVertical } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +15,6 @@ interface ChamadoWithNames {
   updated_at: string;
   representante_id: string | null;
   supervisor_id: string | null;
-  gestor_id: string | null;
   representante_nome?: string;
 }
 
@@ -52,29 +51,6 @@ function getTicketColumn(c: ChamadoWithNames): string {
   return statusToEtapa[c.status] || 'thor';
 }
 
-function FilterRow({ icon, label, value, onChange, children }: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      {icon}
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-8 flex-1 text-xs">
-          <SelectValue placeholder={label} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="todos">{label}</SelectItem>
-          {children}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
 export default function Kanban() {
   const { profile, role } = useAuth();
   const { toast } = useToast();
@@ -89,11 +65,9 @@ export default function Kanban() {
   // Filters
   const [filterSupervisor, setFilterSupervisor] = useState('todos');
   const [filterRepresentante, setFilterRepresentante] = useState('todos');
-  const [filterMotivo, setFilterMotivo] = useState('todos');
   const [filterCliente, setFilterCliente] = useState('todos');
   const [filterTicketId, setFilterTicketId] = useState('todos');
-  const [filterBook, setFilterBook] = useState('todos');
-  const [filterGestor, setFilterGestor] = useState('todos');
+  const [filterMotivo, setFilterMotivo] = useState('todos');
 
   useEffect(() => {
     fetchData();
@@ -202,11 +176,9 @@ export default function Kanban() {
   const filteredChamados = chamados.filter((c) => {
     if (filterSupervisor !== 'todos' && c.supervisor_id !== filterSupervisor) return false;
     if (filterRepresentante !== 'todos' && c.representante_id !== filterRepresentante) return false;
-    if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
     if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
     if (filterTicketId !== 'todos' && String(c.id) !== filterTicketId) return false;
-    if (filterBook !== 'todos' && getTicketColumn(c) !== 'book') return false;
-    if (filterGestor !== 'todos' && c.gestor_id !== filterGestor) return false;
+    if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
     return true;
   });
 
@@ -222,37 +194,65 @@ export default function Kanban() {
           <p className="text-sm text-muted-foreground">Gerenciador de Chamados THOR</p>
         </div>
 
-        <div className="flex gap-4">
-          {/* Filters - Vertical sidebar */}
-          <div className="flex flex-col gap-2 bg-card rounded-lg p-3 shadow-sm border w-[180px] flex-shrink-0 self-start">
-            <FilterRow icon={<Pencil className="h-3.5 w-3.5 text-primary" />} label="Supervisor" value={filterSupervisor} onChange={setFilterSupervisor}>
-              {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
-            </FilterRow>
-            <FilterRow icon={<Pencil className="h-3.5 w-3.5 text-primary" />} label="Representantes" value={filterRepresentante} onChange={setFilterRepresentante}>
-              {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
-            </FilterRow>
-            <FilterRow icon={<Pencil className="h-3.5 w-3.5 text-primary" />} label="Motivo" value={filterMotivo} onChange={setFilterMotivo}>
-              {motivos.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-            </FilterRow>
-            <FilterRow icon={<Pencil className="h-3.5 w-3.5 text-primary" />} label="Clientes" value={filterCliente} onChange={setFilterCliente}>
-              {clientes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </FilterRow>
-            <FilterRow icon={<Pencil className="h-3.5 w-3.5 text-primary" />} label="TicketID" value={filterTicketId} onChange={setFilterTicketId}>
-              {chamados.map((c) => <SelectItem key={c.id} value={String(c.id)}>{String(c.id)}</SelectItem>)}
-            </FilterRow>
-            <FilterRow icon={<Pencil className="h-3.5 w-3.5 text-primary" />} label="Book" value={filterBook} onChange={setFilterBook}>
-              <SelectItem value="book">Sim</SelectItem>
-            </FilterRow>
-            <FilterRow icon={<Pencil className="h-3.5 w-3.5 text-primary" />} label="Gestores" value={filterGestor} onChange={setFilterGestor}>
-              {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
-            </FilterRow>
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Supervisor</span>
+            <Select value={filterSupervisor} onValueChange={setFilterSupervisor}>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Representantes</span>
+            <Select value={filterRepresentante} onValueChange={setFilterRepresentante}>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Clientes</span>
+            <Select value={filterCliente} onValueChange={setFilterCliente}>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {clientes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">TicketID</span>
+            <Select value={filterTicketId} onValueChange={setFilterTicketId}>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {chamados.map((c) => <SelectItem key={c.id} value={String(c.id)}>{String(c.id)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Motivo</span>
+            <Select value={filterMotivo} onValueChange={setFilterMotivo}>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {motivos.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-          {/* Kanban Board - Horizontal scroll */}
-          {loading ? (
-            <div className="flex-1 text-center py-12 text-muted-foreground">Carregando chamados...</div>
-          ) : (
-            <div className="flex-1 overflow-x-auto pb-4">
+        {/* Kanban Board - Horizontal scroll */}
+        {loading ? (
+          <div className="text-center py-12 text-muted-foreground">Carregando chamados...</div>
+        ) : (
+          <div className="overflow-x-auto pb-4">
             <div className="flex gap-3" style={{ minWidth: `${columns.length * 220}px` }}>
               {columns.map((col) => {
                 const tickets = filteredChamados.filter((c) => getTicketColumn(c) === col.key);
@@ -324,8 +324,7 @@ export default function Kanban() {
               })}
             </div>
           </div>
-          )}
-        </div>
+        )}
       </div>
     </Layout>
   );
