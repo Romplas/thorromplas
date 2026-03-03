@@ -95,7 +95,7 @@ export default function Kanban() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [chamadosRes, supRes, repRes, srRes, clientesRes, motivosRes, profilesRes] = await Promise.all([
+    const [chamadosRes, supRes, repRes, srRes, clientesRes, motivosRes, profilesRes, gestorRolesRes] = await Promise.all([
       supabase.from('chamados').select('*').order('updated_at', { ascending: false }),
       supabase.from('supervisores').select('id, nome').order('nome'),
       supabase.from('representantes').select('id, codigo, nome').order('nome'),
@@ -103,6 +103,7 @@ export default function Kanban() {
       supabase.from('clientes').select('id, nome, representante_id').order('nome').limit(1000),
       supabase.from('motivos').select('id, nome').order('nome'),
       supabase.from('profiles').select('id, nome, user_id'),
+      supabase.from('user_roles').select('user_id, role').eq('role', 'gestor'),
     ]);
 
     const profileMap = new Map<string, string>();
@@ -112,8 +113,12 @@ export default function Kanban() {
         profileMap.set(p.id, p.nome);
         profileByUserIdMap.set(p.user_id, p.nome);
       });
-      setProfiles(profilesRes.data);
     }
+
+    // Filter profiles to only gestores
+    const gestorUserIds = new Set((gestorRolesRes?.data || []).map((r: any) => r.user_id));
+    const gestorProfiles = (profilesRes.data || []).filter((p: any) => gestorUserIds.has(p.user_id));
+    setProfiles(gestorProfiles);
 
     // Also build a map from representantes table
     const repMap = new Map<string, string>();
