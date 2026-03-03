@@ -42,9 +42,7 @@ export default function VinculosTab({ supervisores, representantes, links }: Vin
     ? links.filter((l: any) => l.supervisor_id === selectedSupervisor).map((l: any) => l.representante_id)
     : [];
 
-  const availableRepresentantes = representantes.filter(
-    (r: any) => !alreadyLinkedIds.includes(r.id)
-  );
+  const availableRepresentantes = representantes;
 
   const addLinks = useMutation({
     mutationFn: async () => {
@@ -138,32 +136,51 @@ export default function VinculosTab({ supervisores, representantes, links }: Vin
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={availableRepresentantes.length > 0 && selectedRepresentantes.length === availableRepresentantes.length}
-                      onCheckedChange={selectAll}
+                      checked={availableRepresentantes.filter((r: any) => !alreadyLinkedIds.includes(r.id)).length > 0 && selectedRepresentantes.length === availableRepresentantes.filter((r: any) => !alreadyLinkedIds.includes(r.id)).length}
+                      onCheckedChange={() => {
+                        const unlinkable = availableRepresentantes.filter((r: any) => !alreadyLinkedIds.includes(r.id));
+                        if (selectedRepresentantes.length === unlinkable.length) {
+                          setSelectedRepresentantes([]);
+                        } else {
+                          setSelectedRepresentantes(unlinkable.map((r: any) => r.id));
+                        }
+                      }}
                     />
                   </TableHead>
-                  <TableHead>Representante disponível</TableHead>
+                  <TableHead>Representante</TableHead>
+                  <TableHead className="w-24 text-center">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {availableRepresentantes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={2} className="text-center text-muted-foreground py-6">
-                      Todos os representantes já estão vinculados a este supervisor.
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-6">
+                      Nenhum representante cadastrado.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  availableRepresentantes.map((r: any) => (
-                    <TableRow key={r.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedRepresentantes.includes(r.id)}
-                          onCheckedChange={() => toggleRepresentante(r.id)}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">{r.nome}</TableCell>
-                    </TableRow>
-                  ))
+                  availableRepresentantes.map((r: any) => {
+                    const isLinked = alreadyLinkedIds.includes(r.id);
+                    return (
+                      <TableRow key={r.id} className={isLinked ? 'opacity-60' : ''}>
+                        <TableCell>
+                          <Checkbox
+                            checked={isLinked || selectedRepresentantes.includes(r.id)}
+                            disabled={isLinked}
+                            onCheckedChange={() => toggleRepresentante(r.id)}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">{r.nome}</TableCell>
+                        <TableCell className="text-center">
+                          {isLinked ? (
+                            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">Vinculado</span>
+                          ) : (
+                            <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">Disponível</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
