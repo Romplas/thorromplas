@@ -351,23 +351,23 @@ export default function Kanban() {
           <div className="text-center py-12 text-muted-foreground">Carregando chamados...</div>
         ) : (
           <div className="overflow-x-auto pb-4">
-            <div className="flex gap-3" style={{ minWidth: `${columns.length * 280}px` }}>
+            <div className="flex gap-3" style={{ minWidth: `${columns.length * 310}px` }}>
               {columns.map((col) => {
                 const tickets = filteredChamados.filter((c) => getTicketColumn(c) === col.key);
                 const isOver = dragOverCol === col.key;
                 return (
                   <div
                     key={col.key}
-                    className={`flex-shrink-0 w-64 space-y-2 transition-all ${isOver ? 'ring-2 ring-primary/50 rounded-lg' : ''}`}
+                    className={`flex-shrink-0 w-72 space-y-2.5 transition-all ${isOver ? 'ring-2 ring-primary/50 rounded-lg' : ''}`}
                     onDragOver={(e) => handleDragOver(e, col.key)}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, col.key)}
                   >
-                    <div className={`${col.bg} text-white text-center py-2 rounded-lg font-semibold text-xs`}>
+                    <div className={`${col.bg} text-white text-center py-2.5 rounded-lg font-semibold text-sm`}>
                       {col.label}{' '}
-                      <span className="ml-1 bg-white/30 px-1.5 rounded-full text-[10px]">{tickets.length}</span>
+                      <span className="ml-1 bg-white/30 px-2 rounded-full text-xs">{tickets.length}</span>
                     </div>
-                    <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto">
+                    <div className="space-y-2.5 max-h-[calc(100vh-280px)] overflow-y-auto">
                       {tickets.map((ticket) => (
                         <div
                           key={ticket.id}
@@ -376,33 +376,33 @@ export default function Kanban() {
                           onDragEnd={handleDragEnd}
                           className={`rounded-xl overflow-hidden shadow-md cursor-grab active:cursor-grabbing transition-opacity ${draggedId === ticket.id ? 'opacity-40' : 'opacity-100'}`}
                         >
-                          <div className={`${col.cardBg} text-white px-3 py-3 space-y-1.5`}>
-                            <p className="text-[11px] font-bold text-center">TicketID : {ticket.id}</p>
-                            <p className="text-[10px] text-center">
-                              <span className="font-semibold">Representante :</span> {ticket.representante_nome}
+                          <div className={`${col.cardBg} text-white px-4 py-4 space-y-2`}>
+                            <p className="text-xs font-bold text-center">TicketID : {ticket.id}</p>
+                            <p className="text-[11px] text-center font-semibold">
+                              Representante : {ticket.representante_nome}
                             </p>
-                            <p className="text-[10px] text-center mt-2">
-                              <span className="font-semibold">Cliente :</span> {ticket.cliente_nome}
+                            <p className="text-[11px] text-center mt-2 font-semibold">
+                              Cliente : {ticket.cliente_nome}
                             </p>
-                            <p className="text-[10px] text-center mt-1">
+                            <p className="text-[11px] text-center mt-2">
                               <span className="font-semibold">Motivo :</span> {ticket.motivo}
                             </p>
-                            <p className="text-[10px] text-center mt-2">
+                            <p className="text-[11px] text-center mt-2">
                               <span className="font-semibold">Etapa :</span> {col.label}
                             </p>
-                            <p className="text-[10px] text-center">
+                            <p className="text-[11px] text-center">
                               <span className="font-semibold">Gestor :</span> {ticket.gestor_nome || ''}
                             </p>
-                            <p className="text-[10px] text-center mt-2 font-semibold">
+                            <p className="text-[11px] text-center mt-2 font-semibold">
                               Atualizado : {formatDate(ticket.updated_at)}
                             </p>
                           </div>
-                          <div className="bg-gray-900 flex items-center justify-center gap-4 py-2">
+                          <div className="bg-gray-900 flex items-center justify-center gap-5 py-2.5">
                             <button className="text-white hover:text-gray-300 transition-colors" title="Editar">
-                              <Pencil className="h-3.5 w-3.5" />
+                              <Pencil className="h-4 w-4" />
                             </button>
                             <button className="text-white hover:text-gray-300 transition-colors" title="Histórico">
-                              <Clock className="h-3.5 w-3.5" />
+                              <Clock className="h-4 w-4" />
                             </button>
                             {(role === 'admin' || role === 'gestor') && (
                               <button
@@ -410,7 +410,7 @@ export default function Kanban() {
                                 title="Excluir"
                                 onClick={() => handleDelete(ticket.id)}
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             )}
                           </div>
