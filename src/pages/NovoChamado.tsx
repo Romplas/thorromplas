@@ -165,7 +165,10 @@ export default function NovoChamado() {
                 <Label className="text-xs font-semibold">Tipo de Solicitação</Label>
                 <Select>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
-                  <SelectContent><SelectItem value="tipo1">Tipo 1</SelectItem></SelectContent>
+                  <SelectContent>
+                    <SelectItem value="interna">Interna</SelectItem>
+                    <SelectItem value="romplas">Romplas</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
               <div>
@@ -187,7 +190,10 @@ export default function NovoChamado() {
                 <Label className="text-xs font-semibold">Status Agendamentos</Label>
                 <Select>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
-                  <SelectContent><SelectItem value="agendado">Agendado</SelectItem></SelectContent>
+                  <SelectContent>
+                    <SelectItem value="agendado">Agendado</SelectItem>
+                    <SelectItem value="concluido">Concluído</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
             </div>
