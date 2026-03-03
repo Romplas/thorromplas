@@ -97,12 +97,12 @@ export default function Kanban() {
     setLoading(true);
     const [chamadosRes, supRes, repRes, srRes, clientesRes, motivosRes, profilesRes, gestorRolesRes] = await Promise.all([
       supabase.from('chamados').select('*').order('updated_at', { ascending: false }),
-      supabase.from('supervisores').select('id, nome').order('nome'),
+      supabase.from('supervisores').select('id, nome').eq('status', 'ativo').order('nome'),
       supabase.from('representantes').select('id, codigo, nome').order('nome'),
       supabase.from('supervisor_representante').select('supervisor_id, representante_id'),
       supabase.from('clientes').select('id, nome, representante_id').order('nome').limit(1000),
       supabase.from('motivos').select('id, nome').order('nome'),
-      supabase.from('profiles').select('id, nome, user_id'),
+      supabase.from('profiles').select('id, nome, user_id, status').eq('status', 'ativo'),
       supabase.from('user_roles').select('user_id, role').eq('role', 'gestor'),
     ]);
 
