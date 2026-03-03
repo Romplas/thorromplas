@@ -15,6 +15,7 @@ interface ChamadoWithNames {
   updated_at: string;
   representante_id: string | null;
   supervisor_id: string | null;
+  gestor_id: string | null;
   representante_nome?: string;
 }
 
@@ -68,6 +69,8 @@ export default function Kanban() {
   const [filterCliente, setFilterCliente] = useState('todos');
   const [filterTicketId, setFilterTicketId] = useState('todos');
   const [filterMotivo, setFilterMotivo] = useState('todos');
+  const [filterGestor, setFilterGestor] = useState('todos');
+  const [filterStatus, setFilterStatus] = useState('todos');
 
   useEffect(() => {
     fetchData();
@@ -179,6 +182,8 @@ export default function Kanban() {
     if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
     if (filterTicketId !== 'todos' && String(c.id) !== filterTicketId) return false;
     if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
+    if (filterGestor !== 'todos' && c.gestor_id !== filterGestor) return false;
+    if (filterStatus !== 'todos' && c.status !== filterStatus) return false;
     return true;
   });
 
@@ -243,6 +248,29 @@ export default function Kanban() {
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 {motivos.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Gestores</span>
+            <Select value={filterGestor} onValueChange={setFilterGestor}>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Status Ticket</span>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="aberto">Aberto</SelectItem>
+                <SelectItem value="em_progresso">Em Progresso</SelectItem>
+                <SelectItem value="aguardando">Aguardando</SelectItem>
+                <SelectItem value="finalizado">Finalizado</SelectItem>
               </SelectContent>
             </Select>
           </div>
