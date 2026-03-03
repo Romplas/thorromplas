@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Paperclip, Home, Clock, RotateCcw } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,12 +13,34 @@ import Layout from '@/components/Layout';
 interface Motivo { id: string; nome: string }
 interface Submotivo { id: string; motivo_id: string; nome: string }
 
+const ACCEPTED_TYPES: Record<string, { label: string; maxMB: number; icon: React.ReactNode }> = {
+  'application/pdf': { label: 'PDF', maxMB: 10, icon: <FileText className="h-4 w-4" /> },
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { label: 'DOCX', maxMB: 10, icon: <FileText className="h-4 w-4" /> },
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { label: 'XLSX', maxMB: 10, icon: <FileSpreadsheet className="h-4 w-4" /> },
+  'video/mp4': { label: 'MP4', maxMB: 50, icon: <Film className="h-4 w-4" /> },
+  'image/jpeg': { label: 'JPEG', maxMB: 5, icon: <Image className="h-4 w-4" /> },
+  'image/png': { label: 'PNG', maxMB: 5, icon: <Image className="h-4 w-4" /> },
+  'audio/mpeg': { label: 'MP3', maxMB: 15, icon: <Music className="h-4 w-4" /> },
+  'text/plain': { label: 'TXT', maxMB: 2, icon: <File className="h-4 w-4" /> },
+};
+
+const ACCEPT_STRING = Object.keys(ACCEPTED_TYPES).join(',');
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function NovoChamado() {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [motivos, setMotivos] = useState<Motivo[]>([]);
   const [submotivos, setSubmotivos] = useState<Submotivo[]>([]);
   const [selectedMotivo, setSelectedMotivo] = useState<string>('');
   const [filteredSubmotivos, setFilteredSubmotivos] = useState<Submotivo[]>([]);
+  const [anexos, setAnexos] = useState<globalThis.File[]>([]);
+  const [fileErrors, setFileErrors] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -206,11 +228,82 @@ export default function NovoChamado() {
               </div>
               <div>
                 <Label className="text-xs font-semibold">Anexos</Label>
-                <div className="mt-1 border rounded-lg p-4 min-h-[140px] flex flex-col items-center justify-center text-muted-foreground">
-                  <p className="text-sm">Não há nada em anexo.</p>
-                  <div className="flex items-center gap-1.5 mt-2 text-xs">
-                    <Paperclip className="h-3 w-3" />
-                    Anexar Arquivos no formato (.pdf /.docx /.xlsx /.mp4...)
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept={ACCEPT_STRING}
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    const errors: string[] = [];
+                    const valid: globalThis.File[] = [];
+                    files.forEach(f => {
+                      const config = ACCEPTED_TYPES[f.type];
+                      if (!config) {
+                        errors.push(`"${f.name}" — formato não suportado.`);
+                      } else if (f.size > config.maxMB * 1024 * 1024) {
+                        errors.push(`"${f.name}" excede ${config.maxMB} MB (limite para ${config.label}).`);
+                      } else {
+                        valid.push(f);
+                      }
+                    });
+                    setFileErrors(errors);
+                    setAnexos(prev => [...prev, ...valid]);
+                    e.target.value = '';
+                  }}
+                />
+                <div className="mt-1 border rounded-lg p-4 min-h-[140px] flex flex-col">
+                  {anexos.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+                      <p className="text-sm">Não há nada em anexo.</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {anexos.map((file, i) => {
+                        const config = ACCEPTED_TYPES[file.type];
+                        return (
+                          <div key={i} className="flex items-center gap-1.5 bg-muted rounded-md px-2.5 py-1.5 text-xs">
+                            {config?.icon}
+                            <span className="max-w-[120px] truncate">{file.name}</span>
+                            <span className="text-muted-foreground">({formatFileSize(file.size)})</span>
+                            <button
+                              type="button"
+                              onClick={() => setAnexos(prev => prev.filter((_, idx) => idx !== i))}
+                              className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {fileErrors.length > 0 && (
+                    <div className="mb-2 space-y-1">
+                      {fileErrors.map((err, i) => (
+                        <p key={i} className="text-xs text-destructive">{err}</p>
+                      ))}
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mx-auto mt-auto"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Paperclip className="h-3.5 w-3.5 mr-1.5" />
+                    Anexar Arquivos
+                  </Button>
+
+                  <div className="mt-3 border-t pt-2">
+                    <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
+                      <span className="font-semibold">Formatos e limites:</span>{' '}
+                      PDF, DOCX, XLSX (até 10 MB) · MP4 (até 50 MB) · JPEG, PNG (até 5 MB) · MP3 (até 15 MB) · TXT (até 2 MB)
+                    </p>
                   </div>
                 </div>
               </div>
