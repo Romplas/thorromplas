@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, Clock, Users, Zap, LogOut, User, Columns3, Upload } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Clock, Users, Zap, LogOut, User, Columns3, Upload, Settings } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/historico', label: 'Histórico', icon: Clock },
   { to: '/usuarios', label: 'Usuários', icon: Users },
   { to: '/import-clientes', label: 'Importar', icon: Upload },
+  { to: '/configuracoes', label: 'Configurações', icon: Settings },
 ];
 
 interface LayoutProps {
