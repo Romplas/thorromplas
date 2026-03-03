@@ -100,7 +100,7 @@ export default function NovoChamado() {
         const [mRes, sRes, supRes, repRes, srRes, redeRes] = await Promise.all([
           supabase.from('motivos').select('id, nome').order('nome'),
           supabase.from('submotivos').select('id, motivo_id, nome').order('nome'),
-          supabase.from('supervisores').select('id, nome').order('nome'),
+          supabase.from('supervisores').select('id, nome').eq('status', 'ativo').order('nome'),
           supabase.from('representantes').select('id, codigo, nome').order('nome'),
           supabase.from('supervisor_representante').select('supervisor_id, representante_id'),
           supabase.from('redes').select('id, nome').order('nome'),
