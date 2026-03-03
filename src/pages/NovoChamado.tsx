@@ -22,12 +22,16 @@ export default function NovoChamado() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [mRes, sRes] = await Promise.all([
-        supabase.from('motivos').select('id, nome').order('nome'),
-        supabase.from('submotivos' as any).select('id, motivo_id, nome').order('nome'),
-      ]);
-      if (mRes.data) setMotivos(mRes.data);
-      if (sRes.data) setSubmotivos(sRes.data as any);
+      try {
+        const [mRes, sRes] = await Promise.all([
+          supabase.from('motivos').select('id, nome').order('nome'),
+          supabase.from('submotivos').select('id, motivo_id, nome').order('nome'),
+        ]);
+        if (mRes.data) setMotivos(mRes.data);
+        if (sRes.data) setSubmotivos(sRes.data);
+      } catch (error) {
+        console.error('Erro ao carregar motivos/submotivos:', error);
+      }
     };
     fetchData();
   }, []);
