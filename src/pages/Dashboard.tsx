@@ -7,15 +7,13 @@ import Layout from '@/components/Layout';
 const statusColors = {
   aberto: '#EF4444',
   em_progresso: '#3B82F6',
-  aguardando: '#F59E0B',
-  finalizado: '#22C55E',
+  fechado: '#22C55E',
 };
 
 const statusLabels: Record<string, string> = {
   aberto: 'Aberto',
   em_progresso: 'Em Progresso',
-  aguardando: 'Aguardando',
-  finalizado: 'Finalizado',
+  fechado: 'Fechado',
 };
 
 const stats = [
@@ -146,7 +144,7 @@ export default function Dashboard() {
           {mockTickets.slice(0, 5).map((ticket) => (
             <div key={ticket.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-3">
-                <div className={`h-2 w-2 rounded-full ${ticket.status === 'aberto' ? 'bg-red-500' : ticket.status === 'em_progresso' ? 'bg-blue-500' : ticket.status === 'aguardando' ? 'bg-yellow-500' : 'bg-green-500'}`} />
+                <div className={`h-2 w-2 rounded-full ${ticket.status === 'aberto' ? 'bg-red-500' : ticket.status === 'em_progresso' ? 'bg-blue-500' : 'bg-green-500'}`} />
                 <div>
                   <p className="text-sm font-semibold">#{ticket.id}</p>
                   <p className="text-xs text-muted-foreground">
@@ -155,7 +153,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className={`status-badge ${ticket.status === 'aberto' ? 'status-open' : ticket.status === 'em_progresso' ? 'status-progress' : ticket.status === 'aguardando' ? 'status-waiting' : 'status-done'}`}>
+                <span className={`status-badge ${ticket.status === 'aberto' ? 'status-open' : ticket.status === 'em_progresso' ? 'status-progress' : 'status-done'}`}>
                   {statusLabels[ticket.status]}
                 </span>
                 <span className="text-[10px] text-muted-foreground">{ticket.data_criacao.split(' ')[0]}</span>

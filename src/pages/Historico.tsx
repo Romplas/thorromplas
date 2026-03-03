@@ -9,8 +9,7 @@ import Layout from '@/components/Layout';
 const statusLabels: Record<string, string> = {
   aberto: 'Aberto',
   em_progresso: 'Em Progresso',
-  aguardando: 'Aguardando Resposta',
-  finalizado: 'Finalizado',
+  fechado: 'Fechado',
 };
 
 export default function Historico() {
@@ -50,7 +49,6 @@ export default function Historico() {
               className={`border-l-4 rounded-lg p-4 cursor-pointer transition-colors ${
                 ticket.status === 'aberto' ? 'border-l-red-500' :
                 ticket.status === 'em_progresso' ? 'border-l-blue-500' :
-                ticket.status === 'aguardando' ? 'border-l-yellow-500' :
                 'border-l-green-500'
               } ${selected?.id === ticket.id ? 'bg-primary/5 border' : 'bg-card border'}`}
               onClick={() => setSelected(ticket)}
@@ -129,7 +127,7 @@ export default function Historico() {
                   <td className="p-3">{t.supervisor || '-'}</td>
                   <td className="p-3">{t.motivo}</td>
                   <td className="p-3">
-                    <span className={`status-badge ${t.status === 'aberto' ? 'status-open' : t.status === 'em_progresso' ? 'status-progress' : t.status === 'aguardando' ? 'status-waiting' : 'status-done'}`}>
+                    <span className={`status-badge ${t.status === 'aberto' ? 'status-open' : t.status === 'em_progresso' ? 'status-progress' : 'status-done'}`}>
                       {statusLabels[t.status]}
                     </span>
                   </td>
