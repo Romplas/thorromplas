@@ -282,7 +282,7 @@ export default function Kanban() {
               <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                {filteredClientes.map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
+                {filteredClientes.filter((c) => c.nome).map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -302,7 +302,7 @@ export default function Kanban() {
               <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                {motivos.map((m) => <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>)}
+                {motivos.filter((m) => m.nome).map((m) => <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
