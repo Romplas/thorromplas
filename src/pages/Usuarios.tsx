@@ -42,6 +42,7 @@ const roleLabels: Record<UserRole, string> = {
 
 export default function Usuarios() {
   const [users, setUsers] = useState<ProfileWithRole[]>([]);
+  const [supervisores, setSupervisores] = useState<{ id: string; nome: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<ProfileWithRole | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -64,8 +65,11 @@ export default function Usuarios() {
 
   const fetchUsers = async () => {
     setLoading(true);
-    const { data: profiles } = await supabase.from('profiles').select('*').order('nome');
-    const { data: roles } = await supabase.from('user_roles').select('*');
+    const [{ data: profiles }, { data: roles }, { data: sups }] = await Promise.all([
+      supabase.from('profiles').select('*').order('nome'),
+      supabase.from('user_roles').select('*'),
+      supabase.from('supervisores').select('id, nome').eq('status', 'ativo').order('nome'),
+    ]);
 
     if (profiles) {
       const merged: ProfileWithRole[] = profiles.map(p => ({
@@ -74,6 +78,7 @@ export default function Usuarios() {
       }));
       setUsers(merged);
     }
+    setSupervisores(sups || []);
     setLoading(false);
   };
 
@@ -221,7 +226,15 @@ export default function Usuarios() {
       </div>
       <div className="space-y-2">
         <Label>Supervisora</Label>
-        <Input value={formData.supervisora} onChange={e => setFormData(p => ({ ...p, supervisora: e.target.value }))} />
+        <Select value={formData.supervisora} onValueChange={(val) => setFormData(p => ({ ...p, supervisora: val }))}>
+          <SelectTrigger><SelectValue placeholder="Selecione a supervisora" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Nenhuma</SelectItem>
+            {supervisores.map(s => (
+              <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-2">
         <Label>Tipo de Usuário *</Label>
