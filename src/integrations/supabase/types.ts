@@ -148,21 +148,45 @@ export type Database = {
       }
       clientes: {
         Row: {
+          codigo: number | null
           created_at: string
           id: string
           nome: string
+          rede_id: string | null
+          representante_id: string | null
         }
         Insert: {
+          codigo?: number | null
           created_at?: string
           id?: string
           nome: string
+          rede_id?: string | null
+          representante_id?: string | null
         }
         Update: {
+          codigo?: number | null
           created_at?: string
           id?: string
           nome?: string
+          rede_id?: string | null
+          representante_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clientes_rede_id_fkey"
+            columns: ["rede_id"]
+            isOneToOne: false
+            referencedRelation: "redes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clientes_representante_id_fkey"
+            columns: ["representante_id"]
+            isOneToOne: false
+            referencedRelation: "representantes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       etapas: {
         Row: {
@@ -248,6 +272,45 @@ export type Database = {
         }
         Relationships: []
       }
+      redes: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      representantes: {
+        Row: {
+          codigo: number
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          codigo: number
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          codigo?: number
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       submotivos: {
         Row: {
           created_at: string
@@ -276,6 +339,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      supervisor_representante: {
+        Row: {
+          id: string
+          representante_id: string
+          supervisor_id: string
+        }
+        Insert: {
+          id?: string
+          representante_id: string
+          supervisor_id: string
+        }
+        Update: {
+          id?: string
+          representante_id?: string
+          supervisor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supervisor_representante_representante_id_fkey"
+            columns: ["representante_id"]
+            isOneToOne: false
+            referencedRelation: "representantes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supervisor_representante_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "supervisores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supervisores: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
