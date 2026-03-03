@@ -226,10 +226,10 @@ export default function Usuarios() {
       </div>
       <div className="space-y-2">
         <Label>Supervisora</Label>
-        <Select value={formData.supervisora} onValueChange={(val) => setFormData(p => ({ ...p, supervisora: val }))}>
+        <Select value={formData.supervisora || 'none'} onValueChange={(val) => setFormData(p => ({ ...p, supervisora: val === 'none' ? '' : val }))}>
           <SelectTrigger><SelectValue placeholder="Selecione a supervisora" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Nenhuma</SelectItem>
+            <SelectItem value="none">Nenhuma</SelectItem>
             {supervisores.map(s => (
               <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>
             ))}
