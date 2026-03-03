@@ -143,7 +143,14 @@ export default function NovoChamado() {
                 <Label className="text-xs font-semibold">Negociado com:</Label>
                 <Select>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
-                  <SelectContent><SelectItem value="item1">Item 1</SelectItem></SelectContent>
+                  <SelectContent>
+                    <SelectItem value="andre">André</SelectItem>
+                    <SelectItem value="douglas">Douglas</SelectItem>
+                    <SelectItem value="vinicius">Vinicius</SelectItem>
+                    <SelectItem value="joao_pedro">João Pedro</SelectItem>
+                    <SelectItem value="sr_ivo">Sr Ivo</SelectItem>
+                    <SelectItem value="tathy">Tathy</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
               <div>
@@ -162,9 +169,13 @@ export default function NovoChamado() {
                 <Select>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
                   <SelectContent>
-                    {mockUsers.filter(u => u.tipo === 'gestor').map(u => (
-                      <SelectItem key={u.id} value={u.id}>{u.nome}</SelectItem>
-                    ))}
+                    <SelectItem value="andre">André</SelectItem>
+                    <SelectItem value="douglas">Douglas</SelectItem>
+                    <SelectItem value="tathy">Tathy</SelectItem>
+                    <SelectItem value="vinicius">Vinicius</SelectItem>
+                    <SelectItem value="marcelo">Marcelo</SelectItem>
+                    <SelectItem value="juliane">Juliane</SelectItem>
+                    <SelectItem value="ivan">Ivan</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
