@@ -12,6 +12,7 @@ import NovoChamado from "./pages/NovoChamado";
 import Historico from "./pages/Historico";
 import Usuarios from "./pages/Usuarios";
 import Kanban from "./pages/Kanban";
+import ImportClientes from "./pages/ImportClientes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/historico" element={<ProtectedRoute><Historico /></ProtectedRoute>} />
             <Route path="/usuarios" element={<ProtectedRoute><Usuarios /></ProtectedRoute>} />
             <Route path="/kanban" element={<ProtectedRoute><Kanban /></ProtectedRoute>} />
+            <Route path="/import-clientes" element={<ProtectedRoute><ImportClientes /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
