@@ -14,8 +14,7 @@ const columns = [
 const statusToColumn: Record<string, string> = {
   aberto: 'thor',
   em_progresso: 'aguardando',
-  aguardando: 'retorno',
-  finalizado: 'completo',
+  fechado: 'completo',
 };
 
 export default function Home() {

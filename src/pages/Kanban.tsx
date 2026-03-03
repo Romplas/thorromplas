@@ -45,8 +45,7 @@ const columns = [
 const statusToEtapa: Record<string, string> = {
   aberto: 'thor',
   em_progresso: 'aguardando_resposta',
-  aguardando: 'retorno_interno',
-  finalizado: 'completo',
+  fechado: 'completo',
 };
 
 function getTicketColumn(c: ChamadoWithNames): string {
@@ -336,8 +335,7 @@ export default function Kanban() {
                 <SelectItem value="todos">Todos</SelectItem>
                 <SelectItem value="aberto">Aberto</SelectItem>
                 <SelectItem value="em_progresso">Em Progresso</SelectItem>
-                <SelectItem value="aguardando">Aguardando</SelectItem>
-                <SelectItem value="finalizado">Finalizado</SelectItem>
+                <SelectItem value="fechado">Fechado</SelectItem>
               </SelectContent>
             </Select>
           </div>
