@@ -164,6 +164,33 @@ export type Database = {
         }
         Relationships: []
       }
+      etapas: {
+        Row: {
+          cor: string
+          created_at: string
+          id: string
+          label: string
+          nome: string
+          ordem: number
+        }
+        Insert: {
+          cor: string
+          created_at?: string
+          id?: string
+          label: string
+          nome: string
+          ordem?: number
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          id?: string
+          label?: string
+          nome?: string
+          ordem?: number
+        }
+        Relationships: []
+      }
       motivos: {
         Row: {
           created_at: string

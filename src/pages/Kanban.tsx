@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Eye, CheckCircle, Clock, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Eye, CheckCircle, Clock, Trash2, GripVertical } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,8 +26,8 @@ interface ProfileOption {
 
 const columns = [
   { key: 'thor', label: 'THOR', bg: 'bg-red-600', card: 'bg-red-50 border-red-200' },
-  { key: 'aguardando', label: 'Aguardando Resposta', bg: 'bg-purple-600', card: 'bg-purple-50 border-purple-200' },
-  { key: 'retorno', label: 'Retorno Interno Romplas', bg: 'bg-blue-600', card: 'bg-blue-50 border-blue-200' },
+  { key: 'aguardando_resposta', label: 'Aguardando Resposta', bg: 'bg-purple-600', card: 'bg-purple-50 border-purple-200' },
+  { key: 'retorno_interno', label: 'Retorno Interno Romplas', bg: 'bg-blue-600', card: 'bg-blue-50 border-blue-200' },
   { key: 'negociacao', label: 'Em Negociação', bg: 'bg-yellow-500', card: 'bg-yellow-50 border-yellow-200' },
   { key: 'alteracao', label: 'Alteração', bg: 'bg-teal-500', card: 'bg-teal-50 border-teal-200' },
   { key: 'completo', label: 'Completo', bg: 'bg-green-500', card: 'bg-green-50 border-green-200' },
@@ -38,22 +38,18 @@ const columns = [
   { key: 'book', label: 'Book', bg: 'bg-lime-500', card: 'bg-lime-50 border-lime-200' },
 ];
 
-const statusToColumn: Record<string, string> = {
+// Tickets without etapa use status to determine initial column
+const statusToEtapa: Record<string, string> = {
   aberto: 'thor',
-  em_progresso: 'aguardando',
-  aguardando: 'retorno',
+  em_progresso: 'aguardando_resposta',
+  aguardando: 'retorno_interno',
   finalizado: 'completo',
 };
 
-const etapaToColumn: Record<string, string> = {
-  negociacao: 'negociacao',
-  alteracao: 'alteracao',
-  perdido: 'perdido',
-  rnc: 'rnc',
-  sdp: 'sdp',
-  amostras: 'amostras',
-  book: 'book',
-};
+function getTicketColumn(c: ChamadoWithNames): string {
+  if (c.etapa) return c.etapa;
+  return statusToEtapa[c.status] || 'thor';
+}
 
 export default function Kanban() {
   const { profile, role } = useAuth();
@@ -63,6 +59,8 @@ export default function Kanban() {
   const [motivos, setMotivos] = useState<string[]>([]);
   const [clientes, setClientes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [draggedId, setDraggedId] = useState<number | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
   // Filters
   const [filterSupervisor, setFilterSupervisor] = useState('todos');
@@ -77,7 +75,6 @@ export default function Kanban() {
 
   const fetchData = async () => {
     setLoading(true);
-
     const [chamadosRes, profilesRes, motivosRes, clientesRes] = await Promise.all([
       supabase.from('chamados').select('*').order('updated_at', { ascending: false }),
       supabase.from('profiles').select('id, nome, user_id'),
@@ -101,7 +98,6 @@ export default function Kanban() {
 
     if (motivosRes.data) setMotivos(motivosRes.data.map((m) => m.nome));
     if (clientesRes.data) setClientes(clientesRes.data.map((c) => c.nome));
-
     setLoading(false);
   };
 
@@ -113,6 +109,63 @@ export default function Kanban() {
       setChamados((prev) => prev.filter((c) => c.id !== id));
       toast({ title: 'Chamado excluído' });
     }
+  };
+
+  const handleDragStart = (e: React.DragEvent, ticketId: number) => {
+    setDraggedId(ticketId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(ticketId));
+  };
+
+  const handleDragOver = (e: React.DragEvent, colKey: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverCol(colKey);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverCol(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, colKey: string) => {
+    e.preventDefault();
+    setDragOverCol(null);
+    if (draggedId === null) return;
+
+    const ticket = chamados.find((c) => c.id === draggedId);
+    if (!ticket) return;
+
+    const currentCol = getTicketColumn(ticket);
+    if (currentCol === colKey) {
+      setDraggedId(null);
+      return;
+    }
+
+    // Optimistic update
+    setChamados((prev) =>
+      prev.map((c) => (c.id === draggedId ? { ...c, etapa: colKey } : c))
+    );
+    setDraggedId(null);
+
+    const { error } = await supabase
+      .from('chamados')
+      .update({ etapa: colKey })
+      .eq('id', draggedId);
+
+    if (error) {
+      toast({ title: 'Erro ao mover chamado', variant: 'destructive' });
+      // Revert
+      setChamados((prev) =>
+        prev.map((c) => (c.id === ticket.id ? { ...c, etapa: ticket.etapa } : c))
+      );
+    } else {
+      toast({ title: `Chamado movido para ${columns.find((c) => c.key === colKey)?.label}` });
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDragOverCol(null);
   };
 
   const formatDate = (dateStr: string) => {
@@ -129,13 +182,12 @@ export default function Kanban() {
     return true;
   });
 
-  const userName = profile?.nome || 'Usuário';
   const roleLabel = role === 'admin' ? 'Administrador' : role === 'gestor' ? 'Gestor' : role === 'supervisor' ? 'Supervisor' : 'Representante';
 
   return (
     <Layout>
-      <div className="p-6">
-        <div className="mb-6">
+      <div className="p-4">
+        <div className="mb-4">
           <h1 className="text-xl">
             Olá, <span className="text-primary font-semibold">{roleLabel}</span>
           </h1>
@@ -143,140 +195,134 @@ export default function Kanban() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 mb-6 bg-card rounded-lg p-3 shadow-sm border">
+        <div className="flex flex-wrap items-center gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Supervisor</span>
             <Select value={filterSupervisor} onValueChange={setFilterSupervisor}>
-              <SelectTrigger className="h-8 w-36 text-xs">
-                <SelectValue placeholder="Localizar itens" />
-              </SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                {profiles.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
-                ))}
+                {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Representantes</span>
             <Select value={filterRepresentante} onValueChange={setFilterRepresentante}>
-              <SelectTrigger className="h-8 w-36 text-xs">
-                <SelectValue placeholder="Localizar itens" />
-              </SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                {profiles.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
-                ))}
+                {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Clientes</span>
             <Select value={filterCliente} onValueChange={setFilterCliente}>
-              <SelectTrigger className="h-8 w-36 text-xs">
-                <SelectValue placeholder="Localizar itens" />
-              </SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                {clientes.map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
+                {clientes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">TicketID</span>
             <Select value={filterTicketId} onValueChange={setFilterTicketId}>
-              <SelectTrigger className="h-8 w-36 text-xs">
-                <SelectValue placeholder="Localizar itens" />
-              </SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                {chamados.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>{String(c.id)}</SelectItem>
-                ))}
+                {chamados.map((c) => <SelectItem key={c.id} value={String(c.id)}>{String(c.id)}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Motivo</span>
             <Select value={filterMotivo} onValueChange={setFilterMotivo}>
-              <SelectTrigger className="h-8 w-36 text-xs">
-                <SelectValue placeholder="Localizar itens" />
-              </SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                {motivos.map((m) => (
-                  <SelectItem key={m} value={m}>{m}</SelectItem>
-                ))}
+                {motivos.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {/* Kanban Board */}
+        {/* Kanban Board - Horizontal scroll */}
         {loading ? (
           <div className="text-center py-12 text-muted-foreground">Carregando chamados...</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            {columns.map((col) => {
-              const tickets = filteredChamados.filter((c) => {
-                const colByStatus = statusToColumn[c.status];
-                const colByEtapa = c.etapa ? etapaToColumn[c.etapa] : undefined;
-                return colByEtapa === col.key || (!colByEtapa && colByStatus === col.key);
-              });
-              return (
-                <div key={col.key} className="space-y-3">
-                  <div className={`${col.bg} text-white text-center py-2 rounded-lg font-semibold text-sm`}>
-                    {col.label}{' '}
-                    <span className="ml-1 bg-white/30 px-1.5 rounded-full text-xs">{tickets.length}</span>
-                  </div>
-                  <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                    {tickets.map((ticket) => (
-                      <div key={ticket.id} className={`${col.card} border rounded-lg p-3 space-y-1.5`}>
-                        <p className="font-bold text-sm">TicketID: {ticket.id}</p>
-                        <p className="text-xs">
-                          <span className="font-medium">Representante:</span> {ticket.representante_nome}
-                        </p>
-                        <p className="text-xs">
-                          <span className="font-medium">Cliente:</span> {ticket.cliente_nome}
-                        </p>
-                        <p className="text-xs">
-                          <span className="font-medium">Motivo:</span> {ticket.motivo}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          Atualizado: {formatDate(ticket.updated_at)}
-                        </p>
-                        <div className="flex items-center gap-2 pt-1 border-t border-black/10">
-                          <button className="flex items-center gap-1 text-[10px] font-medium hover:opacity-70">
-                            <Eye className="h-3 w-3" /> Exibir
-                          </button>
-                          <button className="flex items-center gap-1 text-[10px] font-medium hover:opacity-70">
-                            <CheckCircle className="h-3 w-3" /> Validar
-                          </button>
-                          <button className="flex items-center gap-1 text-[10px] font-medium hover:opacity-70">
-                            <Clock className="h-3 w-3" /> Histórico
-                          </button>
-                          {(role === 'admin' || role === 'gestor') && (
-                            <button
-                              className="ml-auto text-[10px] hover:opacity-70"
-                              onClick={() => handleDelete(ticket.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
+          <div className="overflow-x-auto pb-4">
+            <div className="flex gap-3" style={{ minWidth: `${columns.length * 220}px` }}>
+              {columns.map((col) => {
+                const tickets = filteredChamados.filter((c) => getTicketColumn(c) === col.key);
+                const isOver = dragOverCol === col.key;
+                return (
+                  <div
+                    key={col.key}
+                    className={`flex-shrink-0 w-52 space-y-2 transition-all ${isOver ? 'ring-2 ring-primary/50 rounded-lg' : ''}`}
+                    onDragOver={(e) => handleDragOver(e, col.key)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, col.key)}
+                  >
+                    <div className={`${col.bg} text-white text-center py-2 rounded-lg font-semibold text-xs`}>
+                      {col.label}{' '}
+                      <span className="ml-1 bg-white/30 px-1.5 rounded-full text-[10px]">{tickets.length}</span>
+                    </div>
+                    <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto">
+                      {tickets.map((ticket) => (
+                        <div
+                          key={ticket.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, ticket.id)}
+                          onDragEnd={handleDragEnd}
+                          className={`${col.card} border rounded-lg p-2.5 space-y-1 cursor-grab active:cursor-grabbing transition-opacity ${draggedId === ticket.id ? 'opacity-40' : 'opacity-100'}`}
+                        >
+                          <div className="flex items-center gap-1">
+                            <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                            <p className="font-bold text-xs">#{ticket.id}</p>
+                          </div>
+                          <p className="text-[10px]">
+                            <span className="font-medium">Rep:</span> {ticket.representante_nome}
+                          </p>
+                          <p className="text-[10px]">
+                            <span className="font-medium">Cliente:</span> {ticket.cliente_nome}
+                          </p>
+                          <p className="text-[10px]">
+                            <span className="font-medium">Motivo:</span> {ticket.motivo}
+                          </p>
+                          <p className="text-[9px] text-muted-foreground">
+                            {formatDate(ticket.updated_at)}
+                          </p>
+                          <div className="flex items-center gap-1.5 pt-1 border-t border-black/10">
+                            <button className="flex items-center gap-0.5 text-[9px] font-medium hover:opacity-70">
+                              <Eye className="h-2.5 w-2.5" /> Exibir
                             </button>
-                          )}
+                            <button className="flex items-center gap-0.5 text-[9px] font-medium hover:opacity-70">
+                              <CheckCircle className="h-2.5 w-2.5" /> Validar
+                            </button>
+                            <button className="flex items-center gap-0.5 text-[9px] font-medium hover:opacity-70">
+                              <Clock className="h-2.5 w-2.5" /> Histórico
+                            </button>
+                            {(role === 'admin' || role === 'gestor') && (
+                              <button
+                                className="ml-auto text-[9px] hover:opacity-70"
+                                onClick={() => handleDelete(ticket.id)}
+                              >
+                                <Trash2 className="h-2.5 w-2.5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                    {tickets.length === 0 && (
-                      <p className="text-xs text-center text-muted-foreground py-4">Nenhum chamado</p>
-                    )}
+                      ))}
+                      {tickets.length === 0 && (
+                        <p className="text-[10px] text-center text-muted-foreground py-4">Nenhum chamado</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
