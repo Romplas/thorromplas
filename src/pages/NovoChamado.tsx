@@ -7,11 +7,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { mockUsers } from '@/data/mockData';
 import Layout from '@/components/Layout';
 
 interface Motivo { id: string; nome: string }
 interface Submotivo { id: string; motivo_id: string; nome: string }
+interface Supervisor { id: string; nome: string }
+interface Representante { id: string; codigo: number; nome: string }
+interface Cliente { id: string; codigo: number | null; nome: string; representante_id: string | null; rede_id: string | null }
+interface Rede { id: string; nome: string }
+interface SupervisorRepresentante { supervisor_id: string; representante_id: string }
 
 const ACCEPTED_TYPES: Record<string, { label: string; maxMB: number; icon: React.ReactNode }> = {
   'application/pdf': { label: 'PDF', maxMB: 10, icon: <FileText className="h-4 w-4" /> },
@@ -42,21 +46,72 @@ export default function NovoChamado() {
   const [anexos, setAnexos] = useState<globalThis.File[]>([]);
   const [fileErrors, setFileErrors] = useState<string[]>([]);
 
+  // Cascading data
+  const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
+  const [representantes, setRepresentantes] = useState<Representante[]>([]);
+  const [srLinks, setSrLinks] = useState<SupervisorRepresentante[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [redes, setRedes] = useState<Rede[]>([]);
+
+  // Cascading selections
+  const [selectedSupervisor, setSelectedSupervisor] = useState<string>('');
+  const [selectedRepresentante, setSelectedRepresentante] = useState<string>('');
+  const [selectedCodigoCliente, setSelectedCodigoCliente] = useState<string>('');
+  const [selectedCliente, setSelectedCliente] = useState<string>('');
+  const [selectedRede, setSelectedRede] = useState<string>('');
+
+  // Derived filtered lists
+  const filteredRepresentantes = selectedSupervisor
+    ? representantes.filter(r =>
+        srLinks.some(sr => sr.supervisor_id === selectedSupervisor && sr.representante_id === r.id)
+      )
+    : representantes;
+
+  const filteredClientes = selectedRepresentante
+    ? clientes.filter(c => c.representante_id === selectedRepresentante)
+    : clientes;
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [mRes, sRes] = await Promise.all([
+        const [mRes, sRes, supRes, repRes, srRes, redeRes] = await Promise.all([
           supabase.from('motivos').select('id, nome').order('nome'),
           supabase.from('submotivos').select('id, motivo_id, nome').order('nome'),
+          supabase.from('supervisores').select('id, nome').order('nome'),
+          supabase.from('representantes').select('id, codigo, nome').order('nome'),
+          supabase.from('supervisor_representante').select('supervisor_id, representante_id'),
+          supabase.from('redes').select('id, nome').order('nome'),
         ]);
         if (mRes.data) setMotivos(mRes.data);
         if (sRes.data) setSubmotivos(sRes.data);
+        if (supRes.data) setSupervisores(supRes.data);
+        if (repRes.data) setRepresentantes(repRes.data);
+        if (srRes.data) setSrLinks(srRes.data);
+        if (redeRes.data) setRedes(redeRes.data);
       } catch (error) {
-        console.error('Erro ao carregar motivos/submotivos:', error);
+        console.error('Erro ao carregar dados:', error);
       }
     };
     fetchData();
   }, []);
+
+  // Load clientes on demand when representante changes (to avoid loading all 4000 at once initially)
+  useEffect(() => {
+    const fetchClientes = async () => {
+      if (!selectedRepresentante) {
+        setClientes([]);
+        return;
+      }
+      const { data } = await supabase
+        .from('clientes')
+        .select('id, codigo, nome, representante_id, rede_id')
+        .eq('representante_id', selectedRepresentante)
+        .order('nome')
+        .limit(1000);
+      if (data) setClientes(data as Cliente[]);
+    };
+    fetchClientes();
+  }, [selectedRepresentante]);
 
   useEffect(() => {
     if (selectedMotivo) {
@@ -65,6 +120,47 @@ export default function NovoChamado() {
       setFilteredSubmotivos([]);
     }
   }, [selectedMotivo, submotivos]);
+
+  // When supervisor changes, reset downstream
+  const handleSupervisorChange = (value: string) => {
+    setSelectedSupervisor(value);
+    setSelectedRepresentante('');
+    setSelectedCodigoCliente('');
+    setSelectedCliente('');
+    setSelectedRede('');
+  };
+
+  // When representante changes, reset downstream
+  const handleRepresentanteChange = (value: string) => {
+    setSelectedRepresentante(value);
+    setSelectedCodigoCliente('');
+    setSelectedCliente('');
+    setSelectedRede('');
+  };
+
+  // When cliente is selected by code
+  const handleCodigoClienteChange = (value: string) => {
+    setSelectedCodigoCliente(value);
+    setSelectedCliente(value);
+    const cliente = clientes.find(c => c.id === value);
+    if (cliente?.rede_id) {
+      setSelectedRede(cliente.rede_id);
+    } else {
+      setSelectedRede('');
+    }
+  };
+
+  // When cliente is selected by name
+  const handleClienteChange = (value: string) => {
+    setSelectedCliente(value);
+    setSelectedCodigoCliente(value);
+    const cliente = clientes.find(c => c.id === value);
+    if (cliente?.rede_id) {
+      setSelectedRede(cliente.rede_id);
+    } else {
+      setSelectedRede('');
+    }
+  };
 
   return (
     <Layout>
@@ -75,42 +171,43 @@ export default function NovoChamado() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
               <div>
                 <Label className="text-xs font-semibold">Supervisor</Label>
-                <Select>
+                <Select value={selectedSupervisor} onValueChange={handleSupervisorChange}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
-                    {mockUsers.filter(u => u.tipo === 'supervisor').map(u => (
-                      <SelectItem key={u.id} value={u.id}>{u.nome}</SelectItem>
+                    {supervisores.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label className="text-xs font-semibold">Representantes</Label>
-                <Select>
+                <Select value={selectedRepresentante} onValueChange={handleRepresentanteChange}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
-                    {mockUsers.filter(u => u.tipo === 'representante').map(u => (
-                      <SelectItem key={u.id} value={u.id}>{u.nome}</SelectItem>
+                    {filteredRepresentantes.map(r => (
+                      <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label className="text-xs font-semibold">Código do Cliente Opcional</Label>
-                <Select>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione o Código" /></SelectTrigger>
+                <Select value={selectedCodigoCliente} onValueChange={handleCodigoClienteChange} disabled={!selectedRepresentante}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder={selectedRepresentante ? "Selecione o Código" : "Selecione um representante"} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="001">001</SelectItem>
-                    <SelectItem value="002">002</SelectItem>
+                    {filteredClientes.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.codigo || '—'}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label className="text-xs font-semibold text-destructive">* Clientes</Label>
-                <Select>
-                  <SelectTrigger className="mt-1 border-destructive/50"><SelectValue placeholder="Selecione o Cliente" /></SelectTrigger>
+                <Select value={selectedCliente} onValueChange={handleClienteChange} disabled={!selectedRepresentante}>
+                  <SelectTrigger className="mt-1 border-destructive/50"><SelectValue placeholder={selectedRepresentante ? "Selecione o Cliente" : "Selecione um representante"} /></SelectTrigger>
                   <SelectContent>
-                    {mockUsers.map(c => (
+                    {filteredClientes.map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
                     ))}
                   </SelectContent>
@@ -122,9 +219,13 @@ export default function NovoChamado() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-5">
               <div>
                 <Label className="text-xs font-semibold">Rede Opcional</Label>
-                <Select>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione a Rede" /></SelectTrigger>
-                  <SelectContent><SelectItem value="rede1">Rede 1</SelectItem></SelectContent>
+                <Select value={selectedRede} onValueChange={setSelectedRede}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Auto-preenchido" /></SelectTrigger>
+                  <SelectContent>
+                    {redes.map(r => (
+                      <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               <div>
