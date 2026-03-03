@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File } from 'lucide-react';
+import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import Layout from '@/components/Layout';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface Motivo { id: string; nome: string }
 interface Submotivo { id: string; motivo_id: string; nome: string }
@@ -16,6 +19,29 @@ interface Representante { id: string; codigo: number; nome: string }
 interface Cliente { id: string; codigo: number | null; nome: string; representante_id: string | null; rede_id: string | null }
 interface Rede { id: string; nome: string }
 interface SupervisorRepresentante { supervisor_id: string; representante_id: string }
+
+interface ChamadoCriado {
+  id: number;
+  status: string;
+  etapa: string;
+  supervisor: string;
+  representante: string;
+  cliente: string;
+  codigoCliente: string;
+  rede: string;
+  dataContato: string;
+  dataRetorno: string;
+  motivo: string;
+  submotivo: string;
+  metrosTotais: string;
+  negociadoCom: string;
+  nfe: string;
+  tipoSolicitacao: string;
+  gestor: string;
+  statusAgendamento: string;
+  descricao: string;
+  criadoEm: string;
+}
 
 const ACCEPTED_TYPES: Record<string, { label: string; maxMB: number; icon: React.ReactNode }> = {
   'application/pdf': { label: 'PDF', maxMB: 10, icon: <FileText className="h-4 w-4" /> },
@@ -42,6 +68,7 @@ export default function NovoChamado() {
   const [motivos, setMotivos] = useState<Motivo[]>([]);
   const [submotivos, setSubmotivos] = useState<Submotivo[]>([]);
   const [selectedMotivo, setSelectedMotivo] = useState<string>('');
+  const [selectedSubmotivo, setSelectedSubmotivo] = useState<string>('');
   const [filteredSubmotivos, setFilteredSubmotivos] = useState<Submotivo[]>([]);
   const [anexos, setAnexos] = useState<globalThis.File[]>([]);
   const [fileErrors, setFileErrors] = useState<string[]>([]);
@@ -59,6 +86,21 @@ export default function NovoChamado() {
   const [selectedCodigoCliente, setSelectedCodigoCliente] = useState<string>('');
   const [selectedCliente, setSelectedCliente] = useState<string>('');
   const [selectedRede, setSelectedRede] = useState<string>('');
+
+  // Additional form fields
+  const [dataContato, setDataContato] = useState('');
+  const [dataRetorno, setDataRetorno] = useState('');
+  const [metrosTotais, setMetrosTotais] = useState('');
+  const [negociadoCom, setNegociadoCom] = useState('');
+  const [nfe, setNfe] = useState('');
+  const [tipoSolicitacao, setTipoSolicitacao] = useState('');
+  const [gestor, setGestor] = useState('');
+  const [statusAgendamento, setStatusAgendamento] = useState('');
+  const [descricao, setDescricao] = useState('');
+
+  // Created tickets
+  const [chamadosCriados, setChamadosCriados] = useState<ChamadoCriado[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
   // Derived filtered lists
   const filteredRepresentantes = selectedSupervisor
@@ -95,7 +137,6 @@ export default function NovoChamado() {
     fetchData();
   }, []);
 
-  // Load clientes on demand when representante changes (to avoid loading all 4000 at once initially)
   useEffect(() => {
     const fetchClientes = async () => {
       if (!selectedRepresentante) {
@@ -121,7 +162,6 @@ export default function NovoChamado() {
     }
   }, [selectedMotivo, submotivos]);
 
-  // When supervisor changes, reset downstream
   const handleSupervisorChange = (value: string) => {
     setSelectedSupervisor(value);
     setSelectedRepresentante('');
@@ -130,7 +170,6 @@ export default function NovoChamado() {
     setSelectedRede('');
   };
 
-  // When representante changes, reset downstream
   const handleRepresentanteChange = (value: string) => {
     setSelectedRepresentante(value);
     setSelectedCodigoCliente('');
@@ -138,7 +177,6 @@ export default function NovoChamado() {
     setSelectedRede('');
   };
 
-  // When cliente is selected by code
   const handleCodigoClienteChange = (value: string) => {
     setSelectedCodigoCliente(value);
     setSelectedCliente(value);
@@ -150,7 +188,6 @@ export default function NovoChamado() {
     }
   };
 
-  // When cliente is selected by name
   const handleClienteChange = (value: string) => {
     setSelectedCliente(value);
     setSelectedCodigoCliente(value);
@@ -160,6 +197,120 @@ export default function NovoChamado() {
     } else {
       setSelectedRede('');
     }
+  };
+
+  // Helper to get names from IDs
+  const getName = (list: { id: string; nome: string }[], id: string) =>
+    list.find(item => item.id === id)?.nome || '';
+
+  const handleCriarChamado = async () => {
+    // Validation
+    if (!selectedCliente) {
+      toast.error('Selecione um cliente.');
+      return;
+    }
+    if (!dataRetorno) {
+      toast.error('Informe a data de retorno.');
+      return;
+    }
+    if (!selectedMotivo) {
+      toast.error('Selecione o motivo principal.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const clienteObj = clientes.find(c => c.id === selectedCliente);
+      const motivoNome = getName(motivos, selectedMotivo);
+      const submotivoNome = getName(filteredSubmotivos, selectedSubmotivo);
+
+      const { data, error } = await supabase.from('chamados').insert({
+        cliente_id: selectedCliente,
+        cliente_nome: clienteObj?.nome || '',
+        motivo: motivoNome,
+        submotivo: submotivoNome || null,
+        descricao: descricao || null,
+        status: 'aberto',
+        etapa: 'THOR',
+        supervisor_id: selectedSupervisor || null,
+        representante_id: selectedRepresentante || null,
+        prioridade: 'Média',
+      }).select('id').single();
+
+      if (error) throw error;
+
+      const novoChamado: ChamadoCriado = {
+        id: data.id,
+        status: 'aberto',
+        etapa: 'THOR',
+        supervisor: getName(supervisores, selectedSupervisor),
+        representante: getName(representantes, selectedRepresentante),
+        cliente: clienteObj?.nome || '',
+        codigoCliente: clienteObj?.codigo?.toString() || '',
+        rede: getName(redes, selectedRede),
+        dataContato,
+        dataRetorno,
+        motivo: motivoNome,
+        submotivo: submotivoNome,
+        metrosTotais,
+        negociadoCom,
+        nfe,
+        tipoSolicitacao,
+        gestor,
+        statusAgendamento,
+        descricao,
+        criadoEm: new Date().toLocaleString('pt-BR'),
+      };
+
+      setChamadosCriados(prev => [novoChamado, ...prev]);
+      toast.success(`Chamado #${data.id} criado com sucesso!`);
+
+      // Reset form
+      setSelectedSupervisor('');
+      setSelectedRepresentante('');
+      setSelectedCodigoCliente('');
+      setSelectedCliente('');
+      setSelectedRede('');
+      setSelectedMotivo('');
+      setSelectedSubmotivo('');
+      setDataContato('');
+      setDataRetorno('');
+      setMetrosTotais('');
+      setNegociadoCom('');
+      setNfe('');
+      setTipoSolicitacao('');
+      setGestor('');
+      setStatusAgendamento('');
+      setDescricao('');
+      setAnexos([]);
+      setFileErrors([]);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erro ao criar chamado: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleLimpar = () => {
+    setSelectedSupervisor('');
+    setSelectedRepresentante('');
+    setSelectedCodigoCliente('');
+    setSelectedCliente('');
+    setSelectedRede('');
+    setSelectedMotivo('');
+    setSelectedSubmotivo('');
+    setDataContato('');
+    setDataRetorno('');
+    setMetrosTotais('');
+    setNegociadoCom('');
+    setNfe('');
+    setTipoSolicitacao('');
+    setGestor('');
+    setStatusAgendamento('');
+    setDescricao('');
+    setAnexos([]);
+    setFileErrors([]);
   };
 
   return (
@@ -230,15 +381,15 @@ export default function NovoChamado() {
               </div>
               <div>
                 <Label className="text-xs font-semibold">Data Contato</Label>
-                <Input type="date" className="mt-1" placeholder="Selecione uma data..." />
+                <Input type="date" className="mt-1" value={dataContato} onChange={e => setDataContato(e.target.value)} />
               </div>
               <div>
                 <Label className="text-xs font-semibold text-destructive">* Data Retorno</Label>
-                <Input type="date" className="mt-1 border-destructive/50" placeholder="Selecione uma data..." />
+                <Input type="date" className="mt-1 border-destructive/50" value={dataRetorno} onChange={e => setDataRetorno(e.target.value)} />
               </div>
               <div>
                 <Label className="text-xs font-semibold text-destructive">* Motivo Principal da Solicitação</Label>
-                <Select onValueChange={setSelectedMotivo} value={selectedMotivo}>
+                <Select onValueChange={v => { setSelectedMotivo(v); setSelectedSubmotivo(''); }} value={selectedMotivo}>
                   <SelectTrigger className="mt-1 border-destructive/50"><SelectValue placeholder="Selecione o Motivo" /></SelectTrigger>
                   <SelectContent>
                     {motivos.map(m => (
@@ -249,7 +400,7 @@ export default function NovoChamado() {
               </div>
               <div>
                 <Label className="text-xs font-semibold">Objetivo Principal da Solicitação</Label>
-                <Select disabled={!selectedMotivo}>
+                <Select disabled={!selectedMotivo} value={selectedSubmotivo} onValueChange={setSelectedSubmotivo}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder={selectedMotivo ? "Selecione o Objetivo" : "Selecione um motivo primeiro"} /></SelectTrigger>
                   <SelectContent>
                     {filteredSubmotivos.map(s => (
@@ -264,58 +415,58 @@ export default function NovoChamado() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-5">
               <div>
                 <Label className="text-xs font-semibold">Metros Totais</Label>
-                <Input className="mt-1" />
+                <Input className="mt-1" value={metrosTotais} onChange={e => setMetrosTotais(e.target.value)} />
               </div>
               <div>
                 <Label className="text-xs font-semibold">Negociado com:</Label>
-                <Select>
+                <Select value={negociadoCom} onValueChange={setNegociadoCom}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="andre">André</SelectItem>
-                    <SelectItem value="douglas">Douglas</SelectItem>
-                    <SelectItem value="vinicius">Vinicius</SelectItem>
-                    <SelectItem value="joao_pedro">João Pedro</SelectItem>
-                    <SelectItem value="sr_ivo">Sr Ivo</SelectItem>
-                    <SelectItem value="tathy">Tathy</SelectItem>
+                    <SelectItem value="André">André</SelectItem>
+                    <SelectItem value="Douglas">Douglas</SelectItem>
+                    <SelectItem value="Vinicius">Vinicius</SelectItem>
+                    <SelectItem value="João Pedro">João Pedro</SelectItem>
+                    <SelectItem value="Sr Ivo">Sr Ivo</SelectItem>
+                    <SelectItem value="Tathy">Tathy</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label className="text-xs font-semibold">Nº NFE</Label>
-                <Input className="mt-1" />
+                <Input className="mt-1" value={nfe} onChange={e => setNfe(e.target.value)} />
               </div>
               <div>
                 <Label className="text-xs font-semibold">Tipo de Solicitação</Label>
-                <Select>
+                <Select value={tipoSolicitacao} onValueChange={setTipoSolicitacao}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="interna">Interna</SelectItem>
-                    <SelectItem value="romplas">Romplas</SelectItem>
+                    <SelectItem value="Interna">Interna</SelectItem>
+                    <SelectItem value="Romplas">Romplas</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label className="text-xs font-semibold">Gestor</Label>
-                <Select>
+                <Select value={gestor} onValueChange={setGestor}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="andre">André</SelectItem>
-                    <SelectItem value="douglas">Douglas</SelectItem>
-                    <SelectItem value="tathy">Tathy</SelectItem>
-                    <SelectItem value="vinicius">Vinicius</SelectItem>
-                    <SelectItem value="marcelo">Marcelo</SelectItem>
-                    <SelectItem value="juliane">Juliane</SelectItem>
-                    <SelectItem value="ivan">Ivan</SelectItem>
+                    <SelectItem value="André">André</SelectItem>
+                    <SelectItem value="Douglas">Douglas</SelectItem>
+                    <SelectItem value="Tathy">Tathy</SelectItem>
+                    <SelectItem value="Vinicius">Vinicius</SelectItem>
+                    <SelectItem value="Marcelo">Marcelo</SelectItem>
+                    <SelectItem value="Juliane">Juliane</SelectItem>
+                    <SelectItem value="Ivan">Ivan</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label className="text-xs font-semibold">Status Agendamentos</Label>
-                <Select>
+                <Select value={statusAgendamento} onValueChange={setStatusAgendamento}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="agendado">Agendado</SelectItem>
-                    <SelectItem value="concluido">Concluído</SelectItem>
+                    <SelectItem value="Agendado">Agendado</SelectItem>
+                    <SelectItem value="Concluído">Concluído</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -325,7 +476,7 @@ export default function NovoChamado() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs font-semibold">Descrição</Label>
-                <Textarea className="mt-1 min-h-[140px]" />
+                <Textarea className="mt-1 min-h-[140px]" value={descricao} onChange={e => setDescricao(e.target.value)} />
               </div>
               <div>
                 <Label className="text-xs font-semibold">Anexos</Label>
@@ -410,6 +561,67 @@ export default function NovoChamado() {
               </div>
             </div>
           </div>
+
+          {/* Chamados Criados */}
+          {chamadosCriados.length > 0 && (
+            <div className="bg-card border rounded-lg p-6 mt-6">
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <h2 className="text-sm font-semibold">Chamados Criados</h2>
+                <Badge variant="secondary" className="ml-1">{chamadosCriados.length}</Badge>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Ticket ID</TableHead>
+                      <TableHead className="text-xs">Status</TableHead>
+                      <TableHead className="text-xs">Etapa</TableHead>
+                      <TableHead className="text-xs">Supervisor</TableHead>
+                      <TableHead className="text-xs">Representante</TableHead>
+                      <TableHead className="text-xs">Cliente</TableHead>
+                      <TableHead className="text-xs">Código</TableHead>
+                      <TableHead className="text-xs">Rede</TableHead>
+                      <TableHead className="text-xs">Motivo</TableHead>
+                      <TableHead className="text-xs">Submotivo</TableHead>
+                      <TableHead className="text-xs">Data Contato</TableHead>
+                      <TableHead className="text-xs">Data Retorno</TableHead>
+                      <TableHead className="text-xs">Gestor</TableHead>
+                      <TableHead className="text-xs">Descrição</TableHead>
+                      <TableHead className="text-xs">Criado em</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {chamadosCriados.map(c => (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-mono font-semibold text-xs">#{c.id}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
+                            {c.status === 'aberto' ? 'Aberto' : c.status === 'em_progresso' ? 'Em Progresso' : 'Fechado'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className="text-xs bg-red-600 text-white">{c.etapa}</Badge>
+                        </TableCell>
+                        <TableCell className="text-xs">{c.supervisor || '—'}</TableCell>
+                        <TableCell className="text-xs">{c.representante || '—'}</TableCell>
+                        <TableCell className="text-xs">{c.cliente}</TableCell>
+                        <TableCell className="text-xs">{c.codigoCliente || '—'}</TableCell>
+                        <TableCell className="text-xs">{c.rede || '—'}</TableCell>
+                        <TableCell className="text-xs">{c.motivo}</TableCell>
+                        <TableCell className="text-xs">{c.submotivo || '—'}</TableCell>
+                        <TableCell className="text-xs">{c.dataContato || '—'}</TableCell>
+                        <TableCell className="text-xs">{c.dataRetorno}</TableCell>
+                        <TableCell className="text-xs">{c.gestor || '—'}</TableCell>
+                        <TableCell className="text-xs max-w-[200px] truncate">{c.descricao || '—'}</TableCell>
+                        <TableCell className="text-xs">{c.criadoEm}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Bottom bar */}
@@ -425,12 +637,12 @@ export default function NovoChamado() {
             </Button>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={handleLimpar}>
               <RotateCcw className="h-4 w-4 mr-1.5" />
               Limpar
             </Button>
-            <Button size="sm">
-              Criar Chamado
+            <Button size="sm" onClick={handleCriarChamado} disabled={submitting}>
+              {submitting ? 'Criando...' : 'Criar Chamado'}
             </Button>
           </div>
         </div>
