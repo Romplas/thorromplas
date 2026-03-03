@@ -221,6 +221,35 @@ export type Database = {
         }
         Relationships: []
       }
+      submotivos: {
+        Row: {
+          created_at: string
+          id: string
+          motivo_id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          motivo_id: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          motivo_id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submotivos_motivo_id_fkey"
+            columns: ["motivo_id"]
+            isOneToOne: false
+            referencedRelation: "motivos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
