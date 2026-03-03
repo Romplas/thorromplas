@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Pencil, Clock, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Layout from '@/components/Layout';
@@ -16,15 +16,17 @@ interface ChamadoWithNames {
   representante_id: string | null;
   supervisor_id: string | null;
   gestor_id: string | null;
+  cliente_id: string | null;
   representante_nome?: string;
   gestor_nome?: string;
 }
 
-interface ProfileOption {
-  id: string;
-  nome: string;
-  user_id: string;
-}
+interface Supervisor { id: string; nome: string }
+interface Representante { id: string; codigo: number; nome: string }
+interface SupervisorRepresentante { supervisor_id: string; representante_id: string }
+interface Cliente { id: string; nome: string; representante_id: string | null }
+interface Motivo { id: string; nome: string }
+interface ProfileOption { id: string; nome: string; user_id: string }
 
 const columns = [
   { key: 'thor', label: 'THOR', bg: 'bg-red-600', cardBg: 'bg-red-600' },
@@ -40,7 +42,6 @@ const columns = [
   { key: 'book', label: 'Book', bg: 'bg-lime-500', cardBg: 'bg-lime-500' },
 ];
 
-// Tickets without etapa use status to determine initial column
 const statusToEtapa: Record<string, string> = {
   aberto: 'thor',
   em_progresso: 'aguardando_resposta',
@@ -54,17 +55,22 @@ function getTicketColumn(c: ChamadoWithNames): string {
 }
 
 export default function Kanban() {
-  const { profile, role } = useAuth();
+  const { role } = useAuth();
   const { toast } = useToast();
   const [chamados, setChamados] = useState<ChamadoWithNames[]>([]);
-  const [profiles, setProfiles] = useState<ProfileOption[]>([]);
-  const [motivos, setMotivos] = useState<string[]>([]);
-  const [clientes, setClientes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
-  // Filters
+  // Reference data
+  const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
+  const [representantes, setRepresentantes] = useState<Representante[]>([]);
+  const [srLinks, setSrLinks] = useState<SupervisorRepresentante[]>([]);
+  const [allClientes, setAllClientes] = useState<Cliente[]>([]);
+  const [motivos, setMotivos] = useState<Motivo[]>([]);
+  const [profiles, setProfiles] = useState<ProfileOption[]>([]);
+
+  // Cascading filters
   const [filterSupervisor, setFilterSupervisor] = useState('todos');
   const [filterRepresentante, setFilterRepresentante] = useState('todos');
   const [filterCliente, setFilterCliente] = useState('todos');
@@ -73,17 +79,31 @@ export default function Kanban() {
   const [filterGestor, setFilterGestor] = useState('todos');
   const [filterStatus, setFilterStatus] = useState('todos');
 
+  // Derived filtered lists for cascading
+  const filteredRepresentantes = filterSupervisor !== 'todos'
+    ? representantes.filter(r =>
+        srLinks.some(sr => sr.supervisor_id === filterSupervisor && sr.representante_id === r.id)
+      )
+    : representantes;
+
+  const filteredClientes = filterRepresentante !== 'todos'
+    ? allClientes.filter(c => c.representante_id === filterRepresentante)
+    : allClientes;
+
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
     setLoading(true);
-    const [chamadosRes, profilesRes, motivosRes, clientesRes] = await Promise.all([
+    const [chamadosRes, supRes, repRes, srRes, clientesRes, motivosRes, profilesRes] = await Promise.all([
       supabase.from('chamados').select('*').order('updated_at', { ascending: false }),
+      supabase.from('supervisores').select('id, nome').order('nome'),
+      supabase.from('representantes').select('id, codigo, nome').order('nome'),
+      supabase.from('supervisor_representante').select('supervisor_id, representante_id'),
+      supabase.from('clientes').select('id, nome, representante_id').order('nome').limit(1000),
+      supabase.from('motivos').select('id, nome').order('nome'),
       supabase.from('profiles').select('id, nome, user_id'),
-      supabase.from('motivos').select('nome'),
-      supabase.from('clientes').select('nome'),
     ]);
 
     const profileMap = new Map<string, string>();
@@ -95,15 +115,30 @@ export default function Kanban() {
     if (chamadosRes.data) {
       const mapped = chamadosRes.data.map((c) => ({
         ...c,
-        representante_nome: c.representante_id ? profileMap.get(c.representante_id) || 'Desconhecido' : 'N/A',
-        gestor_nome: c.gestor_id ? profileMap.get(c.gestor_id) || 'Desconhecido' : '',
+        representante_nome: c.representante_id ? profileMap.get(c.representante_id) || 'N/A' : 'N/A',
+        gestor_nome: c.gestor_id ? profileMap.get(c.gestor_id) || '' : '',
       }));
       setChamados(mapped);
     }
 
-    if (motivosRes.data) setMotivos(motivosRes.data.map((m) => m.nome));
-    if (clientesRes.data) setClientes(clientesRes.data.map((c) => c.nome));
+    if (supRes.data) setSupervisores(supRes.data);
+    if (repRes.data) setRepresentantes(repRes.data);
+    if (srRes.data) setSrLinks(srRes.data);
+    if (clientesRes.data) setAllClientes(clientesRes.data as Cliente[]);
+    if (motivosRes.data) setMotivos(motivosRes.data);
     setLoading(false);
+  };
+
+  // Cascading reset handlers
+  const handleSupervisorChange = (value: string) => {
+    setFilterSupervisor(value);
+    setFilterRepresentante('todos');
+    setFilterCliente('todos');
+  };
+
+  const handleRepresentanteChange = (value: string) => {
+    setFilterRepresentante(value);
+    setFilterCliente('todos');
   };
 
   const handleDelete = async (id: number) => {
@@ -146,7 +181,6 @@ export default function Kanban() {
       return;
     }
 
-    // Optimistic update
     setChamados((prev) =>
       prev.map((c) => (c.id === draggedId ? { ...c, etapa: colKey } : c))
     );
@@ -159,7 +193,6 @@ export default function Kanban() {
 
     if (error) {
       toast({ title: 'Erro ao mover chamado', variant: 'destructive' });
-      // Revert
       setChamados((prev) =>
         prev.map((c) => (c.id === ticket.id ? { ...c, etapa: ticket.etapa } : c))
       );
@@ -178,9 +211,29 @@ export default function Kanban() {
     return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Build a map: representante_id (from representantes table) -> list of supervisor_ids
+  // chamados have supervisor_id & representante_id referencing profiles, but filter uses supervisores/representantes tables
+  // We need to filter by cliente_nome matching clientes table
   const filteredChamados = chamados.filter((c) => {
-    if (filterSupervisor !== 'todos' && c.supervisor_id !== filterSupervisor) return false;
-    if (filterRepresentante !== 'todos' && c.representante_id !== filterRepresentante) return false;
+    // Supervisor filter: find representante IDs linked to this supervisor, then find chamados whose cliente belongs to those representantes
+    if (filterSupervisor !== 'todos') {
+      const repIdsForSupervisor = srLinks
+        .filter(sr => sr.supervisor_id === filterSupervisor)
+        .map(sr => sr.representante_id);
+      const clienteNamesForSupervisor = allClientes
+        .filter(cl => cl.representante_id && repIdsForSupervisor.includes(cl.representante_id))
+        .map(cl => cl.nome);
+      if (!clienteNamesForSupervisor.includes(c.cliente_nome)) return false;
+    }
+
+    // Representante filter: find clientes linked to this representante
+    if (filterRepresentante !== 'todos') {
+      const clienteNamesForRep = allClientes
+        .filter(cl => cl.representante_id === filterRepresentante)
+        .map(cl => cl.nome);
+      if (!clienteNamesForRep.includes(c.cliente_nome)) return false;
+    }
+
     if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
     if (filterTicketId !== 'todos' && String(c.id) !== filterTicketId) return false;
     if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
@@ -205,38 +258,38 @@ export default function Kanban() {
         <div className="flex flex-wrap items-center gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Supervisor</span>
-            <Select value={filterSupervisor} onValueChange={setFilterSupervisor}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+            <Select value={filterSupervisor} onValueChange={handleSupervisorChange}>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+                {supervisores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Representantes</span>
-            <Select value={filterRepresentante} onValueChange={setFilterRepresentante}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+            <Select value={filterRepresentante} onValueChange={handleRepresentanteChange}>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+                {filteredRepresentantes.map((r) => <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Clientes</span>
             <Select value={filterCliente} onValueChange={setFilterCliente}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                {clientes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {filteredClientes.map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">TicketID</span>
             <Select value={filterTicketId} onValueChange={setFilterTicketId}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 {chamados.map((c) => <SelectItem key={c.id} value={String(c.id)}>{String(c.id)}</SelectItem>)}
@@ -246,17 +299,17 @@ export default function Kanban() {
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Motivo</span>
             <Select value={filterMotivo} onValueChange={setFilterMotivo}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                {motivos.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                {motivos.map((m) => <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Gestores</span>
             <Select value={filterGestor} onValueChange={setFilterGestor}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
@@ -266,7 +319,7 @@ export default function Kanban() {
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Status Ticket</span>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 <SelectItem value="aberto">Aberto</SelectItem>
@@ -278,7 +331,7 @@ export default function Kanban() {
           </div>
         </div>
 
-        {/* Kanban Board - Horizontal scroll */}
+        {/* Kanban Board */}
         {loading ? (
           <div className="text-center py-12 text-muted-foreground">Carregando chamados...</div>
         ) : (
@@ -308,7 +361,6 @@ export default function Kanban() {
                           onDragEnd={handleDragEnd}
                           className={`rounded-xl overflow-hidden shadow-md cursor-grab active:cursor-grabbing transition-opacity ${draggedId === ticket.id ? 'opacity-40' : 'opacity-100'}`}
                         >
-                          {/* Card body - colored */}
                           <div className={`${col.cardBg} text-white px-3 py-3 space-y-1.5`}>
                             <p className="text-[11px] font-bold text-center">TicketID : {ticket.id}</p>
                             <p className="text-[10px] text-center">
@@ -330,7 +382,6 @@ export default function Kanban() {
                               Atualizado : {formatDate(ticket.updated_at)}
                             </p>
                           </div>
-                          {/* Card footer - dark */}
                           <div className="bg-gray-900 flex items-center justify-center gap-4 py-2">
                             <button className="text-white hover:text-gray-300 transition-colors" title="Editar">
                               <Pencil className="h-3.5 w-3.5" />
