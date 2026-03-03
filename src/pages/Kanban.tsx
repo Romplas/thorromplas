@@ -50,7 +50,7 @@ const statusToEtapa: Record<string, string> = {
 };
 
 function getTicketColumn(c: ChamadoWithNames): string {
-  if (c.etapa) return c.etapa;
+  if (c.etapa) return c.etapa.toLowerCase();
   return statusToEtapa[c.status] || 'thor';
 }
 
