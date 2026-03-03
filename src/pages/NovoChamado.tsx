@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2 } from 'lucide-react';
+import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2, Eye, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import ChamadoCard, { type ChamadoCriado } from '@/components/chamado/ChamadoCard';
 
 interface Motivo { id: string; nome: string }
 interface Submotivo { id: string; motivo_id: string; nome: string }
@@ -20,28 +20,7 @@ interface Cliente { id: string; codigo: number | null; nome: string; representan
 interface Rede { id: string; nome: string }
 interface SupervisorRepresentante { supervisor_id: string; representante_id: string }
 
-interface ChamadoCriado {
-  id: number;
-  status: string;
-  etapa: string;
-  supervisor: string;
-  representante: string;
-  cliente: string;
-  codigoCliente: string;
-  rede: string;
-  dataContato: string;
-  dataRetorno: string;
-  motivo: string;
-  submotivo: string;
-  metrosTotais: string;
-  negociadoCom: string;
-  nfe: string;
-  tipoSolicitacao: string;
-  gestor: string;
-  statusAgendamento: string;
-  descricao: string;
-  criadoEm: string;
-}
+// ChamadoCriado is imported from ChamadoCard
 
 const ACCEPTED_TYPES: Record<string, { label: string; maxMB: number; icon: React.ReactNode }> = {
   'application/pdf': { label: 'PDF', maxMB: 10, icon: <FileText className="h-4 w-4" /> },
@@ -259,6 +238,7 @@ export default function NovoChamado() {
         gestor,
         statusAgendamento,
         descricao,
+        anexosNomes: anexos.map(f => f.name),
         criadoEm: new Date().toLocaleString('pt-BR'),
       };
 
@@ -564,62 +544,21 @@ export default function NovoChamado() {
 
           {/* Chamados Criados */}
           {chamadosCriados.length > 0 && (
-            <div className="bg-card border rounded-lg p-6 mt-6">
-              <div className="flex items-center gap-2 mb-4">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
                 <h2 className="text-sm font-semibold">Chamados Criados</h2>
                 <Badge variant="secondary" className="ml-1">{chamadosCriados.length}</Badge>
               </div>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">Ticket ID</TableHead>
-                      <TableHead className="text-xs">Status</TableHead>
-                      <TableHead className="text-xs">Etapa</TableHead>
-                      <TableHead className="text-xs">Supervisor</TableHead>
-                      <TableHead className="text-xs">Representante</TableHead>
-                      <TableHead className="text-xs">Cliente</TableHead>
-                      <TableHead className="text-xs">Código</TableHead>
-                      <TableHead className="text-xs">Rede</TableHead>
-                      <TableHead className="text-xs">Motivo</TableHead>
-                      <TableHead className="text-xs">Submotivo</TableHead>
-                      <TableHead className="text-xs">Data Contato</TableHead>
-                      <TableHead className="text-xs">Data Retorno</TableHead>
-                      <TableHead className="text-xs">Gestor</TableHead>
-                      <TableHead className="text-xs">Descrição</TableHead>
-                      <TableHead className="text-xs">Criado em</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {chamadosCriados.map(c => (
-                      <TableRow key={c.id}>
-                        <TableCell className="font-mono font-semibold text-xs">#{c.id}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
-                            {c.status === 'aberto' ? 'Aberto' : c.status === 'em_progresso' ? 'Em Progresso' : 'Fechado'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className="text-xs bg-red-600 text-white">{c.etapa}</Badge>
-                        </TableCell>
-                        <TableCell className="text-xs">{c.supervisor || '—'}</TableCell>
-                        <TableCell className="text-xs">{c.representante || '—'}</TableCell>
-                        <TableCell className="text-xs">{c.cliente}</TableCell>
-                        <TableCell className="text-xs">{c.codigoCliente || '—'}</TableCell>
-                        <TableCell className="text-xs">{c.rede || '—'}</TableCell>
-                        <TableCell className="text-xs">{c.motivo}</TableCell>
-                        <TableCell className="text-xs">{c.submotivo || '—'}</TableCell>
-                        <TableCell className="text-xs">{c.dataContato || '—'}</TableCell>
-                        <TableCell className="text-xs">{c.dataRetorno}</TableCell>
-                        <TableCell className="text-xs">{c.gestor || '—'}</TableCell>
-                        <TableCell className="text-xs max-w-[200px] truncate">{c.descricao || '—'}</TableCell>
-                        <TableCell className="text-xs">{c.criadoEm}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              {chamadosCriados.map(c => (
+                <ChamadoCard
+                  key={c.id}
+                  chamado={c}
+                  onUpdate={(updated) => {
+                    setChamadosCriados(prev => prev.map(item => item.id === updated.id ? updated : item));
+                  }}
+                />
+              ))}
             </div>
           )}
         </div>
