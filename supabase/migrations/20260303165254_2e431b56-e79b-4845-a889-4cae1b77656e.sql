@@ -1,0 +1,1 @@
+DELETE FROM supervisores WHERE id = 'f448de93-8840-4f4e-994a-8664d7869f11';
