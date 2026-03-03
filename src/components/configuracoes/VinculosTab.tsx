@@ -20,6 +20,7 @@ export default function VinculosTab({ supervisores, representantes, links }: Vin
   const queryClient = useQueryClient();
   const [selectedSupervisor, setSelectedSupervisor] = useState('');
   const [selectedRepresentantes, setSelectedRepresentantes] = useState<string[]>([]);
+  const [filterSupervisor, setFilterSupervisor] = useState('');
 
   const activeSupervisores = supervisores.filter((s: any) => s.status === 'ativo');
 
@@ -187,9 +188,23 @@ export default function VinculosTab({ supervisores, representantes, links }: Vin
           </div>
         )}
 
-        {/* Existing links */}
         <div>
-          <h3 className="text-sm font-semibold mb-2">Vínculos existentes</h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold">Vínculos existentes</h3>
+            <div className="min-w-[200px]">
+              <Select value={filterSupervisor} onValueChange={setFilterSupervisor}>
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="Filtrar por supervisor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {supervisores.map((s: any) => (
+                    <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -199,14 +214,14 @@ export default function VinculosTab({ supervisores, representantes, links }: Vin
               </TableRow>
             </TableHeader>
             <TableBody>
-              {links.length === 0 ? (
+              {(filterSupervisor && filterSupervisor !== 'todos' ? links.filter((l: any) => l.supervisor_id === filterSupervisor) : links).length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                    Nenhum vínculo cadastrado.
+                    Nenhum vínculo encontrado.
                   </TableCell>
                 </TableRow>
               ) : (
-                links.map((link: any) => (
+                (filterSupervisor && filterSupervisor !== 'todos' ? links.filter((l: any) => l.supervisor_id === filterSupervisor) : links).map((link: any) => (
                   <TableRow key={link.id}>
                     <TableCell>{getSupervisorName(link.supervisor_id)}</TableCell>
                     <TableCell>{getRepresentanteName(link.representante_id)}</TableCell>
