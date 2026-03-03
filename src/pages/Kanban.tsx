@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Eye, CheckCircle, Clock, Trash2, GripVertical } from 'lucide-react';
+import { Pencil, Clock, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +17,7 @@ interface ChamadoWithNames {
   supervisor_id: string | null;
   gestor_id: string | null;
   representante_nome?: string;
+  gestor_nome?: string;
 }
 
 interface ProfileOption {
@@ -26,17 +27,17 @@ interface ProfileOption {
 }
 
 const columns = [
-  { key: 'thor', label: 'THOR', bg: 'bg-red-600', card: 'bg-red-50 border-red-200' },
-  { key: 'aguardando_resposta', label: 'Aguardando Resposta', bg: 'bg-purple-600', card: 'bg-purple-50 border-purple-200' },
-  { key: 'retorno_interno', label: 'Retorno Interno Romplas', bg: 'bg-blue-600', card: 'bg-blue-50 border-blue-200' },
-  { key: 'negociacao', label: 'Em Negociação', bg: 'bg-yellow-500', card: 'bg-yellow-50 border-yellow-200' },
-  { key: 'alteracao', label: 'Alteração', bg: 'bg-teal-500', card: 'bg-teal-50 border-teal-200' },
-  { key: 'completo', label: 'Completo', bg: 'bg-green-500', card: 'bg-green-50 border-green-200' },
-  { key: 'perdido', label: 'Perdido', bg: 'bg-black', card: 'bg-gray-100 border-gray-300' },
-  { key: 'rnc', label: 'RNC', bg: 'bg-pink-500', card: 'bg-pink-50 border-pink-200' },
-  { key: 'sdp', label: 'SDP', bg: 'bg-orange-500', card: 'bg-orange-50 border-orange-200' },
-  { key: 'amostras', label: 'Amostras', bg: 'bg-blue-900', card: 'bg-blue-50 border-blue-300' },
-  { key: 'book', label: 'Book', bg: 'bg-lime-500', card: 'bg-lime-50 border-lime-200' },
+  { key: 'thor', label: 'THOR', bg: 'bg-red-600', cardBg: 'bg-red-600' },
+  { key: 'aguardando_resposta', label: 'Aguardando Resposta', bg: 'bg-purple-600', cardBg: 'bg-purple-600' },
+  { key: 'retorno_interno', label: 'Retorno Interno Romplas', bg: 'bg-blue-600', cardBg: 'bg-blue-600' },
+  { key: 'negociacao', label: 'Em Negociação', bg: 'bg-yellow-500', cardBg: 'bg-yellow-500' },
+  { key: 'alteracao', label: 'Alteração', bg: 'bg-teal-500', cardBg: 'bg-teal-500' },
+  { key: 'completo', label: 'Completo', bg: 'bg-green-500', cardBg: 'bg-green-500' },
+  { key: 'perdido', label: 'Perdido', bg: 'bg-black', cardBg: 'bg-gray-800' },
+  { key: 'rnc', label: 'RNC', bg: 'bg-pink-500', cardBg: 'bg-pink-500' },
+  { key: 'sdp', label: 'SDP', bg: 'bg-orange-500', cardBg: 'bg-orange-500' },
+  { key: 'amostras', label: 'Amostras', bg: 'bg-blue-900', cardBg: 'bg-blue-900' },
+  { key: 'book', label: 'Book', bg: 'bg-lime-500', cardBg: 'bg-lime-500' },
 ];
 
 // Tickets without etapa use status to determine initial column
@@ -95,6 +96,7 @@ export default function Kanban() {
       const mapped = chamadosRes.data.map((c) => ({
         ...c,
         representante_nome: c.representante_id ? profileMap.get(c.representante_id) || 'Desconhecido' : 'N/A',
+        gestor_nome: c.gestor_id ? profileMap.get(c.gestor_id) || 'Desconhecido' : '',
       }));
       setChamados(mapped);
     }
@@ -304,40 +306,45 @@ export default function Kanban() {
                           draggable
                           onDragStart={(e) => handleDragStart(e, ticket.id)}
                           onDragEnd={handleDragEnd}
-                          className={`${col.card} border rounded-lg p-2.5 space-y-1 cursor-grab active:cursor-grabbing transition-opacity ${draggedId === ticket.id ? 'opacity-40' : 'opacity-100'}`}
+                          className={`rounded-xl overflow-hidden shadow-md cursor-grab active:cursor-grabbing transition-opacity ${draggedId === ticket.id ? 'opacity-40' : 'opacity-100'}`}
                         >
-                          <div className="flex items-center gap-1">
-                            <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                            <p className="font-bold text-xs">#{ticket.id}</p>
+                          {/* Card body - colored */}
+                          <div className={`${col.cardBg} text-white px-3 py-3 space-y-1.5`}>
+                            <p className="text-[11px] font-bold text-center">TicketID : {ticket.id}</p>
+                            <p className="text-[10px] text-center">
+                              <span className="font-semibold">Representante :</span> {ticket.representante_nome}
+                            </p>
+                            <p className="text-[10px] text-center mt-2">
+                              <span className="font-semibold">Cliente :</span> {ticket.cliente_nome}
+                            </p>
+                            <p className="text-[10px] text-center mt-1">
+                              <span className="font-semibold">Motivo :</span> {ticket.motivo}
+                            </p>
+                            <p className="text-[10px] text-center mt-2">
+                              <span className="font-semibold">Etapa :</span> {col.label}
+                            </p>
+                            <p className="text-[10px] text-center">
+                              <span className="font-semibold">Gestor :</span> {ticket.gestor_nome || ''}
+                            </p>
+                            <p className="text-[10px] text-center mt-2 font-semibold">
+                              Atualizado : {formatDate(ticket.updated_at)}
+                            </p>
                           </div>
-                          <p className="text-[10px]">
-                            <span className="font-medium">Rep:</span> {ticket.representante_nome}
-                          </p>
-                          <p className="text-[10px]">
-                            <span className="font-medium">Cliente:</span> {ticket.cliente_nome}
-                          </p>
-                          <p className="text-[10px]">
-                            <span className="font-medium">Motivo:</span> {ticket.motivo}
-                          </p>
-                          <p className="text-[9px] text-muted-foreground">
-                            {formatDate(ticket.updated_at)}
-                          </p>
-                          <div className="flex items-center gap-1.5 pt-1 border-t border-black/10">
-                            <button className="flex items-center gap-0.5 text-[9px] font-medium hover:opacity-70">
-                              <Eye className="h-2.5 w-2.5" /> Exibir
+                          {/* Card footer - dark */}
+                          <div className="bg-gray-900 flex items-center justify-center gap-4 py-2">
+                            <button className="text-white hover:text-gray-300 transition-colors" title="Editar">
+                              <Pencil className="h-3.5 w-3.5" />
                             </button>
-                            <button className="flex items-center gap-0.5 text-[9px] font-medium hover:opacity-70">
-                              <CheckCircle className="h-2.5 w-2.5" /> Validar
-                            </button>
-                            <button className="flex items-center gap-0.5 text-[9px] font-medium hover:opacity-70">
-                              <Clock className="h-2.5 w-2.5" /> Histórico
+                            <button className="text-white hover:text-gray-300 transition-colors" title="Histórico">
+                              <Clock className="h-3.5 w-3.5" />
                             </button>
                             {(role === 'admin' || role === 'gestor') && (
                               <button
-                                className="ml-auto text-[9px] hover:opacity-70"
+                                className="text-white hover:text-red-400 transition-colors"
+                                title="Excluir"
                                 onClick={() => handleDelete(ticket.id)}
                               >
-                                <Trash2 className="h-2.5 w-2.5" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             )}
                           </div>
