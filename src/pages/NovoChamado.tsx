@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Paperclip, Home, Clock, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -5,16 +6,43 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { motivoOptions, clienteOptions, mockUsers } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
+import { mockUsers } from '@/data/mockData';
 import Layout from '@/components/Layout';
+
+interface Motivo { id: string; nome: string }
+interface Submotivo { id: string; motivo_id: string; nome: string }
 
 export default function NovoChamado() {
   const navigate = useNavigate();
+  const [motivos, setMotivos] = useState<Motivo[]>([]);
+  const [submotivos, setSubmotivos] = useState<Submotivo[]>([]);
+  const [selectedMotivo, setSelectedMotivo] = useState<string>('');
+  const [filteredSubmotivos, setFilteredSubmotivos] = useState<Submotivo[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const [mRes, sRes] = await Promise.all([
+        supabase.from('motivos').select('id, nome').order('nome'),
+        supabase.from('submotivos' as any).select('id, motivo_id, nome').order('nome'),
+      ]);
+      if (mRes.data) setMotivos(mRes.data);
+      if (sRes.data) setSubmotivos(sRes.data as any);
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (selectedMotivo) {
+      setFilteredSubmotivos(submotivos.filter(s => s.motivo_id === selectedMotivo));
+    } else {
+      setFilteredSubmotivos([]);
+    }
+  }, [selectedMotivo, submotivos]);
 
   return (
     <Layout>
-      <div className="flex flex-col min-h-[calc(100vh-3rem-3rem)]  -m-6">
-        {/* Form area */}
+      <div className="flex flex-col min-h-[calc(100vh-3rem-3rem)] -m-6">
         <div className="flex-1 p-6">
           <div className="bg-card border rounded-lg p-6">
             {/* Row 1 */}
@@ -56,8 +84,8 @@ export default function NovoChamado() {
                 <Select>
                   <SelectTrigger className="mt-1 border-destructive/50"><SelectValue placeholder="Selecione o Cliente" /></SelectTrigger>
                   <SelectContent>
-                    {clienteOptions.map(c => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    {mockUsers.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -83,20 +111,24 @@ export default function NovoChamado() {
               </div>
               <div>
                 <Label className="text-xs font-semibold text-destructive">* Motivo Principal da Solicitação</Label>
-                <Select>
+                <Select onValueChange={setSelectedMotivo} value={selectedMotivo}>
                   <SelectTrigger className="mt-1 border-destructive/50"><SelectValue placeholder="Selecione o Motivo" /></SelectTrigger>
                   <SelectContent>
-                    {motivoOptions.map(m => (
-                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    {motivos.map(m => (
+                      <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label className="text-xs font-semibold">Objetivo Principal da Solicitação</Label>
-                <Select>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione o Submotivo" /></SelectTrigger>
-                  <SelectContent><SelectItem value="sub1">Submotivo 1</SelectItem></SelectContent>
+                <Select disabled={!selectedMotivo}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder={selectedMotivo ? "Selecione o Objetivo" : "Selecione um motivo primeiro"} /></SelectTrigger>
+                  <SelectContent>
+                    {filteredSubmotivos.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
             </div>
