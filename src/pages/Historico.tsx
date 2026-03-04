@@ -310,7 +310,7 @@ export default function Historico() {
             const match = entry.descricao.match(/para "([^"]+)"/);
             if (match) newLabel = match[1];
           } else if (entry.descricao.includes('Etapa:')) {
-            const match = entry.descricao.match(/Etapa:.*→\s*"([^"]+)"/);
+            const match = entry.descricao.match(/Etapa:.*?→\s*"([^"]+)"/);
             if (match) newLabel = match[1];
           }
           if (newLabel) {
