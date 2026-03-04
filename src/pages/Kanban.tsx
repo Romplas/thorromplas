@@ -60,11 +60,12 @@ function getTicketColumn(c: ChamadoWithNames): string {
 }
 
 export default function Kanban() {
-  const { role } = useAuth();
+  const { role, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [chamados, setChamados] = useState<ChamadoWithNames[]>([]);
   const [loading, setLoading] = useState(true);
+  const [roleFilterApplied, setRoleFilterApplied] = useState(false);
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
@@ -177,6 +178,27 @@ export default function Kanban() {
     if (srRes.data) setSrLinks(srRes.data);
     if (clientesRes.data) setAllClientes(clientesRes.data as Cliente[]);
     if (motivosRes.data) setMotivos(motivosRes.data);
+
+    // Auto-set filters based on role
+    if (!roleFilterApplied && profile) {
+      if (role === 'supervisor' && supRes.data) {
+        const mySupervisor = supRes.data.find(s => s.nome.toLowerCase() === profile.nome.toLowerCase());
+        if (mySupervisor) {
+          setFilterSupervisor(mySupervisor.id);
+          setRoleFilterApplied(true);
+        }
+      } else if (role === 'representante' && repRes.data) {
+        const myRep = repRes.data.find(r => r.nome.toLowerCase() === profile.nome.toLowerCase());
+        if (myRep) {
+          // Find supervisor linked to this representante
+          const link = (srRes.data || []).find(sr => sr.representante_id === myRep.id);
+          if (link) setFilterSupervisor(link.supervisor_id);
+          setFilterRepresentante(myRep.id);
+          setRoleFilterApplied(true);
+        }
+      }
+    }
+
     setLoading(false);
   };
 
@@ -309,14 +331,15 @@ export default function Kanban() {
     return true;
   });
 
-  const roleLabel = role === 'admin' ? 'Administrador' : role === 'gestor' ? 'Gestor' : role === 'supervisor' ? 'Supervisor' : 'Representante';
+  const isRestricted = role === 'supervisor' || role === 'representante';
+  const roleLabel = profile?.nome || (role === 'admin' ? 'Administrador' : role === 'gestor' ? 'Gestor' : role === 'supervisor' ? 'Supervisor' : 'Representante');
 
   return (
     <Layout>
       <div className="p-4">
         <div className="mb-4">
           <h1 className="text-xl">
-            Olá, <span className="text-primary font-semibold">{roleLabel}</span>
+            Olá, <span className="text-primary font-semibold">{profile?.nome || 'Usuário'}</span>
           </h1>
           <p className="text-sm text-muted-foreground">Gerenciador de Chamados THOR</p>
         </div>
@@ -325,7 +348,7 @@ export default function Kanban() {
         <div className="flex flex-wrap items-center gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Supervisor</span>
-            <Select value={filterSupervisor} onValueChange={handleSupervisorChange}>
+            <Select value={filterSupervisor} onValueChange={handleSupervisorChange} disabled={isRestricted}>
               <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
@@ -335,7 +358,7 @@ export default function Kanban() {
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Representantes</span>
-            <Select value={filterRepresentante} onValueChange={handleRepresentanteChange}>
+            <Select value={filterRepresentante} onValueChange={handleRepresentanteChange} disabled={role === 'representante'}>
               <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
