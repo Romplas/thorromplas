@@ -575,7 +575,7 @@ export default function NovoChamado() {
             <div className="mt-6 space-y-4">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
-                <h2 className="text-sm font-semibold">Chamados Criados</h2>
+                <h2 className="text-sm font-semibold">Tickets Criados</h2>
                 <Badge variant="secondary" className="ml-1">{chamadosCriados.length}</Badge>
               </div>
               {chamadosCriados.map(c => (
