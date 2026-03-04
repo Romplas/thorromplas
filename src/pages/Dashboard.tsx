@@ -1,6 +1,13 @@
-import { Mail, AlertCircle, AlertTriangle, TrendingUp, FileText, CheckCircle, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Mail, AlertCircle, AlertTriangle, TrendingUp, FileText, CheckCircle, Trash2, CalendarIcon } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { mockTickets } from '@/data/mockData';
 import Layout from '@/components/Layout';
 
@@ -42,6 +49,9 @@ const pieData = [
 const lastTicket = mockTickets[0];
 
 export default function Dashboard() {
+  const [startDate, setStartDate] = useState<Date>(new Date(2026, 2, 1));
+  const [endDate, setEndDate] = useState<Date>(new Date(2026, 2, 31));
+
   return (
     <Layout>
       <div className="flex items-center justify-between mb-6">
@@ -51,8 +61,30 @@ export default function Dashboard() {
           </h1>
           <p className="text-sm text-muted-foreground">Painel de Chamados THOR</p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          📅 01/03/2026 até 📅 31/03/2026
+        <div className="flex items-center gap-2 text-sm">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className={cn("gap-1.5 text-xs font-normal", !startDate && "text-muted-foreground")}>
+                <CalendarIcon className="h-4 w-4 text-primary" />
+                {startDate ? format(startDate, "dd/MM/yyyy", { locale: ptBR }) : "Data início"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar mode="single" selected={startDate} onSelect={(d) => d && setStartDate(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
+            </PopoverContent>
+          </Popover>
+          <span className="text-muted-foreground text-xs">até</span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className={cn("gap-1.5 text-xs font-normal", !endDate && "text-muted-foreground")}>
+                <CalendarIcon className="h-4 w-4 text-primary" />
+                {endDate ? format(endDate, "dd/MM/yyyy", { locale: ptBR }) : "Data fim"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar mode="single" selected={endDate} onSelect={(d) => d && setEndDate(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
