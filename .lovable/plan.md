@@ -1,36 +1,18 @@
 
 
-## Diagnóstico
+## Problem Analysis
 
-Identifiquei **3 problemas** que impedem o histórico de funcionar:
+The `entryEtapaMap` in `Historico.tsx` (line 285) only detects etapa changes from history entries where `acao === 'Alteração de Etapa'`. However, after the recent consolidation change in `EditChamadoModal`, edits now create entries with `acao === 'Atualização de Ticket'` and the etapa change is embedded in the description as `Etapa: "THOR" → "Aguardando Resposta"`.
 
-### Problema 1: Case mismatch na etapa
-A tabela `etapas` armazena `nome` em **lowercase** (`thor`, `aguardando_resposta`), mas o modal define o valor padrão como `'THOR'` (uppercase). Isso causa:
-- O Select de "Etapa Ticket" não mostra o valor selecionado
-- A comparação de mudanças falha (compara `'THOR'` com `'thor'`)
+This means the etapa reconstruction logic never picks up etapa changes made through the edit modal, so all subsequent cards remain colored as THOR (red).
 
-### Problema 2: RLS bloqueando insert no histórico
-A tabela `chamado_historico` está **vazia** — nenhum registro foi gravado. A política de INSERT só permite `admin` ou o próprio usuário. Usuários com role `gestor` ou `supervisor` são bloqueados silenciosamente.
+## Plan
 
-### Problema 3: Não há registro de criação do ticket
-Quando um chamado é criado na tela de Novo Chamado, nenhuma entrada inicial é inserida no histórico.
+**Edit `src/pages/Historico.tsx`** -- Update the `entryEtapaMap` builder (lines 283-295) to also parse etapa changes from consolidated "Atualização de Ticket" entries. The logic should:
 
----
+1. Keep existing check for `acao === 'Alteração de Etapa'` with `para "X"` pattern
+2. Add a check for entries containing `Etapa:` in the description, parsing the `→ "X"` pattern to extract the new etapa label
+3. Convert the label back to the key using `etapaLabelsMap` as before
 
-## Plano de Correção
-
-### 1. Migração SQL — Corrigir RLS do chamado_historico
-- Dropar a política de INSERT existente
-- Criar nova política permitindo insert para qualquer usuário autenticado (gestor, supervisor, representante, admin)
-
-### 2. EditChamadoModal — Corrigir case da etapa
-- Linha 106: trocar `'THOR'` por `'thor'` no valor padrão
-- Linha 288: remover `.toLowerCase()` na comparação (já será lowercase)
-- Adicionar log de erro no insert do histórico para diagnóstico
-
-### 3. NovoChamado — Registrar criação no histórico
-- Após criar o chamado com sucesso, inserir um registro `"Ticket Criado"` na tabela `chamado_historico` com os dados iniciais (status, etapa, cliente, motivo)
-
-### 4. Kanban drag-drop — Já funciona
-O código de drag-drop já insere histórico, só precisa da correção de RLS para funcionar.
+This is a ~5 line change in the `entryEtapaMap` builder function.
 
