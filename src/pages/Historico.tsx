@@ -235,10 +235,38 @@ export default function Historico() {
     return new Date(d).toLocaleDateString('pt-BR');
   };
 
+  // Build a map of etapa at each history entry by reconstructing the timeline
+  const entryEtapaMap = (() => {
+    const map = new Map<string, string>();
+    // Group history by chamado_id, sorted ascending (oldest first)
+    const byChamado = new Map<number, HistoricoEntry[]>();
+    historico.forEach(h => {
+      if (!byChamado.has(h.chamado_id)) byChamado.set(h.chamado_id, []);
+      byChamado.get(h.chamado_id)!.push(h);
+    });
+
+    byChamado.forEach((entries, chamadoId) => {
+      // Sort ascending by date
+      const sorted = [...entries].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      let currentEtapa = 'thor'; // default initial etapa
+      sorted.forEach(entry => {
+        // Check if this entry changes the etapa
+        if (entry.acao === 'Alteração de Etapa' && entry.descricao) {
+          const match = entry.descricao.match(/para "([^"]+)"/);
+          if (match) {
+            // Convert label back to key
+            const labelToKey = Object.entries(etapaLabelsMap).find(([k, v]) => v === match[1]);
+            if (labelToKey) currentEtapa = labelToKey[0];
+          }
+        }
+        map.set(entry.id, currentEtapa);
+      });
+    });
+    return map;
+  })();
+
   const getEntryColor = (entry: HistoricoEntry) => {
-    const chamado = chamados.find(c => c.id === entry.chamado_id);
-    if (!chamado) return 'bg-blue-500';
-    const etapa = chamado.etapa || 'thor';
+    const etapa = entryEtapaMap.get(entry.id) || 'thor';
     return etapaColors[etapa] || 'bg-blue-500';
   };
 
@@ -335,7 +363,8 @@ export default function Historico() {
                 const chamado = chamados.find(c => c.id === entry.chamado_id);
                 const bgColor = getEntryColor(entry);
                 const isSelected = entry.id === selectedEntryId;
-                const etapaLabel = chamado ? (etapaLabelsMap[chamado.etapa || 'thor'] || chamado.etapa || 'THOR') : '—';
+                const entryEtapa = entryEtapaMap.get(entry.id) || 'thor';
+                const etapaLabel = etapaLabelsMap[entryEtapa] || entryEtapa;
                 const statusLabel = chamado ? (statusLabels[chamado.status] || chamado.status) : '—';
                 const createdByNome = chamado ? (profileMap.get(chamado.representante_id || '') || '') : '';
                 const gestorName = chamado?.gestor_id ? (profileMap.get(chamado.gestor_id) || '') : '';
