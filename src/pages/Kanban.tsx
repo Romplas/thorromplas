@@ -207,11 +207,15 @@ export default function Kanban() {
     setFilterSupervisor(value);
     setFilterRepresentante('todos');
     setFilterCliente('todos');
+    setFilterTicketId('todos');
+    setFilterMotivo('todos');
   };
 
   const handleRepresentanteChange = (value: string) => {
     setFilterRepresentante(value);
     setFilterCliente('todos');
+    setFilterTicketId('todos');
+    setFilterMotivo('todos');
   };
 
   const handleDelete = async (id: number) => {
@@ -303,8 +307,8 @@ export default function Kanban() {
   // Build a map: representante_id (from representantes table) -> list of supervisor_ids
   // chamados have supervisor_id & representante_id referencing profiles, but filter uses supervisores/representantes tables
   // We need to filter by cliente_nome matching clientes table
-  const filteredChamados = chamados.filter((c) => {
-    // Supervisor filter: find representante IDs linked to this supervisor, then find chamados whose cliente belongs to those representantes
+  // Pre-filter chamados by supervisor+representante to derive dropdown options
+  const chamadosForDropdowns = chamados.filter((c) => {
     if (filterSupervisor !== 'todos') {
       const repIdsForSupervisor = srLinks
         .filter(sr => sr.supervisor_id === filterSupervisor)
@@ -314,20 +318,25 @@ export default function Kanban() {
         .map(cl => cl.nome);
       if (!clienteNamesForSupervisor.includes(c.cliente_nome)) return false;
     }
-
-    // Representante filter: find clientes linked to this representante
     if (filterRepresentante !== 'todos') {
       const clienteNamesForRep = allClientes
         .filter(cl => cl.representante_id === filterRepresentante)
         .map(cl => cl.nome);
       if (!clienteNamesForRep.includes(c.cliente_nome)) return false;
     }
+    return true;
+  });
 
+  // Derived dropdown options from filtered chamados
+  const ticketIdOptions = chamadosForDropdowns.map(c => String(c.id));
+  const clienteOptions = [...new Set(chamadosForDropdowns.map(c => c.cliente_nome).filter(Boolean))].sort();
+  const motivoOptions = [...new Set(chamadosForDropdowns.map(c => c.motivo).filter(Boolean))].sort();
+
+  const filteredChamados = chamadosForDropdowns.filter((c) => {
     if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
     if (filterTicketId !== 'todos' && String(c.id) !== filterTicketId) return false;
     if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
     if (filterGestor !== 'todos' && c.gestor_id !== filterGestor) return false;
-    
     return true;
   });
 
@@ -372,7 +381,7 @@ export default function Kanban() {
               <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                {filteredClientes.filter((c) => c.nome).map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
+                {clienteOptions.map((nome) => <SelectItem key={nome} value={nome}>{nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -382,7 +391,7 @@ export default function Kanban() {
               <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                {chamados.map((c) => <SelectItem key={c.id} value={String(c.id)}>{String(c.id)}</SelectItem>)}
+                {ticketIdOptions.map((id) => <SelectItem key={id} value={id}>{id}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -392,7 +401,7 @@ export default function Kanban() {
               <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                {motivos.filter((m) => m.nome).map((m) => <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>)}
+                {motivoOptions.map((nome) => <SelectItem key={nome} value={nome}>{nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
