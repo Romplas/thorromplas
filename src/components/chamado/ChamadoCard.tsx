@@ -144,7 +144,7 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <span className="font-mono font-bold text-base">#{chamado.id}</span>
+            <span className="font-mono font-bold text-base">TicketID {chamado.id}</span>
             <Badge variant="outline" className={`text-xs ${statusColor[c.status as keyof typeof statusColor] || statusColor.aberto}`}>
               {c.status === 'aberto' ? 'Aberto' : c.status === 'em_progresso' ? 'Em Progresso' : 'Fechado'}
             </Badge>
