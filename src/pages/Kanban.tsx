@@ -248,6 +248,21 @@ export default function Kanban() {
         prev.map((c) => (c.id === ticket.id ? { ...c, etapa: ticket.etapa } : c))
       );
     } else {
+      // Record history for drag-drop etapa change
+      const oldEtapaLabel = columns.find(c => c.key === currentCol)?.label || currentCol;
+      const newEtapaLabel = columns.find(c => c.key === colKey)?.label || colKey;
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      let userProfileId: string | null = null;
+      if (currentUser) {
+        const { data: prof } = await supabase.from('profiles').select('id').eq('user_id', currentUser.id).maybeSingle();
+        userProfileId = prof?.id || null;
+      }
+      await supabase.from('chamado_historico').insert({
+        chamado_id: ticket.id,
+        user_id: userProfileId,
+        acao: 'Alteração de Etapa',
+        descricao: `Etapa alterada de "${oldEtapaLabel}" para "${newEtapaLabel}" (drag-drop)`,
+      });
       toast({ title: `Chamado movido para ${columns.find((c) => c.key === colKey)?.label}` });
     }
   };
