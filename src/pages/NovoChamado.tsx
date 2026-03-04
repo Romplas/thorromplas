@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -356,25 +357,27 @@ export default function NovoChamado() {
               </div>
               <div>
                 <Label className="text-xs font-semibold">Código do Cliente Opcional</Label>
-                <Select value={selectedCodigoCliente} onValueChange={handleCodigoClienteChange} disabled={!selectedRepresentante}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder={selectedRepresentante ? "Selecione o Código" : "Selecione um representante"} /></SelectTrigger>
-                  <SelectContent>
-                    {filteredClientes.map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.codigo || '—'}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  className="mt-1"
+                  value={selectedCodigoCliente}
+                  onValueChange={handleCodigoClienteChange}
+                  disabled={!selectedRepresentante}
+                  placeholder={selectedRepresentante ? "Selecione o Código" : "Selecione um representante"}
+                  searchPlaceholder="Pesquisar código..."
+                  options={filteredClientes.map(c => ({ value: c.id, label: String(c.codigo || '—') }))}
+                />
               </div>
               <div>
                 <Label className="text-xs font-semibold text-destructive">* Clientes</Label>
-                <Select value={selectedCliente} onValueChange={handleClienteChange} disabled={!selectedRepresentante}>
-                  <SelectTrigger className="mt-1 border-destructive/50"><SelectValue placeholder={selectedRepresentante ? "Selecione o Cliente" : "Selecione um representante"} /></SelectTrigger>
-                  <SelectContent>
-                    {filteredClientes.map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  className="mt-1 border-destructive/50"
+                  value={selectedCliente}
+                  onValueChange={handleClienteChange}
+                  disabled={!selectedRepresentante}
+                  placeholder={selectedRepresentante ? "Selecione o Cliente" : "Selecione um representante"}
+                  searchPlaceholder="Pesquisar cliente..."
+                  options={filteredClientes.map(c => ({ value: c.id, label: c.nome }))}
+                />
               </div>
             </div>
 
@@ -382,14 +385,14 @@ export default function NovoChamado() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-5">
               <div>
                 <Label className="text-xs font-semibold">Rede Opcional</Label>
-                <Select value={selectedRede} onValueChange={setSelectedRede}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Auto-preenchido" /></SelectTrigger>
-                  <SelectContent>
-                    {redes.map(r => (
-                      <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  className="mt-1"
+                  value={selectedRede}
+                  onValueChange={setSelectedRede}
+                  placeholder="Auto-preenchido"
+                  searchPlaceholder="Pesquisar rede..."
+                  options={redes.map(r => ({ value: r.id, label: r.nome }))}
+                />
               </div>
               <div>
                 <Label className="text-xs font-semibold">Data Contato</Label>
