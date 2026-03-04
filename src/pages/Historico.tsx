@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Pencil, Trash2, Eye } from 'lucide-react';
+import { Pencil, Trash2, Eye, Eraser, Paperclip } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,12 +44,6 @@ const statusLabels: Record<string, string> = {
   aberto: 'Aberto',
   em_progresso: 'Em Progresso',
   fechado: 'Fechado',
-};
-
-const statusColors: Record<string, string> = {
-  aberto: 'bg-green-500',
-  em_progresso: 'bg-orange-500',
-  fechado: 'bg-red-600',
 };
 
 const etapaLabelsMap: Record<string, string> = {
@@ -100,6 +93,7 @@ export default function Historico() {
   const [chamados, setChamados] = useState<ChamadoFull[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicketId, setSelectedTicketId] = useState<string>(ticketIdParam || 'todos');
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
 
   // Filters
   const [filterSupervisor, setFilterSupervisor] = useState('todos');
@@ -113,7 +107,6 @@ export default function Historico() {
   const [motivos, setMotivos] = useState<Motivo[]>([]);
   const [submotivos, setSubmotivos] = useState<Submotivo[]>([]);
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
-  const [profileByUserIdMap, setProfileByUserIdMap] = useState<Map<string, string>>(new Map());
 
   // Resolved names for detail panel
   const [supervisorNome, setSupervisorNome] = useState('');
@@ -151,13 +144,11 @@ export default function Historico() {
     ]);
 
     const pMap = new Map<string, string>();
-    const pByUserIdMap = new Map<string, string>();
     (profilesRes.data || []).forEach(p => {
       pMap.set(p.id, p.nome);
-      pByUserIdMap.set(p.user_id, p.nome);
+      pMap.set(p.user_id, p.nome);
     });
     setProfileMap(pMap);
-    setProfileByUserIdMap(pByUserIdMap);
 
     const entries: HistoricoEntry[] = (historicoRes.data || []).map(h => ({
       ...h,
@@ -172,21 +163,18 @@ export default function Historico() {
     setLoading(false);
   };
 
-  // Resolve names for the selected chamado
+  // Resolve names for the selected entry's chamado
   useEffect(() => {
-    if (selectedTicketId === 'todos') return;
-    const chamado = chamados.find(c => String(c.id) === selectedTicketId);
+    const ticketId = selectedEntryId
+      ? historico.find(h => h.id === selectedEntryId)?.chamado_id
+      : selectedTicketId !== 'todos' ? Number(selectedTicketId) : null;
+
+    if (!ticketId) return;
+    const chamado = chamados.find(c => c.id === ticketId);
     if (!chamado) return;
 
     const resolve = async () => {
-      // Supervisor
-      if (chamado.supervisor_id) {
-        const nome = profileMap.get(chamado.supervisor_id) || '';
-        setSupervisorNome(nome);
-      } else {
-        setSupervisorNome('');
-      }
-      // Representante
+      setSupervisorNome(chamado.supervisor_id ? profileMap.get(chamado.supervisor_id) || '' : '');
       if (chamado.representante_id) {
         const nome = profileMap.get(chamado.representante_id) || '';
         if (nome) {
@@ -198,17 +186,12 @@ export default function Historico() {
       } else {
         setRepresentanteNome('');
       }
-      // Gestor
-      if (chamado.gestor_id) {
-        setGestorNome(profileMap.get(chamado.gestor_id) || '');
-      } else {
-        setGestorNome('');
-      }
+      setGestorNome(chamado.gestor_id ? profileMap.get(chamado.gestor_id) || '' : '');
     };
     resolve();
-  }, [selectedTicketId, chamados, profileMap]);
+  }, [selectedEntryId, selectedTicketId, chamados, profileMap]);
 
-  // Filter chamados for the ticket list
+  // Filter chamados
   const filteredChamadoIds = new Set(
     chamados
       .filter(c => {
@@ -221,17 +204,14 @@ export default function Historico() {
       .map(c => c.id)
   );
 
-  // Get history entries filtered
   const filtered = historico.filter(h => {
     if (selectedTicketId !== 'todos' && String(h.chamado_id) !== selectedTicketId) return false;
     if (!filteredChamadoIds.has(h.chamado_id)) return false;
     return true;
   });
 
-  // Unique clients for filter
   const uniqueClientes = [...new Set(chamados.map(c => c.cliente_nome).filter(Boolean))].sort();
 
-  // Filtered submotivos based on selected motivo
   const filteredSubmotivos = filterMotivo !== 'todos'
     ? submotivos.filter(s => {
         const motivoObj = motivos.find(m => m.nome === filterMotivo);
@@ -239,13 +219,11 @@ export default function Historico() {
       })
     : submotivos;
 
-  const selectedChamado = selectedTicketId !== 'todos'
-    ? chamados.find(c => String(c.id) === selectedTicketId)
+  // Selected entry for detail
+  const selectedEntry = selectedEntryId ? historico.find(h => h.id === selectedEntryId) : null;
+  const selectedChamado = selectedEntry
+    ? chamados.find(c => c.id === selectedEntry.chamado_id)
     : null;
-
-  const ticketHistory = selectedTicketId !== 'todos'
-    ? historico.filter(h => String(h.chamado_id) === selectedTicketId).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    : [];
 
   const formatDateTime = (d: string) => {
     const dt = new Date(d);
@@ -254,53 +232,23 @@ export default function Historico() {
 
   const formatDate = (d: string | null) => {
     if (!d) return '—';
-    const dt = new Date(d);
-    return dt.toLocaleDateString('pt-BR');
+    return new Date(d).toLocaleDateString('pt-BR');
   };
 
-  // Determine the etapa/status at the time of each history entry
   const getEntryColor = (entry: HistoricoEntry) => {
     const chamado = chamados.find(c => c.id === entry.chamado_id);
     if (!chamado) return 'bg-blue-500';
-    // Use etapa color
     const etapa = chamado.etapa || 'thor';
     return etapaColors[etapa] || 'bg-blue-500';
   };
 
-  // Extract the "current state" from a history entry description
-  const getEntryEtapaLabel = (entry: HistoricoEntry) => {
-    // Try to find the target etapa in the description
-    if (entry.descricao) {
-      for (const [key, label] of Object.entries(etapaLabelsMap)) {
-        if (entry.descricao.includes(`para "${label}"`) || entry.descricao.includes(`para ${label}`)) {
-          return label;
-        }
-      }
-      // Check if it mentions an etapa
-      for (const [key, label] of Object.entries(etapaLabelsMap)) {
-        if (entry.descricao.includes(label)) {
-          return label;
-        }
-      }
-    }
-    return null;
+  const handleCardClick = (entry: HistoricoEntry) => {
+    setSelectedEntryId(entry.id);
+    setSelectedTicketId(String(entry.chamado_id));
   };
 
-  const getEntryStatusLabel = (entry: HistoricoEntry) => {
-    if (entry.descricao) {
-      for (const [key, label] of Object.entries(statusLabels)) {
-        if (entry.descricao.includes(`para ${label}`) || entry.descricao.includes(`para "${label}"`)) {
-          return label;
-        }
-      }
-      for (const [key, label] of Object.entries(statusLabels)) {
-        if (entry.descricao.includes(label)) {
-          return label;
-        }
-      }
-    }
-    const chamado = chamados.find(c => c.id === entry.chamado_id);
-    return chamado ? statusLabels[chamado.status] || chamado.status : '';
+  const handleClearSelection = () => {
+    setSelectedEntryId(null);
   };
 
   return (
@@ -308,7 +256,7 @@ export default function Historico() {
       <div className="p-4">
         <h1 className="text-xl font-bold text-center mb-4">Histórico de Atendimento</h1>
 
-        {/* Filters - similar to reference image */}
+        {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Supervisor</span>
@@ -322,7 +270,7 @@ export default function Historico() {
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">TicketID</span>
-            <Select value={selectedTicketId} onValueChange={setSelectedTicketId}>
+            <Select value={selectedTicketId} onValueChange={(v) => { setSelectedTicketId(v); setSelectedEntryId(null); }}>
               <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
@@ -374,68 +322,70 @@ export default function Historico() {
           </div>
         </div>
 
-        {/* Main content: Left list + Right detail */}
+        {/* Main content */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Left: History cards list */}
-          <div className="space-y-2 max-h-[calc(100vh-240px)] overflow-y-auto pr-1">
+          {/* Left: History cards */}
+          <div className="space-y-3 max-h-[calc(100vh-240px)] overflow-y-auto pr-1">
             {loading ? (
               <p className="text-sm text-muted-foreground text-center py-8">Carregando histórico...</p>
             ) : filtered.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">Nenhum registro encontrado.</p>
             ) : (
               filtered.map((entry) => {
-                const entryEtapa = getEntryEtapaLabel(entry);
-                const entryStatus = getEntryStatusLabel(entry);
+                const chamado = chamados.find(c => c.id === entry.chamado_id);
                 const bgColor = getEntryColor(entry);
-                const isSelected = String(entry.chamado_id) === selectedTicketId;
+                const isSelected = entry.id === selectedEntryId;
+                const etapaLabel = chamado ? (etapaLabelsMap[chamado.etapa || 'thor'] || chamado.etapa || 'THOR') : '—';
+                const statusLabel = chamado ? (statusLabels[chamado.status] || chamado.status) : '—';
+                const createdByNome = chamado ? (profileMap.get(chamado.representante_id || '') || '') : '';
+                const gestorName = chamado?.gestor_id ? (profileMap.get(chamado.gestor_id) || '') : '';
 
                 return (
                   <div
                     key={entry.id}
                     className={`rounded-lg overflow-hidden cursor-pointer transition-all shadow-md ${isSelected ? 'ring-2 ring-primary ring-offset-2' : 'hover:shadow-lg'}`}
-                    onClick={() => setSelectedTicketId(String(entry.chamado_id))}
+                    onClick={() => handleCardClick(entry)}
                   >
-                    <div className={`${bgColor} text-white px-4 py-3 space-y-1`}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3">
-                            <span className="font-bold text-sm">TicketID : {entry.chamado_id}</span>
-                            <span className="text-[11px] opacity-90">
-                              {entry.acao === 'Ticket Criado' ? '' : entry.acao}
-                            </span>
+                    {/* Card with two-section layout */}
+                    <div className={`${bgColor} text-white`}>
+                      <div className="flex">
+                        {/* Left section - ticket info */}
+                        <div className="w-[35%] px-3 py-2.5 space-y-0.5 border-r border-white/20 text-[11px]">
+                          <p className="font-bold text-sm">TicketID : {entry.chamado_id}</p>
+                          <p><span className="font-semibold">Cliente : </span>{chamado?.cliente_nome || '—'}</p>
+                          <p className="font-semibold">Etapa Ticket : {etapaLabel}</p>
+                          <p><span className="font-semibold">Motivo : </span>{chamado?.motivo || '—'}</p>
+                          <p><span className="font-semibold">Representante : </span>{representanteNome || createdByNome || '—'}</p>
+                        </div>
+
+                        {/* Right section - description + status row */}
+                        <div className="w-[65%] flex flex-col">
+                          {/* Description box */}
+                          <div className="bg-yellow-300 text-black px-3 py-2 mx-2 mt-2 rounded text-[11px] min-h-[60px]">
+                            <p className="font-semibold">Descrição : {entry.descricao || chamado?.descricao || '—'}</p>
                           </div>
-                          <p className="text-xs mt-1">
-                            <span className="font-semibold">Status : </span>
-                            {entryStatus}
-                          </p>
-                          <p className="text-xs">
-                            <span className="font-semibold">Etapa : </span>
-                            {(() => {
-                              const chamado = chamados.find(c => c.id === entry.chamado_id);
-                              return chamado ? (etapaLabelsMap[chamado.etapa || 'thor'] || chamado.etapa || 'THOR') : '—';
-                            })()}
-                          </p>
-                          {entry.acao === 'Ticket Criado' && (
-                            <p className="text-xs font-semibold mt-0.5">{entry.acao}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                          <Pencil className="h-3.5 w-3.5 opacity-70" />
-                          <Trash2 className="h-3.5 w-3.5 opacity-70" />
-                        </div>
-                      </div>
-                      <div className="text-[10px] opacity-80 space-y-0.5">
-                        <p>Modificado em: {formatDateTime(entry.created_at)}</p>
-                        <div className="flex items-center justify-between">
-                          <p>
-                            TicketID Criado em: {
-                              (() => {
-                                const chamado = chamados.find(c => c.id === entry.chamado_id);
-                                return chamado ? formatDateTime(chamado.created_at) : '—';
-                              })()
-                            }
-                          </p>
-                          <span className="text-[10px] font-semibold">Atualizado por : {entry.user_nome}</span>
+
+                          {/* Bottom status row */}
+                          <div className="flex items-end justify-between px-3 py-2 text-[10px]">
+                            <div className="space-y-0.5">
+                              <p><span className="font-semibold">Status Ticket : </span>{statusLabel}</p>
+                              <p><span className="font-semibold">Atualizado por : </span>{entry.user_nome}</p>
+                              <p><span className="font-semibold">Data e hora da atualização : </span>{formatDateTime(entry.created_at)}</p>
+                            </div>
+                            <div className="space-y-0.5 text-right">
+                              <p><span className="font-semibold">Gestor: </span>{gestorName || '—'}</p>
+                              <p className="text-green-200"><span className="font-semibold">Ticket Criado por : </span>{(() => {
+                                // Find the "Ticket Criado" entry for this chamado
+                                const creationEntry = historico.find(h => h.chamado_id === entry.chamado_id && h.acao === 'Ticket Criado');
+                                return creationEntry?.user_nome || '—';
+                              })()}</p>
+                              <p className="text-yellow-200 font-semibold">TicketID Criado em: {chamado ? formatDateTime(chamado.created_at) : '—'}</p>
+                            </div>
+                            <div className="flex items-center gap-1.5 ml-2">
+                              <Pencil className="h-4 w-4 opacity-80 hover:opacity-100" />
+                              <Trash2 className="h-4 w-4 opacity-80 hover:opacity-100" />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -447,9 +397,8 @@ export default function Historico() {
 
           {/* Right: Detail panel */}
           <div className="bg-card border rounded-lg p-5 max-h-[calc(100vh-240px)] overflow-y-auto">
-            {selectedChamado ? (
+            {selectedChamado && selectedEntry ? (
               <div className="space-y-4">
-                {/* Row 1: ID + Cliente */}
                 <div className="grid grid-cols-3 gap-3">
                   <ReadOnlyField label="TicketID" value={String(selectedChamado.id)} />
                   <div className="col-span-2">
@@ -457,28 +406,24 @@ export default function Historico() {
                   </div>
                 </div>
 
-                {/* Row 2: Representante, Data Retorno */}
                 <div className="grid grid-cols-3 gap-3">
                   <ReadOnlyField label="Representante" value={representanteNome} />
                   <ReadOnlyField label="Data Retorno" value={formatDate(selectedChamado.data_retorno)} />
                   <ReadOnlyField label="Data Contato" value={formatDate(selectedChamado.data_contato)} />
                 </div>
 
-                {/* Row 3: Motivo, SubMotivo */}
                 <div className="grid grid-cols-3 gap-3">
                   <ReadOnlyField label="Motivo" value={selectedChamado.motivo} />
                   <ReadOnlyField label="SubMotivos" value={selectedChamado.submotivo || '—'} />
                   <ReadOnlyField label="Supervisor" value={supervisorNome} />
                 </div>
 
-                {/* Row 4: Etapa, Gestor, Status */}
                 <div className="grid grid-cols-3 gap-3">
                   <ReadOnlyField label="EtapaTicket" value={etapaLabelsMap[selectedChamado.etapa || 'thor'] || selectedChamado.etapa || 'THOR'} />
                   <ReadOnlyField label="Gestor" value={gestorNome} />
                   <ReadOnlyField label="StatusTicket" value={statusLabels[selectedChamado.status] || selectedChamado.status} />
                 </div>
 
-                {/* Descrição */}
                 <div className="space-y-1">
                   <Label className="text-[11px] font-semibold text-muted-foreground">Descrição</Label>
                   <div className="px-3 py-2 border border-border rounded-md bg-muted/40 text-sm min-h-[100px] whitespace-pre-wrap">
@@ -486,32 +431,27 @@ export default function Historico() {
                   </div>
                 </div>
 
-                {/* Timeline */}
-                <div>
-                  <h4 className="text-sm font-bold mb-3 text-primary">Linha do Tempo</h4>
-                  <div className="relative border-l-2 border-primary/20 ml-3 space-y-3">
-                    {ticketHistory.length === 0 ? (
-                      <p className="text-xs text-muted-foreground pl-6">Nenhum registro de histórico.</p>
-                    ) : (
-                      ticketHistory.map((entry) => (
-                        <div key={entry.id} className="relative pl-6">
-                          <div className="absolute -left-[9px] top-1.5 h-4 w-4 rounded-full bg-primary border-2 border-background" />
-                          <p className="text-xs font-semibold">{entry.acao}</p>
-                          {entry.descricao && <p className="text-xs text-muted-foreground">{entry.descricao}</p>}
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {formatDateTime(entry.created_at)} — {entry.user_nome}
-                          </p>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                {/* Action buttons */}
+                <div className="flex items-center gap-3 pt-2">
+                  <Button variant="default" size="sm" className="gap-1.5">
+                    <Pencil className="h-4 w-4" />
+                    Editar
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={handleClearSelection}>
+                    <Eraser className="h-4 w-4" />
+                    Limpar
+                  </Button>
+                  <Button variant="secondary" size="sm" className="gap-1.5">
+                    <Paperclip className="h-4 w-4" />
+                    Ver Anexo
+                  </Button>
                 </div>
               </div>
             ) : (
               <div className="flex items-center justify-center h-full min-h-[300px] text-center text-muted-foreground">
                 <div>
                   <Eye className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Selecione um ticket para ver os detalhes e a linha do tempo completa</p>
+                  <p className="text-sm">Selecione um registro para ver os detalhes</p>
                 </div>
               </div>
             )}
