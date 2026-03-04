@@ -123,7 +123,16 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       setSupervisorNome('');
     }
 
-    setRepresentanteNome(c.representante_nome || '');
+    if (c.representante_id) {
+      const { data: rep } = await supabase
+        .from('representantes')
+        .select('nome')
+        .eq('id', c.representante_id)
+        .maybeSingle();
+      setRepresentanteNome(rep?.nome || profileMap.get(c.representante_id) || '');
+    } else {
+      setRepresentanteNome('');
+    }
 
     // Resolve cliente code and rede
     if (c.cliente_id) {
