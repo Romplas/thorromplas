@@ -437,9 +437,10 @@ export default function Kanban() {
                           </div>
                           <div className="bg-gray-900 flex items-center justify-center gap-5 py-2.5">
                             <button
-                              className="text-white hover:text-gray-300 transition-colors"
-                              title="Editar"
-                              onClick={() => { setEditTicket(ticket); setEditOpen(true); }}
+                              className={`transition-colors ${ticket.status === 'aberto' && (ticket.etapa || '').toLowerCase() === 'thor' ? 'text-white hover:text-gray-300' : 'text-gray-600 cursor-not-allowed'}`}
+                              title={ticket.status === 'aberto' && (ticket.etapa || '').toLowerCase() === 'thor' ? 'Editar' : 'Edição disponível apenas quando Status=Aberto e Etapa=THOR'}
+                              disabled={!(ticket.status === 'aberto' && (ticket.etapa || '').toLowerCase() === 'thor')}
+                              onClick={() => { if (ticket.status === 'aberto' && (ticket.etapa || '').toLowerCase() === 'thor') { setEditTicket(ticket); setEditOpen(true); } }}
                             >
                               <Pencil className="h-4 w-4" />
                             </button>
