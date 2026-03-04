@@ -49,7 +49,7 @@ function formatFileSize(bytes: number) {
 
 export default function NovoChamado() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, role } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [motivos, setMotivos] = useState<Motivo[]>([]);
   const [submotivos, setSubmotivos] = useState<Submotivo[]>([]);
@@ -88,6 +88,9 @@ export default function NovoChamado() {
   // Created tickets
   const [chamadosCriados, setChamadosCriados] = useState<ChamadoCriado[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  const isSupervisorLocked = role === 'supervisor' || role === 'representante';
+  const isRepresentanteLocked = role === 'representante';
 
   // Derived filtered lists
   const filteredRepresentantes = selectedSupervisor
@@ -132,6 +135,32 @@ export default function NovoChamado() {
     };
     fetchData();
   }, []);
+
+  // Auto-fill supervisor/representante based on logged-in user role
+  useEffect(() => {
+    if (!profile || !role) return;
+    if (role === 'supervisor') {
+      // Find supervisor record matching profile name
+      const sup = supervisores.find(s => s.nome === profile.supervisora || s.nome === profile.nome);
+      if (sup && selectedSupervisor !== sup.id) {
+        setSelectedSupervisor(sup.id);
+      }
+    } else if (role === 'representante') {
+      // Find representante matching profile name
+      const rep = representantes.find(r => r.nome === profile.nome);
+      if (rep && selectedRepresentante !== rep.id) {
+        // Find linked supervisor
+        const link = srLinks.find(sr => sr.representante_id === rep.id);
+        if (link) {
+          const sup = supervisores.find(s => s.id === link.supervisor_id);
+          if (sup && selectedSupervisor !== sup.id) {
+            setSelectedSupervisor(sup.id);
+          }
+        }
+        setSelectedRepresentante(rep.id);
+      }
+    }
+  }, [profile, role, supervisores, representantes, srLinks]);
 
   useEffect(() => {
     const fetchClientes = async () => {
@@ -306,9 +335,9 @@ export default function NovoChamado() {
 
       toast.success(`Chamado #${data.id} criado com sucesso!`);
 
-      // Reset form
-      setSelectedSupervisor('');
-      setSelectedRepresentante('');
+      // Reset form (preserve locked fields)
+      if (!isSupervisorLocked) setSelectedSupervisor('');
+      if (!isRepresentanteLocked) setSelectedRepresentante('');
       setSelectedCodigoCliente('');
       setSelectedCliente('');
       setSelectedRede('');
@@ -334,8 +363,8 @@ export default function NovoChamado() {
   };
 
   const handleLimpar = () => {
-    setSelectedSupervisor('');
-    setSelectedRepresentante('');
+    if (!isSupervisorLocked) setSelectedSupervisor('');
+    if (!isRepresentanteLocked) setSelectedRepresentante('');
     setSelectedCodigoCliente('');
     setSelectedCliente('');
     setSelectedRede('');
@@ -363,7 +392,7 @@ export default function NovoChamado() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
               <div>
                 <Label className="text-xs font-semibold">Supervisor</Label>
-                <Select value={selectedSupervisor} onValueChange={handleSupervisorChange}>
+                <Select value={selectedSupervisor} onValueChange={handleSupervisorChange} disabled={isSupervisorLocked}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     {supervisores.map(s => (
@@ -374,7 +403,7 @@ export default function NovoChamado() {
               </div>
               <div>
                 <Label className="text-xs font-semibold">Representantes</Label>
-                <Select value={selectedRepresentante} onValueChange={handleRepresentanteChange}>
+                <Select value={selectedRepresentante} onValueChange={handleRepresentanteChange} disabled={isRepresentanteLocked}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     {filteredRepresentantes.map(r => (
