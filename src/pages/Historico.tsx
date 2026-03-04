@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Pencil, Trash2, Eye, Eraser, Paperclip } from 'lucide-react';
+import { Pencil, Trash2, Eye, Eraser, Paperclip, Download } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/Layout';
+import EditChamadoModal from '@/components/kanban/EditChamadoModal';
 import { supabase } from '@/integrations/supabase/client';
 
 interface HistoricoEntry {
@@ -94,6 +96,12 @@ export default function Historico() {
   const [loading, setLoading] = useState(true);
   const [selectedTicketId, setSelectedTicketId] = useState<string>(ticketIdParam || 'todos');
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [anexosDialogOpen, setAnexosDialogOpen] = useState(false);
+  const [anexos, setAnexos] = useState<{ nome: string; path: string }[]>([]);
+  const [loadingAnexos, setLoadingAnexos] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewName, setPreviewName] = useState('');
 
   // Filters
   const [filterSupervisor, setFilterSupervisor] = useState('todos');
@@ -292,6 +300,56 @@ export default function Historico() {
     setSelectedEntryId(null);
   };
 
+  const handleEditClick = () => {
+    if (selectedChamado) setEditModalOpen(true);
+  };
+
+  const handleVerAnexoClick = async () => {
+    if (!selectedChamado) return;
+    setAnexosDialogOpen(true);
+    setLoadingAnexos(true);
+    try {
+      const { data, error } = await supabase.storage
+        .from('chamado-anexos')
+        .list(String(selectedChamado.id));
+      if (data && !error) {
+        setAnexos(data.map(f => ({ nome: f.name, path: `${selectedChamado.id}/${f.name}` })));
+      } else {
+        setAnexos([]);
+      }
+    } catch {
+      setAnexos([]);
+    }
+    setLoadingAnexos(false);
+  };
+
+  const getAnexoUrl = (path: string) => {
+    const { data } = supabase.storage.from('chamado-anexos').getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const handleAnexoView = (anexo: { nome: string; path: string }) => {
+    const url = getAnexoUrl(anexo.path);
+    const ext = anexo.nome.toLowerCase().split('.').pop() || '';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'].includes(ext)) {
+      setPreviewName(anexo.nome);
+      setPreviewUrl(url);
+    } else {
+      window.open(url, '_blank');
+    }
+  };
+
+  const handleAnexoDownload = (anexo: { nome: string; path: string }) => {
+    const url = getAnexoUrl(anexo.path);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = anexo.nome;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   return (
     <Layout>
       <div className="p-4">
@@ -476,7 +534,7 @@ export default function Historico() {
 
                 {/* Action buttons */}
                 <div className="flex items-center gap-3 pt-2">
-                  <Button variant="default" size="sm" className="gap-1.5">
+                  <Button variant="default" size="sm" className="gap-1.5" onClick={handleEditClick}>
                     <Pencil className="h-4 w-4" />
                     Editar
                   </Button>
@@ -484,7 +542,7 @@ export default function Historico() {
                     <Eraser className="h-4 w-4" />
                     Limpar
                   </Button>
-                  <Button variant="secondary" size="sm" className="gap-1.5">
+                  <Button variant="secondary" size="sm" className="gap-1.5" onClick={handleVerAnexoClick}>
                     <Paperclip className="h-4 w-4" />
                     Ver Anexo
                   </Button>
@@ -500,6 +558,66 @@ export default function Historico() {
             )}
           </div>
         </div>
+
+        {/* Edit Modal */}
+        {selectedChamado && (
+          <EditChamadoModal
+            open={editModalOpen}
+            onOpenChange={setEditModalOpen}
+            chamado={selectedChamado as any}
+            onSaved={fetchData}
+            profileMap={profileMap}
+          />
+        )}
+
+        {/* Anexos Dialog */}
+        <Dialog open={anexosDialogOpen} onOpenChange={setAnexosDialogOpen}>
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Anexos - Ticket {selectedChamado?.id}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              {loadingAnexos ? (
+                <p className="text-sm text-muted-foreground animate-pulse">Carregando anexos...</p>
+              ) : anexos.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhum anexo encontrado.</p>
+              ) : (
+                anexos.map((anexo, i) => (
+                  <div key={i} className="flex items-center justify-between gap-2 p-3 bg-muted/30 border rounded-lg">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Paperclip className="h-4 w-4 text-primary flex-shrink-0" />
+                      <span className="text-sm truncate">{anexo.nome}</span>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleAnexoView(anexo)} title="Visualizar">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleAnexoDownload(anexo)} title="Baixar">
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Preview Dialog */}
+        <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle>{previewName}</DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-center overflow-auto max-h-[70vh]">
+              {previewUrl && previewName.toLowerCase().endsWith('.pdf') ? (
+                <iframe src={previewUrl} className="w-full h-[70vh] border-0 rounded" />
+              ) : previewUrl ? (
+                <img src={previewUrl} alt={previewName} className="max-w-full max-h-[70vh] object-contain rounded" />
+              ) : null}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
