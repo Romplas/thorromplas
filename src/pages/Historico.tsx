@@ -45,6 +45,35 @@ export default function Historico() {
 
   useEffect(() => {
     fetchData();
+
+    // Realtime subscription for chamado_historico
+    const channel = supabase
+      .channel('historico-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'chamado_historico' },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    // Also listen for chamados changes (status/etapa updates)
+    const chamadosChannel = supabase
+      .channel('historico-chamados-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'chamados' },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(chamadosChannel);
+    };
   }, []);
 
   const fetchData = async () => {
