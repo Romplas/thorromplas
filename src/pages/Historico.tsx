@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import Layout from '@/components/Layout';
 import EditChamadoModal from '@/components/kanban/EditChamadoModal';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HistoricoEntry {
   id: string;
@@ -44,6 +45,7 @@ interface Supervisor { id: string; nome: string }
 interface Motivo { id: string; nome: string }
 interface Submotivo { id: string; nome: string; motivo_id: string }
 interface Representante { id: string; nome: string }
+interface SupervisorRepresentante { supervisor_id: string; representante_id: string }
 
 const statusLabels: Record<string, string> = {
   aberto: 'Aberto',
@@ -91,6 +93,7 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
 }
 
 export default function Historico() {
+  const { role, profile } = useAuth();
   const [searchParams] = useSearchParams();
   const ticketIdParam = searchParams.get('ticketId');
 
@@ -121,7 +124,9 @@ export default function Historico() {
   const [supervisorMap, setSupervisorMap] = useState<Map<string, string>>(new Map());
   const [representanteMap, setRepresentanteMap] = useState<Map<string, string>>(new Map());
   const [dbEtapas, setDbEtapas] = useState<{ nome: string; label: string; cor: string }[]>([]);
-
+  const [srLinks, setSrLinks] = useState<SupervisorRepresentante[]>([]);
+  const [allClientes, setAllClientes] = useState<{ id: string; nome: string; representante_id: string | null }[]>([]);
+  const [roleFilterApplied, setRoleFilterApplied] = useState(false);
   // Resolved names for detail panel
   const [supervisorNome, setSupervisorNome] = useState('');
   const [representanteNome, setRepresentanteNome] = useState('');
@@ -148,7 +153,7 @@ export default function Historico() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [historicoRes, chamadosRes, profilesRes, supRes, motivosRes, submotivosRes, repRes, etapasRes] = await Promise.all([
+    const [historicoRes, chamadosRes, profilesRes, supRes, motivosRes, submotivosRes, repRes, etapasRes, srRes, clientesRes] = await Promise.all([
       supabase.from('chamado_historico').select('*').order('created_at', { ascending: false }).limit(1000),
       supabase.from('chamados').select('*').order('id', { ascending: false }),
       supabase.from('profiles').select('id, nome, user_id'),
@@ -157,6 +162,8 @@ export default function Historico() {
       supabase.from('submotivos').select('id, nome, motivo_id').order('nome'),
       supabase.from('representantes').select('id, nome'),
       supabase.from('etapas').select('nome, label, cor').order('ordem'),
+      supabase.from('supervisor_representante').select('supervisor_id, representante_id'),
+      supabase.from('clientes').select('id, nome, representante_id').order('nome').limit(1000),
     ]);
 
     const pMap = new Map<string, string>();
@@ -188,6 +195,27 @@ export default function Historico() {
       setRepresentanteMap(rMap);
     }
     if (etapasRes.data) setDbEtapas(etapasRes.data);
+    if (srRes.data) setSrLinks(srRes.data);
+    if (clientesRes.data) setAllClientes(clientesRes.data as any);
+
+    // Auto-set filters based on role
+    if (!roleFilterApplied && profile) {
+      if (role === 'supervisor' && supRes.data) {
+        const mySupervisor = supRes.data.find(s => s.nome.toLowerCase() === profile.nome.toLowerCase());
+        if (mySupervisor) {
+          setFilterSupervisor(mySupervisor.id);
+          setRoleFilterApplied(true);
+        }
+      } else if (role === 'representante' && repRes.data) {
+        const myRep = repRes.data.find(r => r.nome.toLowerCase() === profile.nome.toLowerCase());
+        if (myRep) {
+          const link = (srRes.data || []).find(sr => sr.representante_id === myRep.id);
+          if (link) setFilterSupervisor(link.supervisor_id);
+          setRoleFilterApplied(true);
+        }
+      }
+    }
+
     setLoading(false);
   };
 
@@ -219,11 +247,23 @@ export default function Historico() {
     resolve();
   }, [selectedEntryId, selectedTicketId, chamados, profileMap]);
 
+  // Role-based base filtering
+  const isRestricted = role === 'supervisor' || role === 'representante';
+
   // Filter chamados
   const filteredChamadoIds = new Set(
     chamados
       .filter(c => {
-        if (filterSupervisor !== 'todos' && c.supervisor_id !== filterSupervisor) return false;
+        // Role-based: supervisor sees only chamados linked to their representantes via clientes
+        if (filterSupervisor !== 'todos') {
+          const repIdsForSupervisor = srLinks
+            .filter(sr => sr.supervisor_id === filterSupervisor)
+            .map(sr => sr.representante_id);
+          const clienteNamesForSupervisor = allClientes
+            .filter(cl => cl.representante_id && repIdsForSupervisor.includes(cl.representante_id))
+            .map(cl => cl.nome);
+          if (!clienteNamesForSupervisor.includes(c.cliente_nome)) return false;
+        }
         if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
         if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
         if (filterSubmotivo !== 'todos' && c.submotivo !== filterSubmotivo) return false;
@@ -442,7 +482,7 @@ export default function Historico() {
         <div className="flex flex-wrap items-center gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Supervisor</span>
-            <Select value={filterSupervisor} onValueChange={setFilterSupervisor}>
+            <Select value={filterSupervisor} onValueChange={setFilterSupervisor} disabled={isRestricted}>
               <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>

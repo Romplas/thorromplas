@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { mockTickets } from '@/data/mockData';
 import Layout from '@/components/Layout';
+import { useAuth } from '@/contexts/AuthContext';
 
 const statusColors = {
   aberto: '#EF4444',
@@ -49,6 +50,7 @@ const pieData = [
 const lastTicket = mockTickets[0];
 
 export default function Dashboard() {
+  const { profile } = useAuth();
   const [startDate, setStartDate] = useState<Date>(new Date(2026, 2, 1));
   const [endDate, setEndDate] = useState<Date>(new Date(2026, 2, 31));
 
@@ -57,7 +59,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl">
-            Olá, <span className="text-primary font-semibold">Administrador</span>
+            Olá, <span className="text-primary font-semibold">{profile?.nome || 'Usuário'}</span>
           </h1>
           <p className="text-sm text-muted-foreground">Painel de Chamados THOR</p>
         </div>

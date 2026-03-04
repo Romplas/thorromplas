@@ -3,6 +3,7 @@ import { Eye, CheckCircle, Clock, Trash2 } from 'lucide-react';
 import { mockTickets } from '@/data/mockData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Layout from '@/components/Layout';
+import { useAuth } from '@/contexts/AuthContext';
 
 const columns = [
   { key: 'thor', label: 'THOR', colorClass: 'kanban-column-thor', cardClass: 'ticket-card-red' },
@@ -18,11 +19,12 @@ const statusToColumn: Record<string, string> = {
 };
 
 export default function Home() {
+  const { profile } = useAuth();
   return (
     <Layout>
       <div className="mb-6">
         <h1 className="text-xl">
-          Olá, <span className="text-primary font-semibold">Administrador</span>
+          Olá, <span className="text-primary font-semibold">{profile?.nome || 'Usuário'}</span>
         </h1>
         <p className="text-sm text-muted-foreground">Gerenciador de Chamados THOR</p>
       </div>
