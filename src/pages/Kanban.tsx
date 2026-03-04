@@ -76,7 +76,7 @@ export default function Kanban() {
   const [filterTicketId, setFilterTicketId] = useState('todos');
   const [filterMotivo, setFilterMotivo] = useState('todos');
   const [filterGestor, setFilterGestor] = useState('todos');
-  const [filterStatus, setFilterStatus] = useState('todos');
+  
 
   // Derived filtered lists for cascading
   const filteredRepresentantes = filterSupervisor !== 'todos'
@@ -254,7 +254,7 @@ export default function Kanban() {
     if (filterTicketId !== 'todos' && String(c.id) !== filterTicketId) return false;
     if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
     if (filterGestor !== 'todos' && c.gestor_id !== filterGestor) return false;
-    if (filterStatus !== 'todos' && c.status !== filterStatus) return false;
+    
     return true;
   });
 
@@ -329,18 +329,6 @@ export default function Kanban() {
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Status Ticket</span>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="aberto">Aberto</SelectItem>
-                <SelectItem value="em_progresso">Em Progresso</SelectItem>
-                <SelectItem value="fechado">Fechado</SelectItem>
               </SelectContent>
             </Select>
           </div>
