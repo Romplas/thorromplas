@@ -119,6 +119,7 @@ export default function Historico() {
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
   const [supervisorMap, setSupervisorMap] = useState<Map<string, string>>(new Map());
   const [representanteMap, setRepresentanteMap] = useState<Map<string, string>>(new Map());
+  const [dbEtapas, setDbEtapas] = useState<{ nome: string; label: string; cor: string }[]>([]);
 
   // Resolved names for detail panel
   const [supervisorNome, setSupervisorNome] = useState('');
@@ -146,7 +147,7 @@ export default function Historico() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [historicoRes, chamadosRes, profilesRes, supRes, motivosRes, submotivosRes, repRes] = await Promise.all([
+    const [historicoRes, chamadosRes, profilesRes, supRes, motivosRes, submotivosRes, repRes, etapasRes] = await Promise.all([
       supabase.from('chamado_historico').select('*').order('created_at', { ascending: false }).limit(1000),
       supabase.from('chamados').select('*').order('id', { ascending: false }),
       supabase.from('profiles').select('id, nome, user_id'),
@@ -154,6 +155,7 @@ export default function Historico() {
       supabase.from('motivos').select('id, nome').order('nome'),
       supabase.from('submotivos').select('id, nome, motivo_id').order('nome'),
       supabase.from('representantes').select('id, nome'),
+      supabase.from('etapas').select('nome, label, cor').order('ordem'),
     ]);
 
     const pMap = new Map<string, string>();
@@ -184,6 +186,7 @@ export default function Historico() {
       repRes.data.forEach((r: any) => rMap.set(r.id, r.nome));
       setRepresentanteMap(rMap);
     }
+    if (etapasRes.data) setDbEtapas(etapasRes.data);
     setLoading(false);
   };
 
@@ -269,6 +272,20 @@ export default function Historico() {
   // Build a map of etapa at each history entry by reconstructing the timeline
   const entryEtapaMap = (() => {
     const map = new Map<string, string>();
+
+    // Build dynamic label→key map from DB etapas (more reliable than hardcoded)
+    const dynamicLabelToKey = new Map<string, string>();
+    dbEtapas.forEach(e => dynamicLabelToKey.set(e.label.toLowerCase(), e.nome));
+    // Also add hardcoded as fallback
+    Object.entries(etapaLabelsMap).forEach(([k, v]) => {
+      if (!dynamicLabelToKey.has(v.toLowerCase())) dynamicLabelToKey.set(v.toLowerCase(), k);
+    });
+
+    // Helper to resolve a label to a key
+    const resolveLabel = (label: string): string | undefined => {
+      return dynamicLabelToKey.get(label.toLowerCase());
+    };
+
     // Group history by chamado_id, sorted ascending (oldest first)
     const byChamado = new Map<number, HistoricoEntry[]>();
     historico.forEach(h => {
@@ -276,10 +293,15 @@ export default function Historico() {
       byChamado.get(h.chamado_id)!.push(h);
     });
 
+    // Build chamado etapa lookup for initial etapa
+    const chamadoEtapaMap = new Map<number, string>();
+    chamados.forEach(c => chamadoEtapaMap.set(c.id, (c as any).etapa || 'thor'));
+
     byChamado.forEach((entries, chamadoId) => {
       // Sort ascending by date
       const sorted = [...entries].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      let currentEtapa = 'thor'; // default initial etapa
+      // Start with the first known etapa - if there's only a "Ticket Criado" with no etapa info, use 'thor'
+      let currentEtapa = 'thor';
       sorted.forEach(entry => {
         // Check if this entry changes the etapa
         if (entry.descricao) {
@@ -292,8 +314,8 @@ export default function Historico() {
             if (match) newLabel = match[1];
           }
           if (newLabel) {
-            const labelToKey = Object.entries(etapaLabelsMap).find(([, v]) => v === newLabel);
-            if (labelToKey) currentEtapa = labelToKey[0];
+            const key = resolveLabel(newLabel);
+            if (key) currentEtapa = key;
           }
         }
         map.set(entry.id, currentEtapa);
