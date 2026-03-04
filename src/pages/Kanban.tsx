@@ -109,6 +109,22 @@ export default function Kanban() {
 
   useEffect(() => {
     fetchData();
+
+    // Realtime subscription for chamados
+    const channel = supabase
+      .channel('kanban-chamados')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'chamados' },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchData = async () => {
