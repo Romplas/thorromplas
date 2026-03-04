@@ -1,12 +1,36 @@
 
-## Plano: Remover filtro "Status Ticket" do Kanban
 
-### O que será feito
-Remover o dropdown de filtro **"Status Ticket"** da barra de filtros na tela Kanban (linhas 335-346) e o estado/lógica associada.
+## Diagnóstico
 
-### Alterações técnicas
+Identifiquei **3 problemas** que impedem o histórico de funcionar:
 
-**`src/pages/Kanban.tsx`:**
-1. Remover o estado `filterStatus` (linha 79)
-2. Remover o bloco JSX do filtro "Status Ticket" (linhas 335-346)
-3. Remover a condição de filtro por status na função `filteredChamados` (linha 257)
+### Problema 1: Case mismatch na etapa
+A tabela `etapas` armazena `nome` em **lowercase** (`thor`, `aguardando_resposta`), mas o modal define o valor padrão como `'THOR'` (uppercase). Isso causa:
+- O Select de "Etapa Ticket" não mostra o valor selecionado
+- A comparação de mudanças falha (compara `'THOR'` com `'thor'`)
+
+### Problema 2: RLS bloqueando insert no histórico
+A tabela `chamado_historico` está **vazia** — nenhum registro foi gravado. A política de INSERT só permite `admin` ou o próprio usuário. Usuários com role `gestor` ou `supervisor` são bloqueados silenciosamente.
+
+### Problema 3: Não há registro de criação do ticket
+Quando um chamado é criado na tela de Novo Chamado, nenhuma entrada inicial é inserida no histórico.
+
+---
+
+## Plano de Correção
+
+### 1. Migração SQL — Corrigir RLS do chamado_historico
+- Dropar a política de INSERT existente
+- Criar nova política permitindo insert para qualquer usuário autenticado (gestor, supervisor, representante, admin)
+
+### 2. EditChamadoModal — Corrigir case da etapa
+- Linha 106: trocar `'THOR'` por `'thor'` no valor padrão
+- Linha 288: remover `.toLowerCase()` na comparação (já será lowercase)
+- Adicionar log de erro no insert do histórico para diagnóstico
+
+### 3. NovoChamado — Registrar criação no histórico
+- Após criar o chamado com sucesso, inserir um registro `"Ticket Criado"` na tabela `chamado_historico` com os dados iniciais (status, etapa, cliente, motivo)
+
+### 4. Kanban drag-drop — Já funciona
+O código de drag-drop já insere histórico, só precisa da correção de RLS para funcionar.
+
