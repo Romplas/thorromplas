@@ -20,6 +20,7 @@ interface Representante { id: string; codigo: number; nome: string }
 interface Cliente { id: string; codigo: number | null; nome: string; representante_id: string | null; rede_id: string | null }
 interface Rede { id: string; nome: string }
 interface SupervisorRepresentante { supervisor_id: string; representante_id: string }
+interface GestorProfile { id: string; nome: string }
 
 // ChamadoCriado is imported from ChamadoCard
 
@@ -60,6 +61,7 @@ export default function NovoChamado() {
   const [srLinks, setSrLinks] = useState<SupervisorRepresentante[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [redes, setRedes] = useState<Rede[]>([]);
+  const [gestorProfiles, setGestorProfiles] = useState<GestorProfile[]>([]);
 
   // Cascading selections
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>('');
@@ -97,13 +99,15 @@ export default function NovoChamado() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [mRes, sRes, supRes, repRes, srRes, redeRes] = await Promise.all([
+        const [mRes, sRes, supRes, repRes, srRes, redeRes, gestorRolesRes, profilesRes] = await Promise.all([
           supabase.from('motivos').select('id, nome').order('nome'),
           supabase.from('submotivos').select('id, motivo_id, nome').order('nome'),
           supabase.from('supervisores').select('id, nome').eq('status', 'ativo').order('nome'),
           supabase.from('representantes').select('id, codigo, nome').order('nome'),
           supabase.from('supervisor_representante').select('supervisor_id, representante_id'),
           supabase.from('redes').select('id, nome').order('nome'),
+          supabase.from('user_roles').select('user_id, role').in('role', ['gestor', 'admin']),
+          supabase.from('profiles').select('id, nome, user_id, status').eq('status', 'ativo'),
         ]);
         if (mRes.data) setMotivos(mRes.data);
         if (sRes.data) setSubmotivos(sRes.data);
@@ -111,6 +115,13 @@ export default function NovoChamado() {
         if (repRes.data) setRepresentantes(repRes.data);
         if (srRes.data) setSrLinks(srRes.data);
         if (redeRes.data) setRedes(redeRes.data);
+
+        // Build gestor profiles list
+        const gestorUserIds = new Set((gestorRolesRes?.data || []).map((r: any) => r.user_id));
+        const gestores = (profilesRes?.data || [])
+          .filter((p: any) => gestorUserIds.has(p.user_id))
+          .map((p: any) => ({ id: p.id, nome: p.nome }));
+        setGestorProfiles(gestores);
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
       }
@@ -216,7 +227,7 @@ export default function NovoChamado() {
         supervisor_id: selectedSupervisor || null,
         representante_id: selectedRepresentante || null,
         prioridade: 'Média',
-        gestor_id: profile?.id || null,
+        gestor_id: gestor || null,
       }).select('id').single();
 
       if (error) throw error;
@@ -253,7 +264,7 @@ export default function NovoChamado() {
         negociadoCom,
         nfe,
         tipoSolicitacao,
-        gestor,
+        gestor: gestorProfiles.find(g => g.id === gestor)?.nome || '',
         statusAgendamento,
         descricao,
         anexosNomes: anexos.map(f => f.name),
@@ -449,13 +460,9 @@ export default function NovoChamado() {
                 <Select value={gestor} onValueChange={setGestor}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="André">André</SelectItem>
-                    <SelectItem value="Douglas">Douglas</SelectItem>
-                    <SelectItem value="Tathy">Tathy</SelectItem>
-                    <SelectItem value="Vinicius">Vinicius</SelectItem>
-                    <SelectItem value="Marcelo">Marcelo</SelectItem>
-                    <SelectItem value="Juliane">Juliane</SelectItem>
-                    <SelectItem value="Ivan">Ivan</SelectItem>
+                    {gestorProfiles.map(g => (
+                      <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
