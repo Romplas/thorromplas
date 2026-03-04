@@ -285,6 +285,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   if (!chamado) return null;
 
   const gestorNome = chamado.gestor_id ? profileMap.get(chamado.gestor_id) || chamado.gestor_nome || '' : '';
+  const isEditable = chamado.status === 'aberto' && (chamado.etapa || '').toLowerCase() === 'thor';
 
   return (
     <>
@@ -330,18 +331,22 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
                 <ReadOnlyField label="Nº NFE" value="" />
                 <ReadOnlyField label="Tipo de Solicitação" value="" />
                 {/* Gestor editable */}
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Gestor</Label>
-                  <Select value={gestorId} onValueChange={setGestorId}>
-                    <SelectTrigger className="h-[40px]"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">— Nenhum —</SelectItem>
-                      {gestorProfiles.map(g => (
-                        <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {isEditable ? (
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Gestor</Label>
+                    <Select value={gestorId} onValueChange={setGestorId}>
+                      <SelectTrigger className="h-[40px]"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">— Nenhum —</SelectItem>
+                        {gestorProfiles.map(g => (
+                          <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <ReadOnlyField label="Gestor" value={gestorProfiles.find(g => g.id === gestorId)?.nome || gestorNome || 'Nenhum'} />
+                )}
                 <ReadOnlyField label="Status Agendamento" value="" />
               </div>
             </div>
@@ -350,30 +355,38 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
             <div>
               <p className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Controle do Ticket</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Status Ticket</Label>
-                  <Select value={status} onValueChange={setStatus}>
-                    <SelectTrigger className="h-[40px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="aberto">Aberto</SelectItem>
-                      <SelectItem value="em_progresso">Em Progresso</SelectItem>
-                      <SelectItem value="fechado">Fechado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Etapa Ticket</Label>
-                  <Select value={etapa} onValueChange={setEtapa}>
-                    <SelectTrigger className="h-[40px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {etapas.map(e => (
-                        <SelectItem key={e.id} value={e.nome}>
-                          {e.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {isEditable ? (
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Status Ticket</Label>
+                    <Select value={status} onValueChange={setStatus}>
+                      <SelectTrigger className="h-[40px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="aberto">Aberto</SelectItem>
+                        <SelectItem value="em_progresso">Em Progresso</SelectItem>
+                        <SelectItem value="fechado">Fechado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <ReadOnlyField label="Status Ticket" value={status === 'aberto' ? 'Aberto' : status === 'em_progresso' ? 'Em Progresso' : 'Fechado'} />
+                )}
+                {isEditable ? (
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Etapa Ticket</Label>
+                    <Select value={etapa} onValueChange={setEtapa}>
+                      <SelectTrigger className="h-[40px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {etapas.map(e => (
+                          <SelectItem key={e.id} value={e.nome}>
+                            {e.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <ReadOnlyField label="Etapa Ticket" value={etapas.find(e => e.nome === etapa)?.label || etapa} />
+                )}
                 <ReadOnlyField label="Criado em" value={new Date(chamado.created_at).toLocaleString('pt-BR')} />
                 <ReadOnlyField label="Atualizado em" value={new Date(chamado.updated_at).toLocaleString('pt-BR')} />
               </div>
@@ -383,10 +396,19 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
             <div>
               <p className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Descrição e Anexos</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Descrição</Label>
-                  <Textarea className="min-h-[140px] resize-y" value={descricao} onChange={e => setDescricao(e.target.value)} />
-                </div>
+                {isEditable ? (
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Descrição</Label>
+                    <Textarea className="min-h-[140px] resize-y" value={descricao} onChange={e => setDescricao(e.target.value)} />
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Descrição</Label>
+                    <div className="px-3 py-2.5 border border-border rounded-lg bg-muted/40 text-sm min-h-[140px] whitespace-pre-wrap font-medium">
+                      {descricao || '—'}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-1.5">
                   <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Anexos</Label>
                   <div className="border border-border rounded-lg p-3 space-y-2 min-h-[140px] bg-muted/20">
@@ -420,10 +442,12 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
           {/* Footer */}
           <div className="sticky bottom-0 bg-card border-t px-6 py-4 flex justify-end gap-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving}>
-              <Save className="h-4 w-4 mr-1.5" />{saving ? 'Salvando...' : 'Salvar'}
-            </Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>{isEditable ? 'Cancelar' : 'Fechar'}</Button>
+            {isEditable && (
+              <Button onClick={handleSave} disabled={saving}>
+                <Save className="h-4 w-4 mr-1.5" />{saving ? 'Salvando...' : 'Salvar'}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
