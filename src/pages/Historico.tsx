@@ -111,6 +111,7 @@ export default function Historico() {
 
   // Filters
   const [filterSupervisor, setFilterSupervisor] = useState('todos');
+  const [filterRepresentante, setFilterRepresentante] = useState('todos');
   const [filterMotivo, setFilterMotivo] = useState('todos');
   const [filterSubmotivo, setFilterSubmotivo] = useState('todos');
   const [filterCliente, setFilterCliente] = useState('todos');
@@ -118,6 +119,7 @@ export default function Historico() {
 
   // Reference data
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
+  const [representantes, setRepresentantes] = useState<Representante[]>([]);
   const [motivos, setMotivos] = useState<Motivo[]>([]);
   const [submotivos, setSubmotivos] = useState<Submotivo[]>([]);
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
@@ -190,6 +192,7 @@ export default function Historico() {
     if (motivosRes.data) setMotivos(motivosRes.data);
     if (submotivosRes.data) setSubmotivos(submotivosRes.data as Submotivo[]);
     if (repRes.data) {
+      setRepresentantes(repRes.data as Representante[]);
       const rMap = new Map<string, string>();
       repRes.data.forEach((r: any) => rMap.set(r.id, r.nome));
       setRepresentanteMap(rMap);
@@ -211,6 +214,7 @@ export default function Historico() {
         if (myRep) {
           const link = (srRes.data || []).find(sr => sr.representante_id === myRep.id);
           if (link) setFilterSupervisor(link.supervisor_id);
+          setFilterRepresentante(myRep.id);
           setRoleFilterApplied(true);
         }
       }
@@ -248,21 +252,37 @@ export default function Historico() {
   }, [selectedEntryId, selectedTicketId, chamados, profileMap]);
 
   // Role-based base filtering
-  const isRestricted = role === 'supervisor' || role === 'representante';
+  const isSupervisorLocked = role === 'supervisor' || role === 'representante';
+  const isRepresentanteLocked = role === 'representante';
+
+  // Representantes filtered by selected supervisor
+  const filteredRepresentantesForFilter = filterSupervisor !== 'todos'
+    ? representantes.filter(r => srLinks.some(sr => sr.supervisor_id === filterSupervisor && sr.representante_id === r.id))
+    : representantes;
 
   // Filter chamados
   const filteredChamadoIds = new Set(
     chamados
       .filter(c => {
-        // Role-based: supervisor sees only chamados linked to their representantes via clientes
+        // Supervisor filter: filter by linked representantes' clients
         if (filterSupervisor !== 'todos') {
           const repIdsForSupervisor = srLinks
             .filter(sr => sr.supervisor_id === filterSupervisor)
             .map(sr => sr.representante_id);
-          const clienteNamesForSupervisor = allClientes
-            .filter(cl => cl.representante_id && repIdsForSupervisor.includes(cl.representante_id))
+          // If representante filter is also set, narrow further
+          const effectiveRepIds = filterRepresentante !== 'todos'
+            ? repIdsForSupervisor.filter(id => id === filterRepresentante)
+            : repIdsForSupervisor;
+          const clienteNamesForReps = allClientes
+            .filter(cl => cl.representante_id && effectiveRepIds.includes(cl.representante_id))
             .map(cl => cl.nome);
-          if (!clienteNamesForSupervisor.includes(c.cliente_nome)) return false;
+          if (!clienteNamesForReps.includes(c.cliente_nome)) return false;
+        } else if (filterRepresentante !== 'todos') {
+          // Only representante filter without supervisor
+          const clienteNamesForRep = allClientes
+            .filter(cl => cl.representante_id === filterRepresentante)
+            .map(cl => cl.nome);
+          if (!clienteNamesForRep.includes(c.cliente_nome)) return false;
         }
         if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
         if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
@@ -482,11 +502,21 @@ export default function Historico() {
         <div className="flex flex-wrap items-center gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Supervisor</span>
-            <Select value={filterSupervisor} onValueChange={setFilterSupervisor} disabled={isRestricted}>
+            <Select value={filterSupervisor} onValueChange={(v) => { setFilterSupervisor(v); setFilterRepresentante('todos'); }} disabled={isSupervisorLocked}>
               <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 {supervisores.map(s => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Representante</span>
+            <Select value={filterRepresentante} onValueChange={setFilterRepresentante} disabled={isRepresentanteLocked}>
+              <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {filteredRepresentantesForFilter.map(r => <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
