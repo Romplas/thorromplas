@@ -286,7 +286,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   if (!chamado) return null;
 
   const gestorNome = chamado.gestor_id ? profileMap.get(chamado.gestor_id) || chamado.gestor_nome || '' : '';
-  const isEditable = chamado.status === 'aberto' && (chamado.etapa || '') === 'thor';
+  const isEditable = true;
 
   return (
     <>
