@@ -228,7 +228,9 @@ export default function NovoChamado() {
         representante_id: selectedRepresentante || null,
         prioridade: 'Média',
         gestor_id: gestor || null,
-      }).select('id').single();
+        data_contato: dataContato || null,
+        data_retorno: dataRetorno || null,
+      } as any).select('id').single();
 
       if (error) throw error;
 
