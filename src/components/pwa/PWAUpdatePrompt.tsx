@@ -18,8 +18,13 @@ export function PWAUpdatePrompt() {
 
   if (!needRefresh) return null;
 
-  const handleUpdate = () => {
-    updateServiceWorker(true);
+  const handleUpdate = async () => {
+    try {
+      await updateServiceWorker(true);
+    } catch (e) {
+      console.error('Erro ao atualizar:', e);
+      window.location.reload();
+    }
   };
 
   const handleClose = () => {
