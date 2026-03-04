@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Pencil, Trash2, Eye, Eraser, Paperclip, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -222,6 +223,7 @@ export default function Historico() {
   const filteredChamadoIds = new Set(
     chamados
       .filter(c => {
+        if (filterSupervisor !== 'todos' && c.supervisor_id !== filterSupervisor) return false;
         if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
         if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
         if (filterSubmotivo !== 'todos' && c.submotivo !== filterSubmotivo) return false;
@@ -450,23 +452,25 @@ export default function Historico() {
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">TicketID</span>
-            <Select value={selectedTicketId} onValueChange={(v) => { setSelectedTicketId(v); setSelectedEntryId(null); }}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {chamados.map(c => <SelectItem key={c.id} value={String(c.id)}>{String(c.id)}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={[{ value: 'todos', label: 'Todos' }, ...chamados.map(c => ({ value: String(c.id), label: String(c.id) }))]}
+              value={selectedTicketId}
+              onValueChange={(v) => { setSelectedTicketId(v); setSelectedEntryId(null); }}
+              placeholder="Todos"
+              searchPlaceholder="Pesquisar ticket..."
+              className="h-8 w-36 text-xs"
+            />
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Clientes</span>
-            <Select value={filterCliente} onValueChange={setFilterCliente}>
-              <SelectTrigger className="h-8 w-44 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {uniqueClientes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={[{ value: 'todos', label: 'Todos' }, ...uniqueClientes.map(c => ({ value: c, label: c }))]}
+              value={filterCliente}
+              onValueChange={setFilterCliente}
+              placeholder="Todos"
+              searchPlaceholder="Pesquisar cliente..."
+              className="h-8 w-44 text-xs"
+            />
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Motivo</span>
