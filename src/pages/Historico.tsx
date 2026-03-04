@@ -210,11 +210,18 @@ export default function Historico() {
       .map(c => c.id)
   );
 
-  const filtered = historico.filter(h => {
-    if (selectedTicketId !== 'todos' && String(h.chamado_id) !== selectedTicketId) return false;
-    if (!filteredChamadoIds.has(h.chamado_id)) return false;
-    return true;
-  });
+  const filtered = (() => {
+    const seenIds = new Set<string>();
+    return historico
+      .filter(h => {
+        if (seenIds.has(h.id)) return false;
+        seenIds.add(h.id);
+        if (selectedTicketId !== 'todos' && String(h.chamado_id) !== selectedTicketId) return false;
+        if (!filteredChamadoIds.has(h.chamado_id)) return false;
+        return true;
+      })
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  })();
 
   const uniqueClientes = [...new Set(chamados.map(c => c.cliente_nome).filter(Boolean))].sort();
 
