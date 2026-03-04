@@ -5,14 +5,14 @@ import logoThor from '@/assets/logo-thor.png';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/kanban', label: 'Kanban', icon: Columns3 },
-  { to: '/novo-chamado', label: 'Novo Chamado', icon: PlusCircle },
-  { to: '/historico', label: 'Histórico', icon: Clock },
-  { to: '/usuarios', label: 'Usuários', icon: Users },
-  { to: '/import-clientes', label: 'Importar', icon: Upload },
-  { to: '/configuracoes', label: 'Configurações', icon: Settings },
+const allNavItems = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'gestor', 'supervisor', 'representante'] },
+  { to: '/kanban', label: 'Kanban', icon: Columns3, roles: ['admin', 'gestor', 'supervisor'] },
+  { to: '/novo-chamado', label: 'Novo Chamado', icon: PlusCircle, roles: ['admin', 'gestor', 'supervisor', 'representante'] },
+  { to: '/historico', label: 'Histórico', icon: Clock, roles: ['admin', 'gestor', 'supervisor', 'representante'] },
+  { to: '/usuarios', label: 'Usuários', icon: Users, roles: ['admin', 'gestor'] },
+  { to: '/import-clientes', label: 'Importar', icon: Upload, roles: ['admin', 'gestor'] },
+  { to: '/configuracoes', label: 'Configurações', icon: Settings, roles: ['admin', 'gestor'] },
 ];
 
 interface LayoutProps {
@@ -29,6 +29,8 @@ export default function Layout({ children }: LayoutProps) {
   const userInitial = userName.charAt(0).toUpperCase();
   const roleLabel = role === 'admin' ? 'Admin' : role === 'gestor' ? 'Gestor' : role === 'supervisor' ? 'Supervisora' : role === 'representante' ? 'Representante' : '';
   const roleClass = role ? `role-${role}` : '';
+
+  const navItems = allNavItems.filter(item => !role || item.roles.includes(role));
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
