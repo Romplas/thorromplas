@@ -107,6 +107,7 @@ export default function Historico() {
   const [motivos, setMotivos] = useState<Motivo[]>([]);
   const [submotivos, setSubmotivos] = useState<Submotivo[]>([]);
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
+  const [supervisorMap, setSupervisorMap] = useState<Map<string, string>>(new Map());
 
   // Resolved names for detail panel
   const [supervisorNome, setSupervisorNome] = useState('');
@@ -157,7 +158,12 @@ export default function Historico() {
 
     setHistorico(entries);
     setChamados(chamadosRes.data || []);
-    if (supRes.data) setSupervisores(supRes.data);
+    if (supRes.data) {
+      setSupervisores(supRes.data);
+      const sMap = new Map<string, string>();
+      supRes.data.forEach(s => sMap.set(s.id, s.nome));
+      setSupervisorMap(sMap);
+    }
     if (motivosRes.data) setMotivos(motivosRes.data);
     if (submotivosRes.data) setSubmotivos(submotivosRes.data as Submotivo[]);
     setLoading(false);
@@ -174,7 +180,7 @@ export default function Historico() {
     if (!chamado) return;
 
     const resolve = async () => {
-      setSupervisorNome(chamado.supervisor_id ? profileMap.get(chamado.supervisor_id) || '' : '');
+      setSupervisorNome(chamado.supervisor_id ? (supervisorMap.get(chamado.supervisor_id) || profileMap.get(chamado.supervisor_id) || '') : '');
       if (chamado.representante_id) {
         const nome = profileMap.get(chamado.representante_id) || '';
         if (nome) {
@@ -385,6 +391,7 @@ export default function Historico() {
                           <p className="font-semibold">Etapa Ticket : {etapaLabel}</p>
                           <p><span className="font-semibold">Motivo : </span>{chamado?.motivo || '—'}</p>
                           <p><span className="font-semibold">Representante : </span>{representanteNome || createdByNome || '—'}</p>
+                          <p><span className="font-semibold">Supervisora : </span>{chamado?.supervisor_id ? (supervisorMap.get(chamado.supervisor_id) || '—') : '—'}</p>
                         </div>
 
                         {/* Right section - description + status row */}
