@@ -361,8 +361,8 @@ export default function Historico() {
                         {/* Right section - description + status row */}
                         <div className="w-[65%] flex flex-col">
                           {/* Description box */}
-                          <div className="bg-yellow-300 text-black px-3 py-2 mx-2 mt-2 rounded text-[11px] min-h-[60px]">
-                            <p className="font-semibold">Descrição : {entry.descricao || chamado?.descricao || '—'}</p>
+                          <div className="bg-white/15 text-white px-3 py-2 mx-2 mt-2 rounded text-[11px] min-h-[60px]">
+                            <p className="font-semibold">Descrição : {chamado?.descricao || '—'}</p>
                           </div>
 
                           {/* Bottom status row */}
