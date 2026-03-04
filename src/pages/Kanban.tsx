@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, Clock, Trash2 } from 'lucide-react';
+import { Pencil, Clock, Trash2, FilterX } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -95,7 +95,15 @@ export default function Kanban() {
   const [filterTicketId, setFilterTicketId] = useState('todos');
   const [filterMotivo, setFilterMotivo] = useState('todos');
   const [filterGestor, setFilterGestor] = useState('todos');
-  
+
+  const handleClearFilters = () => {
+    if (!isRestricted) setFilterSupervisor('todos');
+    if (role !== 'representante') setFilterRepresentante('todos');
+    setFilterCliente('todos');
+    setFilterTicketId('todos');
+    setFilterMotivo('todos');
+    setFilterGestor('todos');
+  };
 
   // Derived filtered lists for cascading
   const filteredRepresentantes = filterSupervisor !== 'todos'
@@ -415,6 +423,13 @@ export default function Kanban() {
               </SelectContent>
             </Select>
           </div>
+          <button
+            onClick={handleClearFilters}
+            className="h-8 w-8 flex items-center justify-center rounded-md border border-border bg-muted/50 hover:bg-destructive/10 hover:text-destructive transition-colors"
+            title="Limpar filtros"
+          >
+            <FilterX className="h-4 w-4" />
+          </button>
         </div>
 
         {/* Kanban Board */}
