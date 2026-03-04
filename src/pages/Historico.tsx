@@ -106,6 +106,7 @@ export default function Historico() {
   const [filterMotivo, setFilterMotivo] = useState('todos');
   const [filterSubmotivo, setFilterSubmotivo] = useState('todos');
   const [filterCliente, setFilterCliente] = useState('todos');
+  const [filterStatus, setFilterStatus] = useState('todos');
 
   // Reference data
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
@@ -214,6 +215,7 @@ export default function Historico() {
         if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
         if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
         if (filterSubmotivo !== 'todos' && c.submotivo !== filterSubmotivo) return false;
+        if (filterStatus !== 'todos' && c.status !== filterStatus) return false;
         return true;
       })
       .map(c => c.id)
@@ -258,23 +260,11 @@ export default function Historico() {
 
   // Determine the etapa/status at the time of each history entry
   const getEntryColor = (entry: HistoricoEntry) => {
-    // Find the chamado to get its current status
     const chamado = chamados.find(c => c.id === entry.chamado_id);
     if (!chamado) return 'bg-blue-500';
-
-    // Try to extract etapa from description
-    if (entry.acao.includes('Etapa')) {
-      // Find etapa mentioned in description
-      for (const [key, color] of Object.entries(etapaColors)) {
-        const label = etapaLabelsMap[key];
-        if (entry.descricao?.includes(label) || entry.descricao?.includes(key)) {
-          return color;
-        }
-      }
-    }
-
-    // Use status color
-    return statusColors[chamado.status] || 'bg-blue-500';
+    // Use etapa color
+    const etapa = chamado.etapa || 'thor';
+    return etapaColors[etapa] || 'bg-blue-500';
   };
 
   // Extract the "current state" from a history entry description
@@ -370,6 +360,18 @@ export default function Historico() {
               </SelectContent>
             </Select>
           </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Status Ticket</span>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="aberto">Aberto</SelectItem>
+                <SelectItem value="em_progresso">Em Progresso</SelectItem>
+                <SelectItem value="fechado">Fechado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Main content: Left list + Right detail */}
@@ -406,12 +408,13 @@ export default function Historico() {
                             <span className="font-semibold">Status : </span>
                             {entryStatus}
                           </p>
-                          {entryEtapa && (
-                            <p className="text-xs">
-                              <span className="font-semibold">Etapa : </span>
-                              {entryEtapa}
-                            </p>
-                          )}
+                          <p className="text-xs">
+                            <span className="font-semibold">Etapa : </span>
+                            {(() => {
+                              const chamado = chamados.find(c => c.id === entry.chamado_id);
+                              return chamado ? (etapaLabelsMap[chamado.etapa || 'thor'] || chamado.etapa || 'THOR') : '—';
+                            })()}
+                          </p>
                           {entry.acao === 'Ticket Criado' && (
                             <p className="text-xs font-semibold mt-0.5">{entry.acao}</p>
                           )}
