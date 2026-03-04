@@ -199,24 +199,18 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       }
 
       // Build list of changes for history
-      const changes: { acao: string; descricao: string }[] = [];
+      const changeParts: string[] = [];
       
       const statusLabels: Record<string, string> = { aberto: 'Aberto', em_progresso: 'Em Progresso', fechado: 'Fechado' };
       if (status !== chamado.status) {
-        changes.push({
-          acao: 'Alteração de Status',
-          descricao: `Status alterado de "${statusLabels[chamado.status] || chamado.status}" para "${statusLabels[status] || status}"`,
-        });
+        changeParts.push(`Status: "${statusLabels[chamado.status] || chamado.status}" → "${statusLabels[status] || status}"`);
       }
 
       const oldEtapa = chamado.etapa || 'thor';
       if (etapa !== oldEtapa) {
         const oldEtapaLabel = etapas.find(e => e.nome === oldEtapa)?.label || oldEtapa;
         const newEtapaLabel = etapas.find(e => e.nome === etapa)?.label || etapa;
-        changes.push({
-          acao: 'Alteração de Etapa',
-          descricao: `Etapa alterada de "${oldEtapaLabel}" para "${newEtapaLabel}"`,
-        });
+        changeParts.push(`Etapa: "${oldEtapaLabel}" → "${newEtapaLabel}"`);
       }
 
       const oldGestorId = chamado.gestor_id || 'none';
@@ -224,23 +218,15 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       if (newGestorId !== oldGestorId) {
         const oldGestorNome = oldGestorId !== 'none' ? (profileMap.get(oldGestorId) || 'N/A') : 'Nenhum';
         const newGestorNome = newGestorId !== 'none' ? (gestorProfiles.find(g => g.id === newGestorId)?.nome || 'N/A') : 'Nenhum';
-        changes.push({
-          acao: 'Alteração de Gestor',
-          descricao: `Gestor alterado de "${oldGestorNome}" para "${newGestorNome}"`,
-        });
+        changeParts.push(`Gestor: "${oldGestorNome}" → "${newGestorNome}"`);
       }
 
       if ((descricao || '') !== (chamado.descricao || '')) {
-        changes.push({
-          acao: 'Alteração de Descrição',
-          descricao: `Descrição atualizada`,
-        });
+        changeParts.push('Descrição atualizada');
       }
 
-      // If no explicit changes detected, still log a generic update
-      if (changes.length === 0) {
-        changes.push({ acao: 'Atualização', descricao: 'Ticket atualizado sem alterações de campos' });
-      }
+      const acao = changeParts.length > 0 ? 'Atualização de Ticket' : 'Atualização';
+      const descricaoHistorico = changeParts.length > 0 ? changeParts.join(' | ') : 'Ticket atualizado sem alterações de campos';
 
       const { error } = await supabase.from('chamados').update({
         descricao: descricao || null,
@@ -250,15 +236,14 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       }).eq('id', chamado.id);
       if (error) throw error;
 
-      // Insert all history entries with description snapshot
-      const historyEntries = changes.map(c => ({
+      // Insert single consolidated history entry
+      const { error: histError } = await supabase.from('chamado_historico').insert({
         chamado_id: chamado.id,
         user_id: userProfileId,
-        acao: c.acao,
-        descricao: c.descricao,
+        acao,
+        descricao: descricaoHistorico,
         descricao_ticket: descricao || null,
-      }));
-      const { error: histError } = await supabase.from('chamado_historico').insert(historyEntries as any);
+      } as any);
       if (histError) console.error('Erro ao inserir histórico:', histError);
 
       toast.success(`Ticket ${chamado.id} atualizado!`);
