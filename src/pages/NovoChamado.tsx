@@ -30,6 +30,9 @@ const ACCEPTED_TYPES: Record<string, { label: string; maxMB: number; icon: React
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { label: 'DOCX', maxMB: 10, icon: <FileText className="h-4 w-4" /> },
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { label: 'XLSX', maxMB: 10, icon: <FileSpreadsheet className="h-4 w-4" /> },
   'video/mp4': { label: 'MP4', maxMB: 50, icon: <Film className="h-4 w-4" /> },
+  'video/quicktime': { label: 'MOV', maxMB: 50, icon: <Film className="h-4 w-4" /> },
+  'video/x-msvideo': { label: 'AVI', maxMB: 50, icon: <Film className="h-4 w-4" /> },
+  'video/webm': { label: 'WEBM', maxMB: 50, icon: <Film className="h-4 w-4" /> },
   'image/jpeg': { label: 'JPEG', maxMB: 5, icon: <Image className="h-4 w-4" /> },
   'image/png': { label: 'PNG', maxMB: 5, icon: <Image className="h-4 w-4" /> },
   'audio/mpeg': { label: 'MP3', maxMB: 15, icon: <Music className="h-4 w-4" /> },
@@ -241,10 +244,14 @@ export default function NovoChamado() {
         const filePath = `${data.id}/${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage
           .from('chamado-anexos')
-          .upload(filePath, file);
+          .upload(filePath, file, {
+            contentType: file.type,
+            cacheControl: '3600',
+            upsert: false,
+          });
         if (uploadError) {
-          console.error('Erro ao enviar anexo:', uploadError);
-          toast.error(`Erro ao enviar ${file.name}`);
+          console.error('Erro ao enviar anexo:', uploadError.message, uploadError);
+          toast.error(`Erro ao enviar ${file.name}: ${uploadError.message}`);
         } else {
           uploadedFiles.push({ nome: file.name, path: filePath });
         }
