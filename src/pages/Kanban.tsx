@@ -1,17 +1,23 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Pencil, Clock, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import EditChamadoModal from '@/components/kanban/EditChamadoModal';
+import DeleteConfirmDialog from '@/components/kanban/DeleteConfirmDialog';
 
 interface ChamadoWithNames {
   id: number;
   cliente_nome: string;
   motivo: string;
+  submotivo: string | null;
   status: string;
   etapa: string | null;
+  descricao: string | null;
+  created_at: string;
   updated_at: string;
   representante_id: string | null;
   supervisor_id: string | null;
@@ -56,10 +62,22 @@ function getTicketColumn(c: ChamadoWithNames): string {
 export default function Kanban() {
   const { role } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [chamados, setChamados] = useState<ChamadoWithNames[]>([]);
   const [loading, setLoading] = useState(true);
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+
+  // Edit modal state
+  const [editTicket, setEditTicket] = useState<ChamadoWithNames | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+
+  // Delete confirmation state
+  const [deleteTicketId, setDeleteTicketId] = useState<number | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  // Profile map for name resolution in modal
+  const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
 
   // Reference data
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
@@ -106,14 +124,15 @@ export default function Kanban() {
       supabase.from('user_roles').select('user_id, role').eq('role', 'gestor'),
     ]);
 
-    const profileMap = new Map<string, string>();
+    const pMap = new Map<string, string>();
     const profileByUserIdMap = new Map<string, string>();
     if (profilesRes.data) {
       profilesRes.data.forEach((p) => {
-        profileMap.set(p.id, p.nome);
+        pMap.set(p.id, p.nome);
         profileByUserIdMap.set(p.user_id, p.nome);
       });
     }
+    setProfileMap(pMap);
 
     // Filter profiles to only gestores
     const gestorUserIds = new Set((gestorRolesRes?.data || []).map((r: any) => r.user_id));
@@ -130,9 +149,9 @@ export default function Kanban() {
       const mapped = chamadosRes.data.map((c) => ({
         ...c,
         representante_nome: c.representante_id
-          ? profileMap.get(c.representante_id) || profileByUserIdMap.get(c.representante_id) || repMap.get(c.representante_id) || 'N/A'
+          ? pMap.get(c.representante_id) || profileByUserIdMap.get(c.representante_id) || repMap.get(c.representante_id) || 'N/A'
           : 'N/A',
-        gestor_nome: c.gestor_id ? profileMap.get(c.gestor_id) || profileByUserIdMap.get(c.gestor_id) || '' : '',
+        gestor_nome: c.gestor_id ? pMap.get(c.gestor_id) || profileByUserIdMap.get(c.gestor_id) || '' : '',
       }));
       setChamados(mapped);
     }
@@ -386,17 +405,25 @@ export default function Kanban() {
                             </p>
                           </div>
                           <div className="bg-gray-900 flex items-center justify-center gap-5 py-2.5">
-                            <button className="text-white hover:text-gray-300 transition-colors" title="Editar">
+                            <button
+                              className="text-white hover:text-gray-300 transition-colors"
+                              title="Editar"
+                              onClick={() => { setEditTicket(ticket); setEditOpen(true); }}
+                            >
                               <Pencil className="h-4 w-4" />
                             </button>
-                            <button className="text-white hover:text-gray-300 transition-colors" title="Histórico">
+                            <button
+                              className="text-white hover:text-gray-300 transition-colors"
+                              title="Histórico"
+                              onClick={() => navigate(`/historico?ticketId=${ticket.id}`)}
+                            >
                               <Clock className="h-4 w-4" />
                             </button>
                             {(role === 'admin' || role === 'gestor') && (
                               <button
                                 className="text-white hover:text-red-400 transition-colors"
                                 title="Excluir"
-                                onClick={() => handleDelete(ticket.id)}
+                                onClick={() => { setDeleteTicketId(ticket.id); setDeleteOpen(true); }}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -415,6 +442,27 @@ export default function Kanban() {
           </div>
         )}
       </div>
+
+      <EditChamadoModal
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        chamado={editTicket}
+        onSaved={fetchData}
+        profileMap={profileMap}
+      />
+
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        ticketId={deleteTicketId}
+        onConfirm={async () => {
+          if (deleteTicketId !== null) {
+            await handleDelete(deleteTicketId);
+            setDeleteOpen(false);
+            setDeleteTicketId(null);
+          }
+        }}
+      />
     </Layout>
   );
 }
