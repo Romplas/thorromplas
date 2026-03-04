@@ -48,7 +48,7 @@ const statusLabels: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  aberto: 'bg-blue-500',
+  aberto: 'bg-green-500',
   em_progresso: 'bg-orange-500',
   fechado: 'bg-red-600',
 };
