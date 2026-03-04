@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Pencil, Trash2, Eye, Eraser, Paperclip, Download } from 'lucide-react';
+import { Pencil, Trash2, Eye, Eraser, Paperclip, Download, FileDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
@@ -713,6 +713,96 @@ export default function Historico() {
             )}
           </div>
         </div>
+
+        {/* Table for selected ticket history - exportable to PDF */}
+        {selectedTicketId !== 'todos' && (() => {
+          const ticketEntries = filtered
+            .filter(h => String(h.chamado_id) === selectedTicketId)
+            .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          const ticketChamado = chamados.find(c => String(c.id) === selectedTicketId);
+          if (ticketEntries.length === 0) return null;
+
+          const handleExportPdf = () => {
+            const printWin = window.open('', '_blank');
+            if (!printWin) return;
+            const rows = ticketEntries.map((entry, i) => {
+              const etapa = etapaLabelsMap[entryEtapaMap.get(entry.id) || 'thor'] || entryEtapaMap.get(entry.id) || 'THOR';
+              const gestor = entryGestorNameMap.get(entry.id) || '—';
+              const status = ticketChamado ? (statusLabels[ticketChamado.status] || ticketChamado.status) : '—';
+              const repNome = ticketChamado?.representante_id ? (representanteMap.get(ticketChamado.representante_id) || '—') : '—';
+              const supNome = ticketChamado?.supervisor_id ? (supervisorMap.get(ticketChamado.supervisor_id) || '—') : '—';
+              return `<tr>
+                <td>${i + 1}</td><td>${entry.chamado_id}</td><td>${ticketChamado?.cliente_nome || '—'}</td>
+                <td>${repNome}</td><td>${supNome}</td><td>${etapa}</td><td>${ticketChamado?.motivo || '—'}</td>
+                <td>${ticketChamado?.submotivo || '—'}</td><td>${status}</td><td>${gestor}</td>
+                <td>${entry.user_nome || '—'}</td><td>${entry.acao}</td>
+                <td style="max-width:280px;word-wrap:break-word;white-space:pre-wrap">${(entry.descricao_ticket ?? ticketChamado?.descricao ?? '—').replace(/</g, '&lt;')}</td>
+                <td>${formatDateTime(entry.created_at)}</td>
+              </tr>`;
+            }).join('');
+            printWin.document.write(`<html><head><title>Histórico Ticket ${selectedTicketId}</title>
+              <style>body{font-family:Arial,sans-serif;margin:20px;font-size:10px}h2{text-align:center}
+              table{width:100%;border-collapse:collapse}th,td{border:1px solid #444;padding:3px 5px;vertical-align:top;text-align:left}
+              th{background:#6b21a8;color:#fff;font-size:9px}tr:nth-child(even){background:#f3f4f6}
+              @media print{body{margin:8px}@page{size:landscape}}</style></head><body>
+              <h2>Histórico do Ticket #${selectedTicketId}</h2>
+              <table><thead><tr><th>#</th><th>Ticket</th><th>Cliente</th><th>Representante</th><th>Supervisor</th><th>Etapa</th><th>Motivo</th><th>SubMotivo</th><th>Status</th><th>Gestor</th><th>Atualizado por</th><th>Ação</th><th>Descrição</th><th>Data/Hora</th></tr></thead>
+              <tbody>${rows}</tbody></table></body></html>`);
+            printWin.document.close();
+            printWin.focus();
+            setTimeout(() => printWin.print(), 500);
+          };
+
+          return (
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold">Detalhes do Ticket #{selectedTicketId}</h2>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExportPdf}>
+                  <FileDown className="h-4 w-4" />
+                  Exportar PDF
+                </Button>
+              </div>
+              <div className="border rounded-lg overflow-auto max-h-[50vh]">
+                <table className="w-full text-xs border-collapse">
+                  <thead className="bg-primary text-primary-foreground sticky top-0">
+                    <tr>
+                      {['#','Ticket','Cliente','Representante','Supervisor','Etapa','Motivo','SubMotivo','Status','Gestor','Atualizado por','Ação','Descrição','Data/Hora'].map(h => (
+                        <th key={h} className={`px-2 py-2 text-left font-semibold whitespace-nowrap ${h === 'Descrição' ? 'min-w-[250px]' : ''}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ticketEntries.map((entry, i) => {
+                      const etapa = etapaLabelsMap[entryEtapaMap.get(entry.id) || 'thor'] || entryEtapaMap.get(entry.id) || 'THOR';
+                      const gestor = entryGestorNameMap.get(entry.id) || '—';
+                      const status = ticketChamado ? (statusLabels[ticketChamado.status] || ticketChamado.status) : '—';
+                      const repNome = ticketChamado?.representante_id ? (representanteMap.get(ticketChamado.representante_id) || '—') : '—';
+                      const supNome = ticketChamado?.supervisor_id ? (supervisorMap.get(ticketChamado.supervisor_id) || '—') : '—';
+                      return (
+                        <tr key={entry.id} className="border-b border-border hover:bg-muted/50">
+                          <td className="px-2 py-1.5">{i + 1}</td>
+                          <td className="px-2 py-1.5 font-medium">{entry.chamado_id}</td>
+                          <td className="px-2 py-1.5">{ticketChamado?.cliente_nome || '—'}</td>
+                          <td className="px-2 py-1.5">{repNome}</td>
+                          <td className="px-2 py-1.5">{supNome}</td>
+                          <td className="px-2 py-1.5">{etapa}</td>
+                          <td className="px-2 py-1.5">{ticketChamado?.motivo || '—'}</td>
+                          <td className="px-2 py-1.5">{ticketChamado?.submotivo || '—'}</td>
+                          <td className="px-2 py-1.5">{status}</td>
+                          <td className="px-2 py-1.5">{gestor}</td>
+                          <td className="px-2 py-1.5">{entry.user_nome || '—'}</td>
+                          <td className="px-2 py-1.5">{entry.acao}</td>
+                          <td className="px-2 py-1.5 whitespace-pre-wrap break-words max-w-[300px]">{entry.descricao_ticket ?? ticketChamado?.descricao ?? '—'}</td>
+                          <td className="px-2 py-1.5 whitespace-nowrap">{formatDateTime(entry.created_at)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Edit Modal */}
         {selectedChamado && (
