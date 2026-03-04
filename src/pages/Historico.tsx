@@ -116,6 +116,7 @@ export default function Historico() {
   const [filterSubmotivo, setFilterSubmotivo] = useState('todos');
   const [filterCliente, setFilterCliente] = useState('todos');
   const [filterStatus, setFilterStatus] = useState('todos');
+  const [filterGestor, setFilterGestor] = useState('todos');
 
   // Reference data
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
@@ -288,6 +289,7 @@ export default function Historico() {
         if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
         if (filterSubmotivo !== 'todos' && c.submotivo !== filterSubmotivo) return false;
         if (filterStatus !== 'todos' && c.status !== filterStatus) return false;
+        if (filterGestor !== 'todos' && c.gestor_id !== filterGestor) return false;
         return true;
       })
       .map(c => c.id)
@@ -571,6 +573,20 @@ export default function Historico() {
                 <SelectItem value="aberto">Aberto</SelectItem>
                 <SelectItem value="em_progresso">Em Progresso</SelectItem>
                 <SelectItem value="fechado">Fechado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Gestores</span>
+            <Select value={filterGestor} onValueChange={setFilterGestor}>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {[...new Map(chamados.filter(c => c.gestor_id).map(c => [c.gestor_id!, profileMap.get(c.gestor_id!) || 'Desconhecido'])).entries()]
+                  .sort((a, b) => a[1].localeCompare(b[1]))
+                  .map(([id, nome]) => (
+                    <SelectItem key={id} value={id}>{nome}</SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
