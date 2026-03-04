@@ -1,10 +1,29 @@
-import { useState } from 'react';
-import { Eye, Trash2, Pencil } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Eye, Clock, User, ArrowRight } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { mockTickets } from '@/data/mockData';
-import { Ticket } from '@/types';
 import Layout from '@/components/Layout';
+import { supabase } from '@/integrations/supabase/client';
+
+interface HistoricoEntry {
+  id: string;
+  chamado_id: number;
+  acao: string;
+  descricao: string | null;
+  created_at: string;
+  user_id: string | null;
+  user_nome?: string;
+}
+
+interface ChamadoBasic {
+  id: number;
+  cliente_nome: string;
+  motivo: string;
+  status: string;
+  etapa: string | null;
+  created_at: string;
+}
 
 const statusLabels: Record<string, string> = {
   aberto: 'Aberto',
@@ -13,129 +32,193 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function Historico() {
-  const [selected, setSelected] = useState<Ticket | null>(null);
+  const [searchParams] = useSearchParams();
+  const ticketIdParam = searchParams.get('ticketId');
+
+  const [historico, setHistorico] = useState<HistoricoEntry[]>([]);
+  const [chamados, setChamados] = useState<ChamadoBasic[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedTicketId, setSelectedTicketId] = useState<string>(ticketIdParam || 'todos');
+  const [filterAcao, setFilterAcao] = useState('todos');
+  const [dataInicial, setDataInicial] = useState('');
+  const [dataFinal, setDataFinal] = useState('');
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    const [historicoRes, chamadosRes, profilesRes] = await Promise.all([
+      supabase.from('chamado_historico').select('*').order('created_at', { ascending: false }).limit(1000),
+      supabase.from('chamados').select('id, cliente_nome, motivo, status, etapa, created_at').order('id', { ascending: false }),
+      supabase.from('profiles').select('id, nome'),
+    ]);
+
+    const profileMap = new Map<string, string>();
+    (profilesRes.data || []).forEach(p => profileMap.set(p.id, p.nome));
+
+    const entries: HistoricoEntry[] = (historicoRes.data || []).map(h => ({
+      ...h,
+      user_nome: h.user_id ? profileMap.get(h.user_id) || 'Desconhecido' : 'Sistema',
+    }));
+
+    setHistorico(entries);
+    setChamados(chamadosRes.data || []);
+    setLoading(false);
+  };
+
+  // Get unique acao types for filter
+  const acaoTypes = [...new Set(historico.map(h => h.acao))];
+
+  // Filter
+  const filtered = historico.filter(h => {
+    if (selectedTicketId !== 'todos' && String(h.chamado_id) !== selectedTicketId) return false;
+    if (filterAcao !== 'todos' && h.acao !== filterAcao) return false;
+    if (dataInicial) {
+      const entryDate = new Date(h.created_at).toISOString().split('T')[0];
+      if (entryDate < dataInicial) return false;
+    }
+    if (dataFinal) {
+      const entryDate = new Date(h.created_at).toISOString().split('T')[0];
+      if (entryDate > dataFinal) return false;
+    }
+    return true;
+  });
+
+  // Group by ticket for the detail panel
+  const selectedChamado = selectedTicketId !== 'todos'
+    ? chamados.find(c => String(c.id) === selectedTicketId)
+    : null;
+
+  const ticketHistory = selectedTicketId !== 'todos'
+    ? filtered.filter(h => String(h.chamado_id) === selectedTicketId)
+    : [];
+
+  const formatDateTime = (d: string) => {
+    const dt = new Date(d);
+    return dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
 
   return (
     <Layout>
-      <h1 className="text-xl font-bold text-center mb-6">Histórico de Solicitações</h1>
+      <h1 className="text-xl font-bold text-center mb-6">Histórico de Atendimento</h1>
 
       {/* Filters */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
-        {['Supervisor', 'TicketID', 'Clientes', '* Motivo', 'SubMotivos'].map((f) => (
-          <div key={f}>
-            <span className="text-xs text-muted-foreground">{f}</span>
-            <Select>
-              <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue placeholder="Todos" /></SelectTrigger>
-              <SelectContent><SelectItem value="todos">Todos</SelectItem></SelectContent>
-            </Select>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div>
+          <span className="text-xs text-muted-foreground">TicketID</span>
+          <Select value={selectedTicketId} onValueChange={setSelectedTicketId}>
+            <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue placeholder="Todos" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              {chamados.map(c => (
+                <SelectItem key={c.id} value={String(c.id)}>#{c.id} - {c.cliente_nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <span className="text-xs text-muted-foreground">Tipo de Ação</span>
+          <Select value={filterAcao} onValueChange={setFilterAcao}>
+            <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue placeholder="Todos" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              {acaoTypes.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
         <div>
           <span className="text-xs text-muted-foreground">Data Inicial</span>
-          <Input type="date" className="h-8 text-xs mt-0.5" />
+          <Input type="date" className="h-8 text-xs mt-0.5" value={dataInicial} onChange={e => setDataInicial(e.target.value)} />
         </div>
         <div>
           <span className="text-xs text-muted-foreground">Data Final</span>
-          <Input type="date" className="h-8 text-xs mt-0.5" />
+          <Input type="date" className="h-8 text-xs mt-0.5" value={dataFinal} onChange={e => setDataFinal(e.target.value)} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Ticket List */}
-        <div className="space-y-3 max-h-[500px] overflow-y-auto">
-          {mockTickets.map((ticket) => (
-            <div
-              key={ticket.id}
-              className={`border-l-4 rounded-lg p-4 cursor-pointer transition-colors ${
-                ticket.status === 'aberto' ? 'border-l-red-500' :
-                ticket.status === 'em_progresso' ? 'border-l-blue-500' :
-                'border-l-green-500'
-              } ${selected?.id === ticket.id ? 'bg-primary/5 border' : 'bg-card border'}`}
-              onClick={() => setSelected(ticket)}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-bold text-sm text-primary">TicketID : {ticket.id}</p>
-                  <p className="text-xs text-muted-foreground">Status Supervisor: {ticket.supervisor || 'N/A'}</p>
-                  <p className="text-xs text-muted-foreground">Modificado em: {ticket.data_atualizacao}</p>
-                  <p className="text-xs text-muted-foreground">TicketID Criado em: {ticket.data_criacao}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Status Agendamento:</p>
-                  <p className="text-xs font-semibold">Status: {statusLabels[ticket.status]}</p>
-                  <div className="flex items-center gap-1 mt-2 justify-end">
-                    <button className="text-red-400 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
-                    <button className="text-muted-foreground hover:text-foreground"><Pencil className="h-4 w-4" /></button>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Timeline */}
+        <div className="space-y-1 max-h-[600px] overflow-y-auto">
+          {loading ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Carregando histórico...</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Nenhum registro encontrado.</p>
+          ) : (
+            filtered.map((entry) => (
+              <div
+                key={entry.id}
+                className="flex gap-3 p-3 bg-card border rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
+                onClick={() => setSelectedTicketId(String(entry.chamado_id))}
+              >
+                <div className="flex-shrink-0 mt-1">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    {entry.acao.includes('Etapa') ? (
+                      <ArrowRight className="h-4 w-4 text-primary" />
+                    ) : entry.acao.includes('Status') ? (
+                      <Clock className="h-4 w-4 text-primary" />
+                    ) : (
+                      <User className="h-4 w-4 text-primary" />
+                    )}
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">Atualizado por: {ticket.atualizado_por}</p>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-primary">Ticket #{entry.chamado_id}</p>
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">{formatDateTime(entry.created_at)}</span>
+                  </div>
+                  <p className="text-xs font-medium mt-0.5">{entry.acao}</p>
+                  {entry.descricao && <p className="text-xs text-muted-foreground mt-0.5">{entry.descricao}</p>}
+                  <p className="text-[10px] text-muted-foreground mt-1">Por: {entry.user_nome}</p>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Detail Panel */}
-        <div className="bg-card border rounded-lg p-6 flex items-center justify-center min-h-[300px]">
-          {selected ? (
-            <div className="w-full space-y-3">
-              <h3 className="font-bold text-lg">Ticket #{selected.id}</h3>
+        <div className="bg-card border rounded-lg p-6 min-h-[300px]">
+          {selectedChamado ? (
+            <div className="space-y-4">
+              <h3 className="font-bold text-lg">Ticket #{selectedChamado.id}</h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><span className="font-medium">Cliente:</span> {selected.cliente}</div>
-                <div><span className="font-medium">Representante:</span> {selected.representante}</div>
-                <div><span className="font-medium">Motivo:</span> {selected.motivo}</div>
-                <div><span className="font-medium">Status:</span> {statusLabels[selected.status]}</div>
-                <div><span className="font-medium">Prioridade:</span> {selected.prioridade}</div>
-                <div><span className="font-medium">Criado:</span> {selected.data_criacao}</div>
+                <div><span className="font-medium">Cliente:</span> {selectedChamado.cliente_nome}</div>
+                <div><span className="font-medium">Motivo:</span> {selectedChamado.motivo}</div>
+                <div><span className="font-medium">Status:</span> {statusLabels[selectedChamado.status] || selectedChamado.status}</div>
+                <div><span className="font-medium">Etapa:</span> {selectedChamado.etapa || 'THOR'}</div>
+                <div><span className="font-medium">Criado em:</span> {formatDateTime(selectedChamado.created_at)}</div>
+              </div>
+
+              {/* Full timeline for this ticket */}
+              <div className="mt-4">
+                <h4 className="text-sm font-bold mb-3 text-primary">Linha do Tempo Completa</h4>
+                <div className="relative border-l-2 border-primary/20 ml-3 space-y-4">
+                  {ticketHistory.length === 0 ? (
+                    <p className="text-xs text-muted-foreground pl-6">Nenhum registro de histórico para este ticket.</p>
+                  ) : (
+                    ticketHistory.map((entry) => (
+                      <div key={entry.id} className="relative pl-6">
+                        <div className="absolute -left-[9px] top-1.5 h-4 w-4 rounded-full bg-primary border-2 border-background" />
+                        <p className="text-xs font-semibold">{entry.acao}</p>
+                        {entry.descricao && <p className="text-xs text-muted-foreground">{entry.descricao}</p>}
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {formatDateTime(entry.created_at)} — {entry.user_nome}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           ) : (
-            <div className="text-center text-muted-foreground">
-              <Eye className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Selecione um ticket para ver os detalhes</p>
+            <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+              <div>
+                <Eye className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Selecione um ticket para ver a linha do tempo completa</p>
+              </div>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-card border rounded-lg overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold text-sm">Todos os Chamados</h3>
-          <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-            📄 Exportar PDF
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium">ID</th>
-                <th className="text-left p-3 font-medium">Cliente</th>
-                <th className="text-left p-3 font-medium">Representante</th>
-                <th className="text-left p-3 font-medium">Supervisor</th>
-                <th className="text-left p-3 font-medium">Motivo</th>
-                <th className="text-left p-3 font-medium">Status</th>
-                <th className="text-left p-3 font-medium">Prioridade</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockTickets.map((t) => (
-                <tr key={t.id} className="border-b hover:bg-muted/30">
-                  <td className="p-3">{t.id}</td>
-                  <td className="p-3 text-primary font-medium">{t.cliente}</td>
-                  <td className="p-3 text-primary">{t.representante}</td>
-                  <td className="p-3">{t.supervisor || '-'}</td>
-                  <td className="p-3">{t.motivo}</td>
-                  <td className="p-3">
-                    <span className={`status-badge ${t.status === 'aberto' ? 'status-open' : t.status === 'em_progresso' ? 'status-progress' : 'status-done'}`}>
-                      {statusLabels[t.status]}
-                    </span>
-                  </td>
-                  <td className="p-3">{t.prioridade}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </Layout>
