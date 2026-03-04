@@ -15,6 +15,7 @@ interface HistoricoEntry {
   chamado_id: number;
   acao: string;
   descricao: string | null;
+  descricao_ticket: string | null;
   created_at: string;
   user_id: string | null;
   user_nome?: string;
@@ -41,6 +42,7 @@ interface ChamadoFull {
 interface Supervisor { id: string; nome: string }
 interface Motivo { id: string; nome: string }
 interface Submotivo { id: string; nome: string; motivo_id: string }
+interface Representante { id: string; nome: string }
 
 const statusLabels: Record<string, string> = {
   aberto: 'Aberto',
@@ -116,6 +118,7 @@ export default function Historico() {
   const [submotivos, setSubmotivos] = useState<Submotivo[]>([]);
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
   const [supervisorMap, setSupervisorMap] = useState<Map<string, string>>(new Map());
+  const [representanteMap, setRepresentanteMap] = useState<Map<string, string>>(new Map());
 
   // Resolved names for detail panel
   const [supervisorNome, setSupervisorNome] = useState('');
@@ -143,13 +146,14 @@ export default function Historico() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [historicoRes, chamadosRes, profilesRes, supRes, motivosRes, submotivosRes] = await Promise.all([
+    const [historicoRes, chamadosRes, profilesRes, supRes, motivosRes, submotivosRes, repRes] = await Promise.all([
       supabase.from('chamado_historico').select('*').order('created_at', { ascending: false }).limit(1000),
       supabase.from('chamados').select('*').order('id', { ascending: false }),
       supabase.from('profiles').select('id, nome, user_id'),
       supabase.from('supervisores').select('id, nome').eq('status', 'ativo').order('nome'),
       supabase.from('motivos').select('id, nome').order('nome'),
       supabase.from('submotivos').select('id, nome, motivo_id').order('nome'),
+      supabase.from('representantes').select('id, nome'),
     ]);
 
     const pMap = new Map<string, string>();
@@ -159,8 +163,9 @@ export default function Historico() {
     });
     setProfileMap(pMap);
 
-    const entries: HistoricoEntry[] = (historicoRes.data || []).map(h => ({
+    const entries: HistoricoEntry[] = (historicoRes.data || []).map((h: any) => ({
       ...h,
+      descricao_ticket: h.descricao_ticket || null,
       user_nome: h.user_id ? pMap.get(h.user_id) || 'Desconhecido' : 'Sistema',
     }));
 
@@ -174,6 +179,11 @@ export default function Historico() {
     }
     if (motivosRes.data) setMotivos(motivosRes.data);
     if (submotivosRes.data) setSubmotivos(submotivosRes.data as Submotivo[]);
+    if (repRes.data) {
+      const rMap = new Map<string, string>();
+      repRes.data.forEach((r: any) => rMap.set(r.id, r.nome));
+      setRepresentanteMap(rMap);
+    }
     setLoading(false);
   };
 
@@ -190,7 +200,7 @@ export default function Historico() {
     const resolve = async () => {
       setSupervisorNome(chamado.supervisor_id ? (supervisorMap.get(chamado.supervisor_id) || profileMap.get(chamado.supervisor_id) || '') : '');
       if (chamado.representante_id) {
-        const nome = profileMap.get(chamado.representante_id) || '';
+        const nome = representanteMap.get(chamado.representante_id) || profileMap.get(chamado.representante_id) || '';
         if (nome) {
           setRepresentanteNome(nome);
         } else {
@@ -437,7 +447,7 @@ export default function Historico() {
                 const entryEtapa = entryEtapaMap.get(entry.id) || 'thor';
                 const etapaLabel = etapaLabelsMap[entryEtapa] || entryEtapa;
                 const statusLabel = chamado ? (statusLabels[chamado.status] || chamado.status) : '—';
-                const createdByNome = chamado ? (profileMap.get(chamado.representante_id || '') || '') : '';
+                const cardRepNome = chamado?.representante_id ? (representanteMap.get(chamado.representante_id) || profileMap.get(chamado.representante_id) || '') : '';
                 const gestorName = chamado?.gestor_id ? (profileMap.get(chamado.gestor_id) || '') : '';
 
                 return (
@@ -455,7 +465,7 @@ export default function Historico() {
                           <p><span className="font-semibold">Cliente : </span>{chamado?.cliente_nome || '—'}</p>
                           <p className="font-semibold">Etapa Ticket : {etapaLabel}</p>
                           <p><span className="font-semibold">Motivo : </span>{chamado?.motivo || '—'}</p>
-                          <p><span className="font-semibold">Representante : </span>{representanteNome || createdByNome || '—'}</p>
+                          <p><span className="font-semibold">Representante : </span>{cardRepNome || '—'}</p>
                           <p><span className="font-semibold">Supervisora : </span>{chamado?.supervisor_id ? (supervisorMap.get(chamado.supervisor_id) || '—') : '—'}</p>
                         </div>
 
@@ -463,7 +473,7 @@ export default function Historico() {
                         <div className="w-[65%] flex flex-col">
                           {/* Description box */}
                           <div className="bg-white/15 text-white px-3 py-2 mx-2 mt-2 rounded text-[11px] min-h-[60px]">
-                            <p className="font-semibold">Descrição : {chamado?.descricao || '—'}</p>
+                            <p className="font-semibold">Descrição : {entry.descricao_ticket ?? chamado?.descricao ?? '—'}</p>
                           </div>
 
                           {/* Bottom status row */}
@@ -528,7 +538,7 @@ export default function Historico() {
                 <div className="space-y-1">
                   <Label className="text-[11px] font-semibold text-muted-foreground">Descrição</Label>
                   <div className="px-3 py-2 border border-border rounded-md bg-muted/40 text-sm min-h-[100px] whitespace-pre-wrap">
-                    {selectedChamado.descricao || '—'}
+                    {selectedEntry?.descricao_ticket ?? selectedChamado.descricao ?? '—'}
                   </div>
                 </div>
 

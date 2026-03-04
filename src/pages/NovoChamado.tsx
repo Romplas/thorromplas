@@ -300,7 +300,8 @@ export default function NovoChamado() {
         user_id: userProfileId,
         acao: 'Ticket Criado',
         descricao: `Ticket criado — Cliente: ${clienteObj?.nome || ''}, Motivo: ${motivoNome}${submotivoNome ? ', Objetivo: ' + submotivoNome : ''}, Status: Aberto, Etapa: THOR`,
-      });
+        descricao_ticket: descricao || null,
+      } as any);
       if (histError) console.error('Erro ao inserir histórico de criação:', histError);
 
       toast.success(`Chamado #${data.id} criado com sucesso!`);
