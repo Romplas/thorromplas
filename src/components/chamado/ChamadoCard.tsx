@@ -168,7 +168,7 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
                 </Button>
               </>
             ) : (
-              <Button variant="outline" size="sm" onClick={handleEdit}>
+              <Button variant="outline" size="sm" onClick={handleEdit} disabled={chamado.etapa !== 'THOR'} title={chamado.etapa !== 'THOR' ? 'Edição disponível apenas na etapa THOR' : ''}>
                 <Pencil className="h-4 w-4 mr-1.5" />Editar
               </Button>
             )}
@@ -214,6 +214,15 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
           <ReadOnlyField label="Tipo de Solicitação" value={c.tipoSolicitacao} />
           <ReadOnlyField label="Gestor" value={c.gestor} />
           <ReadOnlyField label="Status Agendamento" value={c.statusAgendamento} />
+        </div>
+
+        {/* Controle do Ticket */}
+        <div className="mb-5">
+          <h3 className="text-xs font-semibold text-primary uppercase tracking-wide mb-3">Controle do Ticket</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <ReadOnlyField label="Status Ticket" value={c.status === 'aberto' ? 'Aberto' : c.status === 'em_progresso' ? 'Em Progresso' : 'Fechado'} />
+            <ReadOnlyField label="Etapa Ticket" value={c.etapa} />
+          </div>
         </div>
 
         {/* Row 4 */}

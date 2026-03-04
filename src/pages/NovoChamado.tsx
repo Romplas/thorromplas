@@ -480,6 +480,25 @@ export default function NovoChamado() {
               </div>
             </div>
 
+            {/* Controle do Ticket */}
+            <div className="mb-5">
+              <h3 className="text-xs font-semibold text-primary uppercase tracking-wide mb-3">Controle do Ticket</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold">Status Ticket</Label>
+                  <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[36px] flex items-center">
+                    Aberto
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">Etapa Ticket</Label>
+                  <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[36px] flex items-center">
+                    THOR
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Row 4 - Descrição + Anexos */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
