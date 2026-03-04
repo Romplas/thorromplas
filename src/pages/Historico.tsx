@@ -324,6 +324,49 @@ export default function Historico() {
     return map;
   })();
 
+  // Build a map of gestor name at each history entry by reconstructing the timeline
+  const entryGestorNameMap = (() => {
+    const map = new Map<string, string>();
+
+    const byChamado = new Map<number, HistoricoEntry[]>();
+    historico.forEach(h => {
+      if (!byChamado.has(h.chamado_id)) byChamado.set(h.chamado_id, []);
+      byChamado.get(h.chamado_id)!.push(h);
+    });
+
+    byChamado.forEach((entries, chamadoId) => {
+      const sorted = [...entries].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      const chamado = chamados.find(c => c.id === chamadoId);
+      const currentGestorName = chamado?.gestor_id ? (profileMap.get(chamado.gestor_id) || '') : '';
+
+      // Find the original gestor by looking at the first gestor change's "from" value
+      let originalGestor = currentGestorName;
+      for (const entry of sorted) {
+        if (entry.descricao && entry.descricao.includes('Gestor:')) {
+          const match = entry.descricao.match(/Gestor:\s*"([^"]+)"\s*→/);
+          if (match) {
+            originalGestor = match[1] === 'Nenhum' ? '' : match[1];
+            break;
+          }
+        }
+      }
+
+      // Walk forward assigning gestor at each point
+      let gestor = originalGestor;
+      sorted.forEach(entry => {
+        if (entry.descricao && entry.descricao.includes('Gestor:')) {
+          const match = entry.descricao.match(/Gestor:.*?→\s*"([^"]+)"/);
+          if (match) {
+            gestor = match[1] === 'Nenhum' ? '' : match[1];
+          }
+        }
+        map.set(entry.id, gestor);
+      });
+    });
+
+    return map;
+  })();
+
   const getEntryColor = (entry: HistoricoEntry) => {
     const etapa = entryEtapaMap.get(entry.id) || 'thor';
     return etapaColors[etapa] || 'bg-blue-500';
@@ -476,7 +519,7 @@ export default function Historico() {
                 const etapaLabel = etapaLabelsMap[entryEtapa] || entryEtapa;
                 const statusLabel = chamado ? (statusLabels[chamado.status] || chamado.status) : '—';
                 const cardRepNome = chamado?.representante_id ? (representanteMap.get(chamado.representante_id) || profileMap.get(chamado.representante_id) || '') : '';
-                const gestorName = chamado?.gestor_id ? (profileMap.get(chamado.gestor_id) || '') : '';
+                const gestorName = entryGestorNameMap.get(entry.id) || '';
 
                 return (
                   <div
@@ -559,7 +602,7 @@ export default function Historico() {
 
                 <div className="grid grid-cols-3 gap-3">
                   <ReadOnlyField label="EtapaTicket" value={etapaLabelsMap[selectedChamado.etapa || 'thor'] || selectedChamado.etapa || 'THOR'} />
-                  <ReadOnlyField label="Gestor" value={gestorNome} />
+                  <ReadOnlyField label="Gestor" value={selectedEntry ? (entryGestorNameMap.get(selectedEntry.id) || '') : gestorNome} />
                   <ReadOnlyField label="StatusTicket" value={statusLabels[selectedChamado.status] || selectedChamado.status} />
                 </div>
 
