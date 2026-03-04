@@ -241,14 +241,15 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       }).eq('id', chamado.id);
       if (error) throw error;
 
-      // Insert all history entries
+      // Insert all history entries with description snapshot
       const historyEntries = changes.map(c => ({
         chamado_id: chamado.id,
         user_id: userProfileId,
         acao: c.acao,
         descricao: c.descricao,
+        descricao_ticket: descricao || null,
       }));
-      const { error: histError } = await supabase.from('chamado_historico').insert(historyEntries);
+      const { error: histError } = await supabase.from('chamado_historico').insert(historyEntries as any);
       if (histError) console.error('Erro ao inserir histórico:', histError);
 
       toast.success(`Ticket ${chamado.id} atualizado!`);

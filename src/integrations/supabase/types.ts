@@ -20,6 +20,7 @@ export type Database = {
           chamado_id: number
           created_at: string
           descricao: string | null
+          descricao_ticket: string | null
           id: string
           user_id: string | null
         }
@@ -28,6 +29,7 @@ export type Database = {
           chamado_id: number
           created_at?: string
           descricao?: string | null
+          descricao_ticket?: string | null
           id?: string
           user_id?: string | null
         }
@@ -36,6 +38,7 @@ export type Database = {
           chamado_id?: number
           created_at?: string
           descricao?: string | null
+          descricao_ticket?: string | null
           id?: string
           user_id?: string | null
         }

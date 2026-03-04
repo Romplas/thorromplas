@@ -262,7 +262,8 @@ export default function Kanban() {
         user_id: userProfileId,
         acao: 'Alteração de Etapa',
         descricao: `Etapa alterada de "${oldEtapaLabel}" para "${newEtapaLabel}" (drag-drop)`,
-      });
+        descricao_ticket: ticket.descricao || null,
+      } as any);
       toast({ title: `Chamado movido para ${columns.find((c) => c.key === colKey)?.label}` });
     }
   };
