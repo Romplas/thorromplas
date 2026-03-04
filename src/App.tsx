@@ -35,10 +35,10 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/novo-chamado" element={<ProtectedRoute><NovoChamado /></ProtectedRoute>} />
             <Route path="/historico" element={<ProtectedRoute><Historico /></ProtectedRoute>} />
-            <Route path="/usuarios" element={<ProtectedRoute><Usuarios /></ProtectedRoute>} />
-            <Route path="/kanban" element={<ProtectedRoute><Kanban /></ProtectedRoute>} />
-            <Route path="/import-clientes" element={<ProtectedRoute><ImportClientes /></ProtectedRoute>} />
-            <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
+            <Route path="/usuarios" element={<ProtectedRoute allowedRoles={['admin', 'gestor']}><Usuarios /></ProtectedRoute>} />
+            <Route path="/kanban" element={<ProtectedRoute allowedRoles={['admin', 'gestor', 'supervisor']}><Kanban /></ProtectedRoute>} />
+            <Route path="/import-clientes" element={<ProtectedRoute allowedRoles={['admin', 'gestor']}><ImportClientes /></ProtectedRoute>} />
+            <Route path="/configuracoes" element={<ProtectedRoute allowedRoles={['admin', 'gestor']}><Configuracoes /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
