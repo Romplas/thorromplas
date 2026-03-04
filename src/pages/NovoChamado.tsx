@@ -224,7 +224,7 @@ export default function NovoChamado() {
         submotivo: submotivoNome || null,
         descricao: descricao || null,
         status: 'aberto',
-        etapa: 'THOR',
+        etapa: 'thor',
         supervisor_id: selectedSupervisor || null,
         representante_id: selectedRepresentante || null,
         prioridade: 'Média',
@@ -276,6 +276,26 @@ export default function NovoChamado() {
       };
 
       setChamadosCriados(prev => [novoChamado, ...prev]);
+
+      // Register creation in history
+      let userProfileId: string | null = null;
+      if (profile?.id) {
+        userProfileId = profile.id;
+      } else {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+          const { data: prof } = await supabase.from('profiles').select('id').eq('user_id', currentUser.id).maybeSingle();
+          userProfileId = prof?.id || null;
+        }
+      }
+      const { error: histError } = await supabase.from('chamado_historico').insert({
+        chamado_id: data.id,
+        user_id: userProfileId,
+        acao: 'Ticket Criado',
+        descricao: `Ticket criado — Cliente: ${clienteObj?.nome || ''}, Motivo: ${motivoNome}${submotivoNome ? ', Objetivo: ' + submotivoNome : ''}, Status: Aberto, Etapa: THOR`,
+      });
+      if (histError) console.error('Erro ao inserir histórico de criação:', histError);
+
       toast.success(`Chamado #${data.id} criado com sucesso!`);
 
       // Reset form

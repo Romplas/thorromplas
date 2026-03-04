@@ -103,7 +103,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
     if (chamado && open) {
       setDescricao(chamado.descricao || '');
       setStatus(chamado.status);
-      setEtapa(chamado.etapa || 'THOR');
+      setEtapa(chamado.etapa || 'thor');
       setGestorId(chamado.gestor_id || 'none');
       loadAnexos(chamado.id);
       resolveNames(chamado);
@@ -200,7 +200,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
         });
       }
 
-      const oldEtapa = chamado.etapa || 'THOR';
+      const oldEtapa = chamado.etapa || 'thor';
       if (etapa !== oldEtapa) {
         const oldEtapaLabel = etapas.find(e => e.nome === oldEtapa)?.label || oldEtapa;
         const newEtapaLabel = etapas.find(e => e.nome === etapa)?.label || etapa;
@@ -248,7 +248,8 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
         acao: c.acao,
         descricao: c.descricao,
       }));
-      await supabase.from('chamado_historico').insert(historyEntries);
+      const { error: histError } = await supabase.from('chamado_historico').insert(historyEntries);
+      if (histError) console.error('Erro ao inserir histórico:', histError);
 
       toast.success(`Ticket ${chamado.id} atualizado!`);
       onSaved();
@@ -285,7 +286,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   if (!chamado) return null;
 
   const gestorNome = chamado.gestor_id ? profileMap.get(chamado.gestor_id) || chamado.gestor_nome || '' : '';
-  const isEditable = chamado.status === 'aberto' && (chamado.etapa || '').toLowerCase() === 'thor';
+  const isEditable = chamado.status === 'aberto' && (chamado.etapa || '') === 'thor';
 
   return (
     <>
