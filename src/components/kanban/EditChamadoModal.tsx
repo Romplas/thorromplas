@@ -103,7 +103,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
     if (chamado && open) {
       setDescricao(chamado.descricao || '');
       setStatus(chamado.status);
-      setEtapa(chamado.etapa || 'thor');
+      setEtapa(chamado.etapa || 'THOR');
       setGestorId(chamado.gestor_id || 'none');
       loadAnexos(chamado.id);
       resolveNames(chamado);
@@ -305,7 +305,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
                     <SelectTrigger className="h-[40px]"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {etapas.map(e => (
-                        <SelectItem key={e.id} value={e.nome.toLowerCase()}>
+                        <SelectItem key={e.id} value={e.nome}>
                           {e.label}
                         </SelectItem>
                       ))}
