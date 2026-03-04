@@ -282,11 +282,17 @@ export default function Historico() {
       let currentEtapa = 'thor'; // default initial etapa
       sorted.forEach(entry => {
         // Check if this entry changes the etapa
-        if (entry.acao === 'Alteração de Etapa' && entry.descricao) {
-          const match = entry.descricao.match(/para "([^"]+)"/);
-          if (match) {
-            // Convert label back to key
-            const labelToKey = Object.entries(etapaLabelsMap).find(([k, v]) => v === match[1]);
+        if (entry.descricao) {
+          let newLabel: string | null = null;
+          if (entry.acao === 'Alteração de Etapa') {
+            const match = entry.descricao.match(/para "([^"]+)"/);
+            if (match) newLabel = match[1];
+          } else if (entry.descricao.includes('Etapa:')) {
+            const match = entry.descricao.match(/Etapa:.*→\s*"([^"]+)"/);
+            if (match) newLabel = match[1];
+          }
+          if (newLabel) {
+            const labelToKey = Object.entries(etapaLabelsMap).find(([, v]) => v === newLabel);
             if (labelToKey) currentEtapa = labelToKey[0];
           }
         }
