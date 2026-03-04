@@ -62,6 +62,8 @@ export type Database = {
           cliente_id: string | null
           cliente_nome: string
           created_at: string
+          data_contato: string | null
+          data_retorno: string | null
           descricao: string | null
           etapa: string | null
           gestor_id: string | null
@@ -79,6 +81,8 @@ export type Database = {
           cliente_id?: string | null
           cliente_nome: string
           created_at?: string
+          data_contato?: string | null
+          data_retorno?: string | null
           descricao?: string | null
           etapa?: string | null
           gestor_id?: string | null
@@ -96,6 +100,8 @@ export type Database = {
           cliente_id?: string | null
           cliente_nome?: string
           created_at?: string
+          data_contato?: string | null
+          data_retorno?: string | null
           descricao?: string | null
           etapa?: string | null
           gestor_id?: string | null

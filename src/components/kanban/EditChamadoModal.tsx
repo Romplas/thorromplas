@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Save, Paperclip, Eye, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -46,9 +45,9 @@ interface Props {
 
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <Label className="text-xs font-semibold text-muted-foreground">{label}</Label>
-      <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[36px] flex items-center">
+    <div className="space-y-1.5">
+      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{label}</Label>
+      <div className="px-3 py-2.5 border border-border rounded-lg bg-muted/40 text-sm min-h-[40px] flex items-center font-medium">
         {value || '—'}
       </div>
     </div>
@@ -64,6 +63,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   const [descricao, setDescricao] = useState('');
   const [status, setStatus] = useState('');
   const [etapa, setEtapa] = useState('');
+  const [gestorId, setGestorId] = useState('');
   const [saving, setSaving] = useState(false);
   const [anexos, setAnexos] = useState<AnexoFile[]>([]);
   const [loadingAnexos, setLoadingAnexos] = useState(false);
@@ -79,10 +79,10 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   const [representanteNome, setRepresentanteNome] = useState('');
   const [clienteCodigo, setClienteCodigo] = useState('');
   const [redeNome, setRedeNome] = useState('');
-  const [gestorNome, setGestorNome] = useState('');
+  const [dataContato, setDataContato] = useState('');
+  const [dataRetorno, setDataRetorno] = useState('');
 
   useEffect(() => {
-    // Load etapas and gestor profiles once
     const loadRef = async () => {
       const [etapasRes, rolesRes, profilesRes] = await Promise.all([
         supabase.from('etapas').select('*').order('ordem'),
@@ -104,16 +104,26 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       setDescricao(chamado.descricao || '');
       setStatus(chamado.status);
       setEtapa(chamado.etapa || 'thor');
+      setGestorId(chamado.gestor_id || 'none');
       loadAnexos(chamado.id);
       resolveNames(chamado);
     }
   }, [chamado, open]);
 
   const resolveNames = async (c: ChamadoFull) => {
-    // Supervisor: look up in supervisores table or profileMap
-    setSupervisorNome(c.supervisor_id ? profileMap.get(c.supervisor_id) || '' : '');
+    // Supervisor: look up in supervisores table
+    if (c.supervisor_id) {
+      const { data: sup } = await supabase
+        .from('supervisores')
+        .select('nome')
+        .eq('id', c.supervisor_id)
+        .maybeSingle();
+      setSupervisorNome(sup?.nome || profileMap.get(c.supervisor_id) || '');
+    } else {
+      setSupervisorNome('');
+    }
+
     setRepresentanteNome(c.representante_nome || '');
-    setGestorNome(c.gestor_nome || (c.gestor_id ? profileMap.get(c.gestor_id) || '' : ''));
 
     // Resolve cliente code and rede
     if (c.cliente_id) {
@@ -137,6 +147,17 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       setClienteCodigo('');
       setRedeNome('');
     }
+
+    // Resolve dates
+    const { data: chamadoData } = await supabase
+      .from('chamados')
+      .select('*')
+      .eq('id', c.id)
+      .maybeSingle();
+    
+    const raw = chamadoData as any;
+    setDataContato(raw?.data_contato ? new Date(raw.data_contato).toLocaleDateString('pt-BR') : '');
+    setDataRetorno(raw?.data_retorno ? new Date(raw.data_retorno).toLocaleDateString('pt-BR') : '');
   };
 
   const loadAnexos = async (chamadoId: number) => {
@@ -164,9 +185,10 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
         descricao: descricao || null,
         status: status as any,
         etapa,
+        gestor_id: gestorId === 'none' ? null : gestorId,
       }).eq('id', chamado.id);
       if (error) throw error;
-      toast.success(`Chamado #${chamado.id} atualizado!`);
+      toast.success(`Ticket ${chamado.id} atualizado!`);
       onSaved();
       onOpenChange(false);
     } catch (err: any) {
@@ -200,108 +222,142 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
   if (!chamado) return null;
 
+  const gestorNome = chamado.gestor_id ? profileMap.get(chamado.gestor_id) || chamado.gestor_nome || '' : '';
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg">Editar Chamado #{chamado.id}</DialogTitle>
-          </DialogHeader>
-
-          {/* Row 1 - Supervisor, Representante, Código Cliente, Cliente */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <ReadOnlyField label="Supervisor" value={supervisorNome} />
-            <ReadOnlyField label="Representantes" value={representanteNome} />
-            <ReadOnlyField label="Código do Cliente Opcional" value={clienteCodigo} />
-            <ReadOnlyField label="Cliente" value={chamado.cliente_nome} />
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
+          {/* Header */}
+          <div className="sticky top-0 z-10 bg-card border-b px-6 py-4">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold">Editar Ticket {chamado.id}</DialogTitle>
+            </DialogHeader>
           </div>
 
-          {/* Row 2 - Rede, Data Contato, Data Retorno, Motivo, Submotivo */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-            <ReadOnlyField label="Rede Opcional" value={redeNome} />
-            <ReadOnlyField label="Data Contato" value="" />
-            <ReadOnlyField label="Data Retorno" value="" />
-            <ReadOnlyField label="Motivo Principal da Solicitação" value={chamado.motivo} />
-            <ReadOnlyField label="Objetivo Principal da Solicitação" value={chamado.submotivo || ''} />
-          </div>
-
-          {/* Row 3 - Metros, Negociado, NFE, Tipo, Gestor, Status Agendamento */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
-            <ReadOnlyField label="Metros Totais" value="" />
-            <ReadOnlyField label="Negociado com" value="" />
-            <ReadOnlyField label="Nº NFE" value="" />
-            <ReadOnlyField label="Tipo de Solicitação" value="" />
-            <ReadOnlyField label="Gestor" value={gestorNome} />
-            <ReadOnlyField label="Status Agendamentos" value="" />
-          </div>
-
-          {/* Row 4 - Status Ticket + Etapa Ticket (editable) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="px-6 py-5 space-y-6">
+            {/* Section 1 - Identification */}
             <div>
-              <Label className="text-xs font-semibold">Status Ticket</Label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="aberto">Aberto</SelectItem>
-                  <SelectItem value="em_progresso">Em Progresso</SelectItem>
-                  <SelectItem value="fechado">Fechado</SelectItem>
-                </SelectContent>
-              </Select>
+              <p className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Identificação</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <ReadOnlyField label="Supervisor" value={supervisorNome} />
+                <ReadOnlyField label="Representante" value={representanteNome} />
+                <ReadOnlyField label="Código do Cliente" value={clienteCodigo} />
+                <ReadOnlyField label="Cliente" value={chamado.cliente_nome} />
+              </div>
             </div>
-            <div>
-              <Label className="text-xs font-semibold">Etapa Ticket</Label>
-              <Select value={etapa} onValueChange={setEtapa}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {etapas.map(e => (
-                    <SelectItem key={e.id} value={e.nome.toLowerCase()}>
-                      {e.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <ReadOnlyField label="Criado em" value={new Date(chamado.created_at).toLocaleString('pt-BR')} />
-            <ReadOnlyField label="Atualizado em" value={new Date(chamado.updated_at).toLocaleString('pt-BR')} />
-          </div>
 
-          {/* Row 5 - Descrição + Anexos */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            {/* Section 2 - Details */}
             <div>
-              <Label className="text-xs font-semibold">Descrição</Label>
-              <Textarea className="mt-1 min-h-[140px]" value={descricao} onChange={e => setDescricao(e.target.value)} />
+              <p className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Detalhes da Solicitação</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <ReadOnlyField label="Rede" value={redeNome} />
+                <ReadOnlyField label="Data Contato" value={dataContato} />
+                <ReadOnlyField label="Data Retorno" value={dataRetorno} />
+                <ReadOnlyField label="Motivo Principal" value={chamado.motivo} />
+                <ReadOnlyField label="Objetivo Principal" value={chamado.submotivo || ''} />
+              </div>
             </div>
+
+            {/* Section 3 - Additional Info */}
             <div>
-              <Label className="text-xs font-semibold">Anexos</Label>
-              <div className="mt-1 border rounded-md p-3 space-y-2 min-h-[140px]">
-                {loadingAnexos ? (
-                  <p className="text-xs text-muted-foreground">Carregando anexos...</p>
-                ) : anexos.length === 0 ? (
-                  <p className="text-xs text-muted-foreground flex items-center justify-center h-full">Nenhum anexo encontrado.</p>
-                ) : (
-                  anexos.map((anexo, i) => (
-                    <div key={i} className="flex items-center justify-between gap-2 p-2 bg-muted rounded-md">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Paperclip className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="text-sm truncate">{anexo.nome}</span>
-                      </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleView(anexo)} title="Visualizar">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(anexo)} title="Baixar">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
+              <p className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Informações Adicionais</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <ReadOnlyField label="Metros Totais" value="" />
+                <ReadOnlyField label="Negociado com" value="" />
+                <ReadOnlyField label="Nº NFE" value="" />
+                <ReadOnlyField label="Tipo de Solicitação" value="" />
+                {/* Gestor editable */}
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Gestor</Label>
+                  <Select value={gestorId} onValueChange={setGestorId}>
+                    <SelectTrigger className="h-[40px]"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Nenhum —</SelectItem>
+                      {gestorProfiles.map(g => (
+                        <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <ReadOnlyField label="Status Agendamento" value="" />
+              </div>
+            </div>
+
+            {/* Section 4 - Ticket Control */}
+            <div>
+              <p className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Controle do Ticket</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Status Ticket</Label>
+                  <Select value={status} onValueChange={setStatus}>
+                    <SelectTrigger className="h-[40px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="aberto">Aberto</SelectItem>
+                      <SelectItem value="em_progresso">Em Progresso</SelectItem>
+                      <SelectItem value="fechado">Fechado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Etapa Ticket</Label>
+                  <Select value={etapa} onValueChange={setEtapa}>
+                    <SelectTrigger className="h-[40px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {etapas.map(e => (
+                        <SelectItem key={e.id} value={e.nome.toLowerCase()}>
+                          {e.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <ReadOnlyField label="Criado em" value={new Date(chamado.created_at).toLocaleString('pt-BR')} />
+                <ReadOnlyField label="Atualizado em" value={new Date(chamado.updated_at).toLocaleString('pt-BR')} />
+              </div>
+            </div>
+
+            {/* Section 5 - Description & Attachments */}
+            <div>
+              <p className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Descrição e Anexos</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Descrição</Label>
+                  <Textarea className="min-h-[140px] resize-y" value={descricao} onChange={e => setDescricao(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Anexos</Label>
+                  <div className="border border-border rounded-lg p-3 space-y-2 min-h-[140px] bg-muted/20">
+                    {loadingAnexos ? (
+                      <p className="text-xs text-muted-foreground animate-pulse">Carregando anexos...</p>
+                    ) : anexos.length === 0 ? (
+                      <p className="text-xs text-muted-foreground flex items-center justify-center h-full">Nenhum anexo encontrado.</p>
+                    ) : (
+                      anexos.map((anexo, i) => (
+                        <div key={i} className="flex items-center justify-between gap-2 p-2.5 bg-card border border-border rounded-lg hover:shadow-sm transition-shadow">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Paperclip className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span className="text-sm truncate">{anexo.nome}</span>
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleView(anexo)} title="Visualizar">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(anexo)} title="Baixar">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-2">
+          {/* Footer */}
+          <div className="sticky bottom-0 bg-card border-t px-6 py-4 flex justify-end gap-3">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button onClick={handleSave} disabled={saving}>
               <Save className="h-4 w-4 mr-1.5" />{saving ? 'Salvando...' : 'Salvar'}
