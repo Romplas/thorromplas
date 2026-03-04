@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, FileText, Shield } from 'lucide-react';
+import { FileText, Shield } from 'lucide-react';
+import logoThor from '@/assets/logo-thor.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -89,8 +90,8 @@ export default function Login() {
         <div className="absolute inset-0 bg-gradient-to-t from-primary/30 via-primary/10 to-transparent" />
         <div className="relative z-10 text-white">
           <div className="flex items-center gap-3 mb-6">
-            <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center">
-              <Zap className="h-6 w-6 text-white" />
+            <div className="h-14 w-14 rounded-xl overflow-hidden bg-white/10 flex items-center justify-center">
+              <img src={logoThor} alt="THOR" className="h-14 w-14 object-contain" />
             </div>
             <div>
               <h2 className="text-2xl font-bold">THOR</h2>

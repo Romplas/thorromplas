@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, Clock, Users, Zap, LogOut, User, Columns3, Upload, Settings } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Clock, Users, LogOut, User, Columns3, Upload, Settings } from 'lucide-react';
+import logoThor from '@/assets/logo-thor.png';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -50,7 +51,7 @@ export default function Layout({ children }: LayoutProps) {
       <header className="nav-header h-12 flex items-center justify-between px-6 shadow-md">
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-2 font-bold text-lg cursor-pointer" onClick={() => navigate('/')}>
-            <Zap className="h-5 w-5" />
+            <img src={logoThor} alt="THOR" className="h-7 w-7 rounded" />
             THOR
           </div>
           <nav className="flex items-center gap-1">
