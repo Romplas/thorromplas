@@ -2,15 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Pencil, Trash2, Eye, Eraser, Paperclip, Download, FileDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/Layout';
 import EditChamadoModal from '@/components/kanban/EditChamadoModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface HistoricoEntry {
   id: string;
@@ -109,7 +112,9 @@ export default function Historico() {
   const [anexoCount, setAnexoCount] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState('');
-
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTicketId, setDeleteTicketId] = useState<number | null>(null);
+  const [deleteMotivo, setDeleteMotivo] = useState('');
   // Filters
   const [filterSupervisor, setFilterSupervisor] = useState('todos');
   const [filterRepresentante, setFilterRepresentante] = useState('todos');
@@ -453,6 +458,46 @@ export default function Historico() {
     if (selectedChamado) setEditModalOpen(true);
   };
 
+  const handleDeleteRequest = (ticketId: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setDeleteTicketId(ticketId);
+    setDeleteMotivo('');
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTicketId || !deleteMotivo.trim()) {
+      toast.error('Informe o motivo da exclusão');
+      return;
+    }
+    try {
+      // Log deletion in history before deleting
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      let userProfileId: string | null = null;
+      if (currentUser) {
+        const { data: prof } = await supabase.from('profiles').select('id').eq('user_id', currentUser.id).maybeSingle();
+        userProfileId = prof?.id || null;
+      }
+
+      await supabase.from('chamado_historico').insert({
+        chamado_id: deleteTicketId,
+        user_id: userProfileId,
+        acao: 'Ticket Excluído',
+        descricao: `Motivo da exclusão: ${deleteMotivo.trim()}`,
+        descricao_ticket: null,
+      } as any);
+
+      const { error } = await supabase.from('chamados').delete().eq('id', deleteTicketId);
+      if (error) throw error;
+      toast.success(`Ticket #${deleteTicketId} excluído com sucesso`);
+      setDeleteDialogOpen(false);
+      setSelectedEntryId(null);
+      fetchData();
+    } catch (err: any) {
+      toast.error('Erro ao excluir: ' + (err.message || 'Erro desconhecido'));
+    }
+  };
+
   const handleVerAnexoClick = async () => {
     if (!selectedChamado) return;
     setAnexosDialogOpen(true);
@@ -668,8 +713,8 @@ export default function Historico() {
                               <p className="text-yellow-200 font-semibold">TicketID Criado em: {chamado ? formatDateTime(chamado.created_at) : '—'}</p>
                             </div>
                             <div className="flex items-center gap-1.5 ml-2">
-                              <Pencil className="h-4 w-4 opacity-80 hover:opacity-100" />
-                              <Trash2 className="h-4 w-4 opacity-80 hover:opacity-100" />
+                              <Pencil className="h-4 w-4 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedEntryId(entry.id); setSelectedTicketId(String(entry.chamado_id)); setEditModalOpen(true); }} />
+                              <Trash2 className="h-4 w-4 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => handleDeleteRequest(entry.chamado_id, e)} />
                             </div>
                           </div>
                         </div>
@@ -722,6 +767,10 @@ export default function Historico() {
                   <Button variant="default" size="sm" className="gap-1.5" onClick={handleEditClick}>
                     <Pencil className="h-4 w-4" />
                     Editar
+                  </Button>
+                  <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => handleDeleteRequest(selectedChamado.id)}>
+                    <Trash2 className="h-4 w-4" />
+                    Excluir
                   </Button>
                   <Button variant="outline" size="sm" className="gap-1.5" onClick={handleClearSelection}>
                     <Eraser className="h-4 w-4" />
@@ -895,6 +944,36 @@ export default function Historico() {
             </div>
           </DialogContent>
         </Dialog>
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir o chamado <strong>#{deleteTicketId}</strong>? Informe o motivo da exclusão abaixo. Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2 py-2">
+              <Label className="text-sm font-medium">Motivo da exclusão *</Label>
+              <Textarea
+                value={deleteMotivo}
+                onChange={(e) => setDeleteMotivo(e.target.value)}
+                placeholder="Informe o motivo da exclusão..."
+                className="min-h-[80px]"
+              />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteConfirm}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={!deleteMotivo.trim()}
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Layout>
   );
