@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import jsPDF from 'jspdf';
 import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2, Eye, Pencil, Plus } from 'lucide-react';
+import romplasLogo from '@/assets/romplas-logo.png';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -1202,7 +1203,12 @@ export default function NovoChamado() {
       {/* SD Form Dialog */}
       <Dialog open={showSDForm} onOpenChange={setShowSDForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>ROMPLAS - SDP - Solicitação de Desenvolvimento de Produto</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <div className="flex justify-center mb-2">
+              <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
+            </div>
+            <DialogTitle className="text-center">SDP - Solicitação de Desenvolvimento de Produto</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div><Label className="text-xs">Cliente *</Label><Input className="mt-1" value={sdForm.cliente} onChange={e => setSdForm(p => ({ ...p, cliente: e.target.value }))} /></div>
@@ -1221,13 +1227,14 @@ export default function NovoChamado() {
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="necessitaAmostra" checked={sdForm.necessitaAmostra === 'nao'} onChange={() => setSdForm(p => ({ ...p, necessitaAmostra: 'nao', amostraTipo: '' }))} /> Não</label>
                 <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="necessitaAmostra" checked={sdForm.necessitaAmostra === 'sim'} onChange={() => setSdForm(p => ({ ...p, necessitaAmostra: 'sim' }))} /> Sim</label>
+                {sdForm.necessitaAmostra === 'sim' && (
+                  <>
+                    <span className="text-xs text-muted-foreground ml-2">—</span>
+                    <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="amostraTipo" checked={sdForm.amostraTipo === 'placa'} onChange={() => setSdForm(p => ({ ...p, amostraTipo: 'placa' }))} /> Placa</label>
+                    <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="amostraTipo" checked={sdForm.amostraTipo === 'metros'} onChange={() => setSdForm(p => ({ ...p, amostraTipo: 'metros' }))} /> Metros</label>
+                  </>
+                )}
               </div>
-              {sdForm.necessitaAmostra === 'sim' && (
-                <div className="flex items-center gap-4 ml-4">
-                  <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="amostraTipo" checked={sdForm.amostraTipo === 'placa'} onChange={() => setSdForm(p => ({ ...p, amostraTipo: 'placa' }))} /> Placa</label>
-                  <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="amostraTipo" checked={sdForm.amostraTipo === 'metros'} onChange={() => setSdForm(p => ({ ...p, amostraTipo: 'metros' }))} /> Metros</label>
-                </div>
-              )}
             </div>
 
             {/* Desenvolvimento */}
