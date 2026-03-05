@@ -149,72 +149,87 @@ export default function NovoChamado() {
   }, []);
 
   // Load existing open/THOR chamados from DB
-  useEffect(() => {
-    const loadExistingTickets = async () => {
-      setLoadingTickets(true);
-      try {
-        const { data, error } = await supabase
-          .from('chamados')
-          .select('*')
-          .eq('status', 'aberto')
-          .eq('etapa', 'thor')
-          .order('created_at', { ascending: false })
-          .limit(100);
-        if (error) throw error;
-        if (data && data.length > 0) {
-          // Resolve names for loaded chamados
-          const supIds = [...new Set(data.map(d => d.supervisor_id).filter(Boolean))];
-          const repIds = [...new Set(data.map(d => d.representante_id).filter(Boolean))];
-          const clienteIds = [...new Set(data.map(d => d.cliente_id).filter(Boolean))];
-          
-          const [supRes, repRes, clienteRes, redeRes] = await Promise.all([
-            supIds.length > 0 ? supabase.from('supervisores').select('id, nome').in('id', supIds) : { data: [] },
-            repIds.length > 0 ? supabase.from('representantes').select('id, nome').in('id', repIds) : { data: [] },
-            clienteIds.length > 0 ? supabase.from('clientes').select('id, codigo, nome, rede_id').in('id', clienteIds) : { data: [] },
-            supabase.from('redes').select('id, nome'),
-          ]);
+  const loadExistingTickets = async () => {
+    setLoadingTickets(true);
+    try {
+      const { data, error } = await supabase
+        .from('chamados')
+        .select('*')
+        .eq('status', 'aberto')
+        .eq('etapa', 'thor')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      if (data && data.length > 0) {
+        // Resolve names for loaded chamados
+        const supIds = [...new Set(data.map(d => d.supervisor_id).filter(Boolean))];
+        const repIds = [...new Set(data.map(d => d.representante_id).filter(Boolean))];
+        const clienteIds = [...new Set(data.map(d => d.cliente_id).filter(Boolean))];
+        
+        const [supRes, repRes, clienteRes, redeRes] = await Promise.all([
+          supIds.length > 0 ? supabase.from('supervisores').select('id, nome').in('id', supIds) : { data: [] },
+          repIds.length > 0 ? supabase.from('representantes').select('id, nome').in('id', repIds) : { data: [] },
+          clienteIds.length > 0 ? supabase.from('clientes').select('id, codigo, nome, rede_id').in('id', clienteIds) : { data: [] },
+          supabase.from('redes').select('id, nome'),
+        ]);
 
-          const supMap = new Map((supRes.data || []).map((s: any) => [s.id, s.nome]));
-          const repMap = new Map((repRes.data || []).map((r: any) => [r.id, r.nome]));
-          const clienteMap = new Map((clienteRes.data || []).map((c: any) => [c.id, c]));
-          const redeMap = new Map((redeRes.data || []).map((r: any) => [r.id, r.nome]));
+        const supMap = new Map((supRes.data || []).map((s: any) => [s.id, s.nome]));
+        const repMap = new Map((repRes.data || []).map((r: any) => [r.id, r.nome]));
+        const clienteMap = new Map((clienteRes.data || []).map((c: any) => [c.id, c]));
+        const redeMap = new Map((redeRes.data || []).map((r: any) => [r.id, r.nome]));
 
-          const mapped: ChamadoCriado[] = data.map((d: any) => {
-            const cliente = clienteMap.get(d.cliente_id);
-            return {
-              id: d.id,
-              status: d.status,
-              etapa: d.etapa?.toUpperCase() || 'THOR',
-              supervisor: supMap.get(d.supervisor_id) || '',
-              representante: repMap.get(d.representante_id) || '',
-              cliente: d.cliente_nome || '',
-              codigoCliente: cliente?.codigo?.toString() || '',
-              rede: cliente?.rede_id ? (redeMap.get(cliente.rede_id) || '') : '',
-              dataContato: d.data_contato || '',
-              dataRetorno: d.data_retorno || '',
-              motivo: d.motivo || '',
-              submotivo: d.submotivo || '',
-              metrosTotais: (d as any).metros_totais || '',
-              negociadoCom: (d as any).negociado_com || '',
-              nfe: (d as any).nfe || '',
-              tipoSolicitacao: (d as any).tipo_solicitacao || '',
-              gestor: '',
-              statusAgendamento: (d as any).status_agendamento || '',
-              descricao: d.descricao || '',
-              anexosNomes: [],
-              anexos: [],
-              criadoEm: new Date(d.created_at).toLocaleString('pt-BR'),
-            };
-          });
-          setChamadosCriados(mapped);
-        }
-      } catch (err) {
-        console.error('Erro ao carregar tickets:', err);
-      } finally {
-        setLoadingTickets(false);
+        const mapped: ChamadoCriado[] = data.map((d: any) => {
+          const cliente = clienteMap.get(d.cliente_id);
+          return {
+            id: d.id,
+            status: d.status,
+            etapa: d.etapa?.toUpperCase() || 'THOR',
+            supervisor: supMap.get(d.supervisor_id) || '',
+            representante: repMap.get(d.representante_id) || '',
+            cliente: d.cliente_nome || '',
+            codigoCliente: cliente?.codigo?.toString() || '',
+            rede: cliente?.rede_id ? (redeMap.get(cliente.rede_id) || '') : '',
+            dataContato: d.data_contato || '',
+            dataRetorno: d.data_retorno || '',
+            motivo: d.motivo || '',
+            submotivo: d.submotivo || '',
+            metrosTotais: (d as any).metros_totais || '',
+            negociadoCom: (d as any).negociado_com || '',
+            nfe: (d as any).nfe || '',
+            tipoSolicitacao: (d as any).tipo_solicitacao || '',
+            gestor: '',
+            statusAgendamento: (d as any).status_agendamento || '',
+            descricao: d.descricao || '',
+            anexosNomes: [],
+            anexos: [],
+            criadoEm: new Date(d.created_at).toLocaleString('pt-BR'),
+          };
+        });
+        setChamadosCriados(mapped);
+      } else {
+        setChamadosCriados([]);
       }
-    };
+    } catch (err) {
+      console.error('Erro ao carregar tickets:', err);
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
+  useEffect(() => {
     loadExistingTickets();
+
+    // Realtime subscription for chamados changes from any user
+    const channel = supabase
+      .channel('novo-chamado-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chamados' }, () => {
+        loadExistingTickets();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Auto-fill supervisor/representante based on logged-in user role
