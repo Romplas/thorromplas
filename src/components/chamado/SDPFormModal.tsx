@@ -59,8 +59,9 @@ export default function SDPFormModal({ open, onOpenChange, chamadoId, clienteNom
       // Try loading from DB
       const { data } = await supabase.from('chamados').select('sdp_data').eq('id', chamadoId).maybeSingle();
       const raw = data as any;
-      if (raw?.sdp_data && typeof raw.sdp_data === 'object') {
-        setSdForm({ ...defaultSdForm, ...raw.sdp_data, cliente: clienteNome, representante: representanteNome });
+      if (raw?.sdp_data && typeof raw.sdp_data === 'object' && (!raw.sdp_data.formType || raw.sdp_data.formType === 'sdp')) {
+        const { formType, ...rest } = raw.sdp_data;
+        setSdForm({ ...defaultSdForm, ...rest, cliente: clienteNome, representante: representanteNome });
       } else {
         setSdForm({ ...defaultSdForm, cliente: clienteNome, representante: representanteNome });
       }
