@@ -96,6 +96,9 @@ export default function NovoChamado() {
   const [newClientCodigo, setNewClientCodigo] = useState('');
   const [newClientRede, setNewClientRede] = useState('');
   const [savingClient, setSavingClient] = useState(false);
+  const [showNewRedeInput, setShowNewRedeInput] = useState(false);
+  const [newRedeNome, setNewRedeNome] = useState('');
+  const [savingRede, setSavingRede] = useState(false);
 
   const isSupervisorLocked = role === 'supervisor' || role === 'representante';
   const isRepresentanteLocked = role === 'representante';
@@ -744,15 +747,61 @@ export default function NovoChamado() {
               <Input className="mt-1" type="number" value={newClientCodigo} onChange={e => setNewClientCodigo(e.target.value)} placeholder="Código numérico" />
             </div>
             <div>
-              <Label className="text-xs font-semibold">Rede (opcional)</Label>
-              <SearchableSelect
-                className="mt-1"
-                value={newClientRede}
-                onValueChange={setNewClientRede}
-                placeholder="Selecione a rede"
-                searchPlaceholder="Pesquisar rede..."
-                options={redes.map(r => ({ value: r.id, label: r.nome }))}
-              />
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">Rede (opcional)</Label>
+                <button
+                  type="button"
+                  onClick={() => setShowNewRedeInput(true)}
+                  className="text-primary hover:text-primary/80 transition-colors"
+                  title="Cadastrar nova rede"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+              {showNewRedeInput ? (
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    value={newRedeNome}
+                    onChange={e => setNewRedeNome(e.target.value)}
+                    placeholder="Nome da nova rede"
+                    className="flex-1"
+                  />
+                  <Button
+                    size="sm"
+                    disabled={savingRede || !newRedeNome.trim()}
+                    onClick={async () => {
+                      setSavingRede(true);
+                      try {
+                        const { data, error } = await supabase.from('redes').insert({ nome: newRedeNome.trim() }).select('id, nome').single();
+                        if (error) throw error;
+                        setRedes(prev => [...prev, data as Rede]);
+                        setNewClientRede(data.id);
+                        setNewRedeNome('');
+                        setShowNewRedeInput(false);
+                        toast.success(`Rede "${data.nome}" cadastrada!`);
+                      } catch (err: any) {
+                        toast.error('Erro ao cadastrar rede: ' + (err.message || 'Erro desconhecido'));
+                      } finally {
+                        setSavingRede(false);
+                      }
+                    }}
+                  >
+                    {savingRede ? '...' : 'OK'}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setShowNewRedeInput(false); setNewRedeNome(''); }}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <SearchableSelect
+                  className="mt-1"
+                  value={newClientRede}
+                  onValueChange={setNewClientRede}
+                  placeholder="Selecione a rede"
+                  searchPlaceholder="Pesquisar rede..."
+                  options={redes.map(r => ({ value: r.id, label: r.nome }))}
+                />
+              )}
             </div>
             {selectedSupervisor && (
               <div>
