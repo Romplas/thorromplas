@@ -119,12 +119,13 @@ export default function NovoChamado() {
     aditivos: string; quaisAditivos: string;
     corPantone: string; qualPantone: string;
     observacoesComplementares: string;
+    statusAprovacao: string; motivoReprovacao: string;
   }
   interface RNCFormData { nfNumero: string; produto: string; lote: string; defeito: string; quantidade: string; observacoes: string }
   interface AmostrasFormData { produto: string; referencia: string; cor: string; quantidade: string; tamanho: string; destino: string; observacoes: string }
   interface BookFormData { tipoBook: string; quantidade: string; destino: string; observacoes: string }
 
-  const defaultSdForm: SDFormData = { cliente: '', representante: '', segmentoMercado: '', aplicacaoProduto: '', estimativaConsumo: '', precoAlvo: '', necessitaAmostra: 'nao', amostraTipo: '', desenvolvimento: '', amostraReferenciaAnexa: 'nao', qualFabricante: '', gramaturaTotal: '', espessura: '', substrato: '', gravacao: '', aditivos: 'nao', quaisAditivos: '', corPantone: 'nao', qualPantone: '', observacoesComplementares: '' };
+  const defaultSdForm: SDFormData = { cliente: '', representante: '', segmentoMercado: '', aplicacaoProduto: '', estimativaConsumo: '', precoAlvo: '', necessitaAmostra: 'nao', amostraTipo: '', desenvolvimento: '', amostraReferenciaAnexa: 'nao', qualFabricante: '', gramaturaTotal: '', espessura: '', substrato: '', gravacao: '', aditivos: 'nao', quaisAditivos: '', corPantone: 'nao', qualPantone: '', observacoesComplementares: '', statusAprovacao: '', motivoReprovacao: '' };
   const [sdForm, setSdForm] = useState<SDFormData>({ ...defaultSdForm });
   const [rncForm, setRncForm] = useState<RNCFormData>({ nfNumero: '', produto: '', lote: '', defeito: '', quantidade: '', observacoes: '' });
   const [amostrasForm, setAmostrasForm] = useState<AmostrasFormData>({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
@@ -162,8 +163,8 @@ export default function NovoChamado() {
   // Helper to build description from structured fields
   const buildDescricao = (negociacao: boolean) => {
     if (hasSpecialForm && specialFormFilled) {
-      const specialDesc = buildSpecialDescricao();
-      return descricaoTexto ? `${specialDesc}\n\nObservações: ${descricaoTexto}` : specialDesc;
+      // Não inclui dados do formulário especial na descrição - ficam apenas no PDF
+      return descricaoTexto || '';
     }
     if (!negociacao) return descricaoTexto;
     const prodLines = produtos.map((p, i) => 
@@ -937,29 +938,46 @@ export default function NovoChamado() {
                   </div>
                 ) : hasSpecialForm ? (
                   <div className="mt-1 space-y-3">
-                    <Button
-                      type="button"
-                      variant={specialFormFilled ? 'default' : 'outline'}
-                      className="w-full"
-                      onClick={() => {
-                        if (isSD) {
-                          const repNome = representantes.find(r => r.id === selectedRepresentante)?.nome || '';
-                          setSdForm(p => ({ ...p, representante: repNome }));
-                          setShowSDForm(true);
-                        }
-                        else if (isRNC) setShowRNCForm(true);
-                        else if (isAmostras) setShowAmostrasForm(true);
-                        else if (isBook) setShowBookForm(true);
-                      }}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      {specialFormFilled ? '✓ ' : ''}Preencher Solicitação de {isSD ? 'SD' : isRNC ? 'RNC' : isAmostras ? 'Amostras' : 'Books'}
-                    </Button>
-                    {specialFormFilled && (
-                      <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground whitespace-pre-line">
-                        {buildSpecialDescricao()}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant={specialFormFilled ? 'default' : 'outline'}
+                        className="flex-1"
+                        onClick={() => {
+                          if (isSD) {
+                            const repNome = representantes.find(r => r.id === selectedRepresentante)?.nome || '';
+                            setSdForm(p => ({ ...p, representante: repNome }));
+                            setShowSDForm(true);
+                          }
+                          else if (isRNC) setShowRNCForm(true);
+                          else if (isAmostras) setShowAmostrasForm(true);
+                          else if (isBook) setShowBookForm(true);
+                        }}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        {specialFormFilled ? '✓ ' : ''}Preencher Solicitação de {isSD ? 'SD' : isRNC ? 'RNC' : isAmostras ? 'Amostras' : 'Books'}
+                      </Button>
+                      {specialFormFilled && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          title="Visualizar / Editar solicitação"
+                          onClick={() => {
+                            if (isSD) {
+                              const repNome = representantes.find(r => r.id === selectedRepresentante)?.nome || '';
+                              setSdForm(p => ({ ...p, representante: repNome }));
+                              setShowSDForm(true);
+                            }
+                            else if (isRNC) setShowRNCForm(true);
+                            else if (isAmostras) setShowAmostrasForm(true);
+                            else if (isBook) setShowBookForm(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                     <div>
                       <Label className="text-[10px] text-muted-foreground">Observações</Label>
                       <Textarea
@@ -1307,6 +1325,24 @@ export default function NovoChamado() {
 
             {/* Observações Complementares */}
             <div><Label className="text-xs">Observações Complementares</Label><Textarea className="mt-1" value={sdForm.observacoesComplementares} onChange={e => setSdForm(p => ({ ...p, observacoesComplementares: e.target.value }))} /></div>
+
+            {/* Aprovação */}
+            <div className="border rounded-lg p-3 space-y-3">
+              <div className="flex items-center gap-6">
+                <label className="flex items-center gap-1.5 text-xs font-medium">
+                  <input type="radio" name="statusAprovacao" checked={sdForm.statusAprovacao === 'aprovada'} onChange={() => setSdForm(p => ({ ...p, statusAprovacao: 'aprovada', motivoReprovacao: '' }))} />
+                  APROVADA
+                </label>
+                <label className="flex items-center gap-1.5 text-xs font-medium">
+                  <input type="radio" name="statusAprovacao" checked={sdForm.statusAprovacao === 'reprovada'} onChange={() => setSdForm(p => ({ ...p, statusAprovacao: 'reprovada' }))} />
+                  REPROVADA, POR QUE?
+                </label>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold text-center block">MOTIVO</Label>
+                <Textarea className="mt-1" placeholder="Informe o motivo..." value={sdForm.motivoReprovacao} onChange={e => setSdForm(p => ({ ...p, motivoReprovacao: e.target.value }))} />
+              </div>
+            </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowSDForm(false)}>Cancelar</Button>
@@ -1480,6 +1516,34 @@ export default function NovoChamado() {
                 doc.text(obsLines, margin, y);
                 y += obsLines.length * 5;
               }
+
+              // Aprovação / Reprovação
+              checkPage(25);
+              y += 3;
+              addSectionBox('', () => {
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9);
+                const aprovadaLabel = '( ' + (sdForm.statusAprovacao === 'aprovada' ? 'X' : ' ') + ' ) APROVADA';
+                const reprovadaLabel = '( ' + (sdForm.statusAprovacao === 'reprovada' ? 'X' : ' ') + ' ) REPROVADA, POR QUE?';
+                doc.text(aprovadaLabel + '    ' + reprovadaLabel, margin + 3, y);
+                y += 8;
+                doc.setFont('helvetica', 'bold');
+                doc.text('MOTIVO', pageW / 2, y, { align: 'center' });
+                y += 6;
+                doc.setDrawColor(0);
+                doc.line(margin + 3, y, pageW - margin - 3, y);
+                y += 3;
+                doc.setFont('helvetica', 'normal');
+                if (sdForm.motivoReprovacao) {
+                  const motivoLines = doc.splitTextToSize(sdForm.motivoReprovacao, contentW - 6);
+                  doc.text(motivoLines, margin + 3, y);
+                  y += motivoLines.length * 5;
+                } else {
+                  doc.text('R:', margin + 3, y);
+                  doc.line(margin + 10, y + 1, pageW - margin - 3, y + 1);
+                  y += 5;
+                }
+              });
               const pdfBlob = doc.output('blob');
               const cleanName = (sdForm.cliente || 'solicitacao').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
               const pdfFile = new globalThis.File([pdfBlob], `SDP_${cleanName}.pdf`, { type: 'application/pdf' });
