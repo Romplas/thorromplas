@@ -3,6 +3,9 @@ import { Save, Paperclip, Eye, Download, Upload, X, Trash2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import SDPFormModal from '@/components/chamado/SDPFormModal';
+import RNCFormModal from '@/components/chamado/RNCFormModal';
+import AmostrasFormModal from '@/components/chamado/AmostrasFormModal';
+import BookFormModal from '@/components/chamado/BookFormModal';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -96,6 +99,9 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState('');
   const [showSDPModal, setShowSDPModal] = useState(false);
+  const [showRNCModal, setShowRNCModal] = useState(false);
+  const [showAmostrasModal, setShowAmostrasModal] = useState(false);
+  const [showBookModal, setShowBookModal] = useState(false);
 
   // Reference data
   const [etapas, setEtapas] = useState<Etapa[]>([]);
@@ -537,6 +543,42 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
                           SDP
                         </Button>
                       )}
+                      {chamado && chamado.motivo.toLowerCase() === 'rnc' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => setShowRNCModal(true)}
+                          title="Preencher / Editar RNC"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          RNC
+                        </Button>
+                      )}
+                      {chamado && chamado.motivo.toLowerCase() === 'amostras' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => setShowAmostrasModal(true)}
+                          title="Preencher / Editar Amostras"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          Amostras
+                        </Button>
+                      )}
+                      {chamado && chamado.motivo.toLowerCase() === 'book' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => setShowBookModal(true)}
+                          title="Preencher / Editar Book"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          Book
+                        </Button>
+                      )}
                     </div>
                     <Textarea className="min-h-[140px] resize-y" value={descricao} onChange={e => setDescricao(e.target.value)} />
                   </div>
@@ -641,6 +683,42 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
         <SDPFormModal
           open={showSDPModal}
           onOpenChange={setShowSDPModal}
+          chamadoId={chamado.id}
+          clienteNome={chamado.cliente_nome}
+          representanteNome={representanteNome}
+          onPdfUploaded={() => loadAnexos(chamado.id)}
+        />
+      )}
+
+      {/* RNC Form Modal */}
+      {chamado && (
+        <RNCFormModal
+          open={showRNCModal}
+          onOpenChange={setShowRNCModal}
+          chamadoId={chamado.id}
+          clienteNome={chamado.cliente_nome}
+          representanteNome={representanteNome}
+          onPdfUploaded={() => loadAnexos(chamado.id)}
+        />
+      )}
+
+      {/* Amostras Form Modal */}
+      {chamado && (
+        <AmostrasFormModal
+          open={showAmostrasModal}
+          onOpenChange={setShowAmostrasModal}
+          chamadoId={chamado.id}
+          clienteNome={chamado.cliente_nome}
+          representanteNome={representanteNome}
+          onPdfUploaded={() => loadAnexos(chamado.id)}
+        />
+      )}
+
+      {/* Book Form Modal */}
+      {chamado && (
+        <BookFormModal
+          open={showBookModal}
+          onOpenChange={setShowBookModal}
           chamadoId={chamado.id}
           clienteNome={chamado.cliente_nome}
           representanteNome={representanteNome}
