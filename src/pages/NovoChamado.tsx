@@ -460,12 +460,7 @@ export default function NovoChamado() {
                 </Select>
               </div>
               <div>
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold">Código do Cliente Opcional</Label>
-                  <button type="button" title="Cadastrar novo cliente" onClick={() => setShowNewClientDialog(true)} className="text-primary hover:text-primary/80 transition-colors">
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </div>
+                <Label className="text-xs font-semibold">Código do Cliente Opcional</Label>
                 <SearchableSelect
                   className="mt-1"
                   value={selectedCodigoCliente}
@@ -498,12 +493,7 @@ export default function NovoChamado() {
             {/* Row 2 */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-5">
               <div>
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold">Rede Opcional</Label>
-                  <button type="button" title="Cadastrar novo cliente" onClick={() => setShowNewClientDialog(true)} className="text-primary hover:text-primary/80 transition-colors">
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </div>
+                <Label className="text-xs font-semibold">Rede Opcional</Label>
                 <SearchableSelect
                   className="mt-1"
                   value={selectedRede}
@@ -764,10 +754,17 @@ export default function NovoChamado() {
                 options={redes.map(r => ({ value: r.id, label: r.nome }))}
               />
             </div>
+            {selectedSupervisor && (
+              <div>
+                <Label className="text-xs font-semibold">Supervisor</Label>
+                <Input className="mt-1" value={supervisores.find(s => s.id === selectedSupervisor)?.nome || ''} disabled />
+              </div>
+            )}
             {selectedRepresentante && (
-              <p className="text-xs text-muted-foreground">
-                Representante: <span className="font-medium">{representantes.find(r => r.id === selectedRepresentante)?.nome}</span>
-              </p>
+              <div>
+                <Label className="text-xs font-semibold">Representante</Label>
+                <Input className="mt-1" value={representantes.find(r => r.id === selectedRepresentante)?.nome || ''} disabled />
+              </div>
             )}
           </div>
           <DialogFooter>
