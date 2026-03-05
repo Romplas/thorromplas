@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2, Eye, Pencil } from 'lucide-react';
+import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2, Eye, Pencil, Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
@@ -88,6 +89,13 @@ export default function NovoChamado() {
   // Created tickets
   const [chamadosCriados, setChamadosCriados] = useState<ChamadoCriado[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  // New client dialog
+  const [showNewClientDialog, setShowNewClientDialog] = useState(false);
+  const [newClientNome, setNewClientNome] = useState('');
+  const [newClientCodigo, setNewClientCodigo] = useState('');
+  const [newClientRede, setNewClientRede] = useState('');
+  const [savingClient, setSavingClient] = useState(false);
 
   const isSupervisorLocked = role === 'supervisor' || role === 'representante';
   const isRepresentanteLocked = role === 'representante';
@@ -383,6 +391,45 @@ export default function NovoChamado() {
     setFileErrors([]);
   };
 
+  const handleSaveNewClient = async () => {
+    if (!newClientNome.trim()) {
+      toast.error('Informe o nome do cliente.');
+      return;
+    }
+    if (!selectedRepresentante) {
+      toast.error('Selecione um representante antes de cadastrar um cliente.');
+      return;
+    }
+    setSavingClient(true);
+    try {
+      const insertData: any = {
+        nome: newClientNome.trim(),
+        representante_id: selectedRepresentante,
+      };
+      if (newClientCodigo) insertData.codigo = Number(newClientCodigo);
+      if (newClientRede) insertData.rede_id = newClientRede;
+
+      const { data, error } = await supabase.from('clientes').insert(insertData).select('id, codigo, nome, representante_id, rede_id').single();
+      if (error) throw error;
+
+      // Add to local list and select
+      setClientes(prev => [...prev, data as Cliente]);
+      setSelectedCliente(data.id);
+      setSelectedCodigoCliente(data.id);
+      if (data.rede_id) setSelectedRede(data.rede_id);
+
+      toast.success(`Cliente "${data.nome}" cadastrado com sucesso!`);
+      setShowNewClientDialog(false);
+      setNewClientNome('');
+      setNewClientCodigo('');
+      setNewClientRede('');
+    } catch (err: any) {
+      toast.error('Erro ao cadastrar cliente: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+      setSavingClient(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="flex flex-col min-h-[calc(100vh-3rem-3rem)] -m-6">
@@ -413,7 +460,12 @@ export default function NovoChamado() {
                 </Select>
               </div>
               <div>
-                <Label className="text-xs font-semibold">Código do Cliente Opcional</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold">Código do Cliente Opcional</Label>
+                  <button type="button" title="Cadastrar novo cliente" onClick={() => setShowNewClientDialog(true)} className="text-primary hover:text-primary/80 transition-colors">
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
                 <SearchableSelect
                   className="mt-1"
                   value={selectedCodigoCliente}
@@ -425,7 +477,12 @@ export default function NovoChamado() {
                 />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-destructive">* Clientes</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-destructive">* Clientes</Label>
+                  <button type="button" title="Cadastrar novo cliente" onClick={() => setShowNewClientDialog(true)} className="text-primary hover:text-primary/80 transition-colors">
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
                 <SearchableSelect
                   className="mt-1 border-destructive/50"
                   value={selectedCliente}
@@ -441,7 +498,12 @@ export default function NovoChamado() {
             {/* Row 2 */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-5">
               <div>
-                <Label className="text-xs font-semibold">Rede Opcional</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold">Rede Opcional</Label>
+                  <button type="button" title="Cadastrar novo cliente" onClick={() => setShowNewClientDialog(true)} className="text-primary hover:text-primary/80 transition-colors">
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
                 <SearchableSelect
                   className="mt-1"
                   value={selectedRede}
@@ -675,6 +737,47 @@ export default function NovoChamado() {
           </div>
         </div>
       </div>
+
+      {/* Dialog Cadastrar Novo Cliente */}
+      <Dialog open={showNewClientDialog} onOpenChange={setShowNewClientDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="text-xs font-semibold">Nome do Cliente *</Label>
+              <Input className="mt-1" value={newClientNome} onChange={e => setNewClientNome(e.target.value)} placeholder="Nome do cliente" />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold">Código (opcional)</Label>
+              <Input className="mt-1" type="number" value={newClientCodigo} onChange={e => setNewClientCodigo(e.target.value)} placeholder="Código numérico" />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold">Rede (opcional)</Label>
+              <SearchableSelect
+                className="mt-1"
+                value={newClientRede}
+                onValueChange={setNewClientRede}
+                placeholder="Selecione a rede"
+                searchPlaceholder="Pesquisar rede..."
+                options={redes.map(r => ({ value: r.id, label: r.nome }))}
+              />
+            </div>
+            {selectedRepresentante && (
+              <p className="text-xs text-muted-foreground">
+                Representante: <span className="font-medium">{representantes.find(r => r.id === selectedRepresentante)?.nome}</span>
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setShowNewClientDialog(false)}>Cancelar</Button>
+            <Button size="sm" onClick={handleSaveNewClient} disabled={savingClient}>
+              {savingClient ? 'Salvando...' : 'Cadastrar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
