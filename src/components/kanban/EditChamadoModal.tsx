@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Save, Paperclip, Eye, Download, Upload, X, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import SDPFormModal from '@/components/chamado/SDPFormModal';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -94,6 +95,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState('');
+  const [showSDPModal, setShowSDPModal] = useState(false);
 
   // Reference data
   const [etapas, setEtapas] = useState<Etapa[]>([]);
@@ -521,7 +523,21 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {isEditable ? (
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Descrição</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Descrição</Label>
+                      {chamado && (chamado.motivo.toLowerCase().includes('sd') || chamado.motivo.toLowerCase().includes('solicitação de desenvolvimento')) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => setShowSDPModal(true)}
+                          title="Preencher / Editar Solicitação de SD"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          SDP
+                        </Button>
+                      )}
+                    </div>
                     <Textarea className="min-h-[140px] resize-y" value={descricao} onChange={e => setDescricao(e.target.value)} />
                   </div>
                 ) : (
@@ -619,6 +635,18 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* SDP Form Modal */}
+      {chamado && (
+        <SDPFormModal
+          open={showSDPModal}
+          onOpenChange={setShowSDPModal}
+          chamadoId={chamado.id}
+          clienteNome={chamado.cliente_nome}
+          representanteNome={representanteNome}
+          onPdfUploaded={() => loadAnexos(chamado.id)}
+        />
+      )}
     </>
   );
 }

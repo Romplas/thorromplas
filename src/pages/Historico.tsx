@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Pencil, Trash2, Eye, Eraser, Paperclip, Download, FileDown } from 'lucide-react';
+import SDPFormModal from '@/components/chamado/SDPFormModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -106,6 +107,7 @@ export default function Historico() {
   const [selectedTicketId, setSelectedTicketId] = useState<string>(ticketIdParam || 'todos');
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [sdpModalOpen, setSdpModalOpen] = useState(false);
   const [anexosDialogOpen, setAnexosDialogOpen] = useState(false);
   const [anexos, setAnexos] = useState<{ nome: string; path: string }[]>([]);
   const [loadingAnexos, setLoadingAnexos] = useState(false);
@@ -756,6 +758,12 @@ export default function Historico() {
                     <Pencil className="h-4 w-4" />
                     Editar
                   </Button>
+                  {(selectedChamado.motivo.toLowerCase().includes('sd') || selectedChamado.motivo.toLowerCase().includes('solicitação de desenvolvimento')) && (
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setSdpModalOpen(true)} title="Preencher / Editar Solicitação de SD">
+                      <Eye className="h-4 w-4" />
+                      SDP
+                    </Button>
+                  )}
                   <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => handleDeleteRequest(selectedChamado.id)}>
                     <Trash2 className="h-4 w-4" />
                     Excluir
@@ -881,6 +889,18 @@ export default function Historico() {
             chamado={selectedChamado as any}
             onSaved={fetchData}
             profileMap={profileMap}
+          />
+        )}
+
+        {/* SDP Form Modal */}
+        {selectedChamado && (
+          <SDPFormModal
+            open={sdpModalOpen}
+            onOpenChange={setSdpModalOpen}
+            chamadoId={selectedChamado.id}
+            clienteNome={selectedChamado.cliente_nome}
+            representanteNome={representanteNome}
+            onPdfUploaded={fetchData}
           />
         )}
 
