@@ -1727,7 +1727,6 @@ export default function NovoChamado() {
                 toast.error('Preencha os campos obrigatórios (Cliente, Produto, NF Venda, Descrição).');
                 return;
               }
-              // Generate PDF
               const doc = new jsPDF();
               const pageW = doc.internal.pageSize.getWidth();
               const margin = 15;
@@ -1745,76 +1744,78 @@ export default function NovoChamado() {
               } catch { /* fallback */ }
 
               doc.setFontSize(13); doc.setFont('helvetica', 'bold');
-              doc.text('ROMPLAS - RNC - RELATÓRIO DE NÃO CONFORMIDADE', pageW / 2, y, { align: 'center' }); y += 8;
+              doc.text('RNC - Relatório de Não Conformidade', pageW / 2, y, { align: 'center' }); y += 8;
               doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 8;
 
               const addField = (label: string, value: string) => { checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(label, margin, y); doc.setFont('helvetica', 'normal'); doc.text(value || '-', margin + doc.getTextWidth(label) + 3, y); y += 7; };
               const addFieldRow = (l1: string, v1: string, l2: string, v2: string) => { checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(l1, margin, y); doc.setFont('helvetica', 'normal'); doc.text(v1 || '-', margin + doc.getTextWidth(l1) + 3, y); const col2X = pageW / 2 + 5; doc.setFont('helvetica', 'bold'); doc.text(l2, col2X, y); doc.setFont('helvetica', 'normal'); doc.text(v2 || '-', col2X + doc.getTextWidth(l2) + 3, y); y += 7; };
+              const addSectionBox = (title: string, contentFn: () => void) => { checkPage(25); const startY = y; y += 2; doc.setFont('helvetica', 'bold'); doc.setFontSize(9); if (title) doc.text(title, margin + 3, y + 4); y += title ? 9 : 4; doc.setFont('helvetica', 'normal'); contentFn(); y += 2; doc.setDrawColor(200); doc.roundedRect(margin, startY, contentW, y - startY, 2, 2, 'S'); y += 6; };
 
-              addFieldRow('CLIENTE:', rncForm.cliente, 'REPRESENTANTE:', rncForm.representante); y += 2;
+              addFieldRow('Cliente:', rncForm.cliente, 'Representante:', rncForm.representante); y += 2;
+
               // Produtos
-              const col2 = pageW / 2 - 10; const col3 = pageW / 2 + 25;
-              rncForm.produtos.filter(p => p.produto).forEach((prod) => {
-                checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-                doc.text('PRODUTO:', margin, y); doc.setFont('helvetica', 'normal'); doc.text(prod.produto || '-', margin + doc.getTextWidth('PRODUTO: ') + 2, y);
-                doc.setFont('helvetica', 'bold'); doc.text('CÓD:', col2, y); doc.setFont('helvetica', 'normal'); doc.text(prod.cod || '-', col2 + doc.getTextWidth('CÓD: ') + 2, y);
-                doc.setFont('helvetica', 'bold'); doc.text('METROS:', col3, y); doc.setFont('helvetica', 'normal'); doc.text(prod.metros || '-', col3 + doc.getTextWidth('METROS: ') + 2, y); y += 7;
+              addSectionBox('Produtos', () => {
+                rncForm.produtos.filter(p => p.produto).forEach((prod, i) => {
+                  checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+                  doc.text(`Produto ${i + 1}:`, margin + 3, y); doc.setFont('helvetica', 'normal'); doc.text(prod.produto || '-', margin + 3 + doc.getTextWidth(`Produto ${i + 1}: `) + 2, y);
+                  const col2X = pageW / 2 - 5;
+                  doc.setFont('helvetica', 'bold'); doc.text('Cód:', col2X, y); doc.setFont('helvetica', 'normal'); doc.text(prod.cod || '-', col2X + doc.getTextWidth('Cód: ') + 2, y);
+                  const col3X = pageW / 2 + 30;
+                  doc.setFont('helvetica', 'bold'); doc.text('Metros:', col3X, y); doc.setFont('helvetica', 'normal'); doc.text(prod.metros || '-', col3X + doc.getTextWidth('Metros: ') + 2, y); y += 7;
+                });
               });
-              y += 3;
 
               // Amostra + Imagens
-              checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-              const amostraText = `OBRIGATÓRIO - AMOSTRA ANEXA? ${rncForm.amostraAnexa === 'sim' ? 'SIM' : 'NÃO'}    IMAGENS: ${rncForm.imagensVideo ? 'VÍDEO (X)' : 'VÍDEO ( )'} ${rncForm.imagensFotos ? 'FOTOS (X)' : 'FOTOS ( )'}`;
-              doc.text(amostraText, margin, y); y += 7;
-              addField('NÚMERO DA NOTA FISCAL DE VENDA:', rncForm.nfVenda); y += 3;
+              addSectionBox('Amostra / Imagens', () => {
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+                doc.text('Amostra Anexa:', margin + 3, y); doc.setFont('helvetica', 'normal'); doc.text(rncForm.amostraAnexa === 'sim' ? 'SIM' : 'NÃO', margin + 3 + doc.getTextWidth('Amostra Anexa: ') + 2, y);
+                const imgX = pageW / 2;
+                doc.setFont('helvetica', 'bold'); doc.text('Imagens:', imgX, y); doc.setFont('helvetica', 'normal');
+                const imgs = [rncForm.imagensVideo ? 'Vídeo' : '', rncForm.imagensFotos ? 'Fotos' : ''].filter(Boolean).join(', ') || 'Nenhuma';
+                doc.text(imgs, imgX + doc.getTextWidth('Imagens: ') + 2, y); y += 5;
+              });
+
+              addField('Número da Nota Fiscal de Venda:', rncForm.nfVenda); y += 2;
 
               // Descrição
-              checkPage(20);
-              doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
-              doc.text('DESCRIÇÃO DA NÃO CONFORMIDADE', pageW / 2, y, { align: 'center' }); y += 6;
-              doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-              const descLines = doc.splitTextToSize(rncForm.descricaoNaoConformidade, contentW);
-              doc.text(descLines, margin, y); y += descLines.length * 5 + 5;
+              addSectionBox('Descrição da Não Conformidade', () => {
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+                const descLines = doc.splitTextToSize(rncForm.descricaoNaoConformidade, contentW - 6);
+                doc.text(descLines, margin + 3, y); y += descLines.length * 5;
+              });
 
               // Objetivo
-              checkPage(20);
-              doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
-              doc.text('OBJETIVO DA RNC', pageW / 2, y, { align: 'center' }); y += 6;
-              doc.setFontSize(9);
-              const obj1 = `(${rncForm.objetivoAlertarEmpresa ? 'X' : ' '}) ALERTAR A EMPRESA    (${rncForm.objetivoDevParcial ? 'X' : ' '}) DEVOLUÇÃO PARCIAL    (${rncForm.objetivoDevTotal ? 'X' : ' '}) DEVOLUÇÃO TOTAL`;
-              doc.setFont('helvetica', 'normal'); doc.text(obj1, margin, y); y += 6;
-              doc.text(`(${rncForm.objetivoNegociacao ? 'X' : ' '}) NEGOCIAÇÃO`, margin, y); y += 8;
+              addSectionBox('Objetivo da RNC', () => {
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+                doc.text(`(${rncForm.objetivoAlertarEmpresa ? 'X' : ' '}) Alertar a Empresa    (${rncForm.objetivoDevParcial ? 'X' : ' '}) Devolução Parcial`, margin + 3, y); y += 6;
+                doc.text(`(${rncForm.objetivoDevTotal ? 'X' : ' '}) Devolução Total    (${rncForm.objetivoNegociacao ? 'X' : ' '}) Negociação`, margin + 3, y); y += 5;
+              });
 
               // Parecer
-              checkPage(20);
-              doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
-              doc.text('PARECER DA FÁBRICA (ROMPLAS)', pageW / 2, y, { align: 'center' }); y += 6;
-              doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-              doc.text(`(${rncForm.parecerFabrica === 'procede' ? 'X' : ' '}) PROCEDE    (${rncForm.parecerFabrica === 'nao_procede' ? 'X' : ' '}) NÃO PROCEDE, POR QUE?`, margin, y); y += 8;
+              addSectionBox('Parecer da Fábrica (Romplas)', () => {
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+                doc.text(`(${rncForm.parecerFabrica === 'procede' ? 'X' : ' '}) PROCEDE    (${rncForm.parecerFabrica === 'nao_procede' ? 'X' : ' '}) NÃO PROCEDE, POR QUE?`, margin + 3, y); y += 5;
+              });
 
               // Motivo
-              doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
-              doc.text('MOTIVO', pageW / 2, y, { align: 'center' }); y += 6;
-              doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-              if (rncForm.motivo) { const mLines = doc.splitTextToSize(rncForm.motivo, contentW); doc.text(mLines, margin, y); y += mLines.length * 5; } else { doc.text('R:', margin, y); y += 5; }
-              y += 5;
+              addSectionBox('Motivo', () => {
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+                if (rncForm.motivo) { const mLines = doc.splitTextToSize(rncForm.motivo, contentW - 6); doc.text(mLines, margin + 3, y); y += mLines.length * 5; } else { doc.text('R:', margin + 3, y); doc.line(margin + 10, y + 1, pageW - margin - 3, y + 1); y += 5; }
+              });
 
               // Fechamento
-              checkPage(20);
-              doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
-              doc.text('FECHAMENTO DA RNC (COMERCIAL/FINANCEIRO)', pageW / 2, y, { align: 'center' }); y += 6;
-              doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-              if (rncForm.fechamentoRnc) { const fLines = doc.splitTextToSize(rncForm.fechamentoRnc, contentW); doc.text(fLines, margin, y); y += fLines.length * 5; } else { doc.text('R:', margin, y); y += 5; }
-              y += 8;
+              addSectionBox('Fechamento da RNC (Comercial/Financeiro)', () => {
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+                if (rncForm.fechamentoRnc) { const fLines = doc.splitTextToSize(rncForm.fechamentoRnc, contentW - 6); doc.text(fLines, margin + 3, y); y += fLines.length * 5; } else { doc.text('R:', margin + 3, y); doc.line(margin + 10, y + 1, pageW - margin - 3, y + 1); y += 5; }
+              });
 
               // Assinaturas
-              checkPage(30);
-              doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 5;
+              checkPage(30); doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 5;
               doc.setFontSize(9);
               const sigCol1 = margin; const sigCol2 = pageW / 2 + 5;
-              doc.setFont('helvetica', 'bold'); doc.text(`DATA: ${rncForm.dataComercial || '___/___/___'}`, sigCol1, y); doc.text(`ASSINATURA COMERCIAL: ${rncForm.assinaturaComercial || '________________'}`, sigCol2, y); y += 7;
-              doc.text(`DATA: ${rncForm.dataQualidade || '___/___/___'}`, sigCol1, y); doc.text(`ASSINATURA QUALIDADE: ${rncForm.assinaturaQualidade || '________________'}`, sigCol2, y); y += 7;
-              doc.text(`DATA: ${rncForm.dataFinanceiro || '___/___/___'}`, sigCol1, y); doc.text(`ASSINATURA FINANCEIRO: ${rncForm.assinaturaFinanceiro || '________________'}`, sigCol2, y);
+              doc.setFont('helvetica', 'bold'); doc.text(`Data: ${rncForm.dataComercial || '___/___/___'}`, sigCol1, y); doc.text(`Assinatura Comercial: ${rncForm.assinaturaComercial || '________________'}`, sigCol2, y); y += 7;
+              doc.text(`Data: ${rncForm.dataQualidade || '___/___/___'}`, sigCol1, y); doc.text(`Assinatura Qualidade: ${rncForm.assinaturaQualidade || '________________'}`, sigCol2, y); y += 7;
+              doc.text(`Data: ${rncForm.dataFinanceiro || '___/___/___'}`, sigCol1, y); doc.text(`Assinatura Financeiro: ${rncForm.assinaturaFinanceiro || '________________'}`, sigCol2, y);
 
               const pdfBlob = doc.output('blob');
               const cleanName = (rncForm.cliente || 'rnc').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -1836,8 +1837,13 @@ export default function NovoChamado() {
 
       {/* Amostras Form Dialog */}
       <Dialog open={showAmostrasForm} onOpenChange={setShowAmostrasForm}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Solicitação de Amostras</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex justify-center mb-2">
+              <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
+            </div>
+            <DialogTitle className="text-center">Solicitação de Amostras</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div><Label className="text-xs">Produto *</Label><Input className="mt-1" value={amostrasForm.produto} onChange={e => setAmostrasForm(p => ({ ...p, produto: e.target.value }))} /></div>
@@ -1849,8 +1855,57 @@ export default function NovoChamado() {
             </div>
             <div><Label className="text-xs">Observações</Label><Textarea className="mt-1" value={amostrasForm.observacoes} onChange={e => setAmostrasForm(p => ({ ...p, observacoes: e.target.value }))} /></div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowAmostrasForm(false)}>Cancelar</Button>
+            <Button variant="secondary" onClick={async () => {
+              if (!amostrasForm.produto || !amostrasForm.referencia || !amostrasForm.cor || !amostrasForm.quantidade || !amostrasForm.tamanho || !amostrasForm.destino) { toast.error('Preencha todos os campos obrigatórios.'); return; }
+              const doc = new jsPDF();
+              const pageW = doc.internal.pageSize.getWidth();
+              const margin = 15;
+              const contentW = pageW - margin * 2;
+              let y = 12;
+              const checkPage = (needed: number) => { if (y + needed > 280) { doc.addPage(); y = 15; } };
+              try {
+                const logoImg = new window.Image(); logoImg.crossOrigin = 'anonymous';
+                await new Promise<void>((resolve, reject) => { logoImg.onload = () => resolve(); logoImg.onerror = () => reject(); logoImg.src = '/images/romplas-logo-pdf.png'; });
+                const logoH = 12; const logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
+                doc.addImage(logoImg, 'PNG', (pageW - logoW) / 2, y, logoW, logoH); y += logoH + 4;
+              } catch { /* fallback */ }
+              doc.setFontSize(13); doc.setFont('helvetica', 'bold');
+              doc.text('Solicitação de Amostras', pageW / 2, y, { align: 'center' }); y += 8;
+              doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 8;
+
+              const addFieldRow = (l1: string, v1: string, l2: string, v2: string) => { checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(l1, margin, y); doc.setFont('helvetica', 'normal'); doc.text(v1 || '-', margin + doc.getTextWidth(l1) + 3, y); const col2X = pageW / 2 + 5; doc.setFont('helvetica', 'bold'); doc.text(l2, col2X, y); doc.setFont('helvetica', 'normal'); doc.text(v2 || '-', col2X + doc.getTextWidth(l2) + 3, y); y += 7; };
+              const addField = (label: string, value: string) => { checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(label, margin, y); doc.setFont('helvetica', 'normal'); doc.text(value || '-', margin + doc.getTextWidth(label) + 3, y); y += 7; };
+              const addSectionBox = (title: string, contentFn: () => void) => { checkPage(25); const startY = y; y += 2; doc.setFont('helvetica', 'bold'); doc.setFontSize(9); if (title) doc.text(title, margin + 3, y + 4); y += title ? 9 : 4; doc.setFont('helvetica', 'normal'); contentFn(); y += 2; doc.setDrawColor(200); doc.roundedRect(margin, startY, contentW, y - startY, 2, 2, 'S'); y += 6; };
+
+              const clienteNome = clientes.find(c => c.id === selectedCliente)?.nome || '';
+              const repNome = representantes.find(r => r.id === selectedRepresentante)?.nome || '';
+              addFieldRow('Cliente:', clienteNome, 'Representante:', repNome); y += 2;
+
+              addSectionBox('Dados da Amostra', () => {
+                addFieldRow('Produto:', amostrasForm.produto, 'Referência:', amostrasForm.referencia);
+                addFieldRow('Cor:', amostrasForm.cor, 'Quantidade:', amostrasForm.quantidade);
+                addFieldRow('Tamanho:', amostrasForm.tamanho, 'Destino:', amostrasForm.destino);
+              });
+
+              if (amostrasForm.observacoes) {
+                addSectionBox('Observações', () => {
+                  doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+                  const obsLines = doc.splitTextToSize(amostrasForm.observacoes, contentW - 6);
+                  doc.text(obsLines, margin + 3, y); y += obsLines.length * 5;
+                });
+              }
+
+              const pdfBlob = doc.output('blob');
+              const cleanName = (clienteNome || 'amostras').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
+              const pdfFile = new globalThis.File([pdfBlob], `Amostras_${cleanName}.pdf`, { type: 'application/pdf' });
+              setAnexos(prev => [...prev, pdfFile]);
+              setSpecialFormFilled(true); setShowAmostrasForm(false);
+              toast.success('Formulário Amostras salvo e PDF anexado!');
+            }}>
+              <FileText className="h-4 w-4 mr-1.5" /> Confirmar e Anexar PDF
+            </Button>
             <Button onClick={() => {
               if (!amostrasForm.produto || !amostrasForm.referencia || !amostrasForm.cor || !amostrasForm.quantidade || !amostrasForm.tamanho || !amostrasForm.destino) { toast.error('Preencha todos os campos obrigatórios.'); return; }
               setSpecialFormFilled(true); setShowAmostrasForm(false);
@@ -1861,8 +1916,13 @@ export default function NovoChamado() {
 
       {/* Book Form Dialog */}
       <Dialog open={showBookForm} onOpenChange={setShowBookForm}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Solicitação de Books</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex justify-center mb-2">
+              <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
+            </div>
+            <DialogTitle className="text-center">Solicitação de Books</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div><Label className="text-xs">Tipo de Book *</Label><Input className="mt-1" value={bookForm.tipoBook} onChange={e => setBookForm(p => ({ ...p, tipoBook: e.target.value }))} /></div>
@@ -1871,8 +1931,56 @@ export default function NovoChamado() {
             <div><Label className="text-xs">Destino *</Label><Input className="mt-1" value={bookForm.destino} onChange={e => setBookForm(p => ({ ...p, destino: e.target.value }))} /></div>
             <div><Label className="text-xs">Observações</Label><Textarea className="mt-1" value={bookForm.observacoes} onChange={e => setBookForm(p => ({ ...p, observacoes: e.target.value }))} /></div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowBookForm(false)}>Cancelar</Button>
+            <Button variant="secondary" onClick={async () => {
+              if (!bookForm.tipoBook || !bookForm.quantidade || !bookForm.destino) { toast.error('Preencha todos os campos obrigatórios.'); return; }
+              const doc = new jsPDF();
+              const pageW = doc.internal.pageSize.getWidth();
+              const margin = 15;
+              const contentW = pageW - margin * 2;
+              let y = 12;
+              const checkPage = (needed: number) => { if (y + needed > 280) { doc.addPage(); y = 15; } };
+              try {
+                const logoImg = new window.Image(); logoImg.crossOrigin = 'anonymous';
+                await new Promise<void>((resolve, reject) => { logoImg.onload = () => resolve(); logoImg.onerror = () => reject(); logoImg.src = '/images/romplas-logo-pdf.png'; });
+                const logoH = 12; const logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
+                doc.addImage(logoImg, 'PNG', (pageW - logoW) / 2, y, logoW, logoH); y += logoH + 4;
+              } catch { /* fallback */ }
+              doc.setFontSize(13); doc.setFont('helvetica', 'bold');
+              doc.text('Solicitação de Books', pageW / 2, y, { align: 'center' }); y += 8;
+              doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 8;
+
+              const addFieldRow = (l1: string, v1: string, l2: string, v2: string) => { checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(l1, margin, y); doc.setFont('helvetica', 'normal'); doc.text(v1 || '-', margin + doc.getTextWidth(l1) + 3, y); const col2X = pageW / 2 + 5; doc.setFont('helvetica', 'bold'); doc.text(l2, col2X, y); doc.setFont('helvetica', 'normal'); doc.text(v2 || '-', col2X + doc.getTextWidth(l2) + 3, y); y += 7; };
+              const addSectionBox = (title: string, contentFn: () => void) => { checkPage(25); const startY = y; y += 2; doc.setFont('helvetica', 'bold'); doc.setFontSize(9); if (title) doc.text(title, margin + 3, y + 4); y += title ? 9 : 4; doc.setFont('helvetica', 'normal'); contentFn(); y += 2; doc.setDrawColor(200); doc.roundedRect(margin, startY, contentW, y - startY, 2, 2, 'S'); y += 6; };
+
+              const clienteNome = clientes.find(c => c.id === selectedCliente)?.nome || '';
+              const repNome = representantes.find(r => r.id === selectedRepresentante)?.nome || '';
+              addFieldRow('Cliente:', clienteNome, 'Representante:', repNome); y += 2;
+
+              addSectionBox('Dados do Book', () => {
+                addFieldRow('Tipo de Book:', bookForm.tipoBook, 'Quantidade:', bookForm.quantidade);
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+                doc.text('Destino:', margin + 3, y); doc.setFont('helvetica', 'normal'); doc.text(bookForm.destino || '-', margin + 3 + doc.getTextWidth('Destino: ') + 2, y); y += 7;
+              });
+
+              if (bookForm.observacoes) {
+                addSectionBox('Observações', () => {
+                  doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+                  const obsLines = doc.splitTextToSize(bookForm.observacoes, contentW - 6);
+                  doc.text(obsLines, margin + 3, y); y += obsLines.length * 5;
+                });
+              }
+
+              const pdfBlob = doc.output('blob');
+              const cleanName = (clienteNome || 'book').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
+              const pdfFile = new globalThis.File([pdfBlob], `Book_${cleanName}.pdf`, { type: 'application/pdf' });
+              setAnexos(prev => [...prev, pdfFile]);
+              setSpecialFormFilled(true); setShowBookForm(false);
+              toast.success('Formulário Book salvo e PDF anexado!');
+            }}>
+              <FileText className="h-4 w-4 mr-1.5" /> Confirmar e Anexar PDF
+            </Button>
             <Button onClick={() => {
               if (!bookForm.tipoBook || !bookForm.quantidade || !bookForm.destino) { toast.error('Preencha todos os campos obrigatórios.'); return; }
               setSpecialFormFilled(true); setShowBookForm(false);
