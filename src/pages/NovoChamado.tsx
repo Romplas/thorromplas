@@ -91,8 +91,47 @@ export default function NovoChamado() {
   const [tipoEntrega, setTipoEntrega] = useState('');
   const [descricaoTexto, setDescricaoTexto] = useState('');
 
+  // Check if motivo is Negociação
+  const selectedMotivoNome = motivos.find(m => m.id === selectedMotivo)?.nome || '';
+  const isNegociacao = selectedMotivoNome.toLowerCase() === 'negociação';
+  const isSD = selectedMotivoNome.toLowerCase().includes('sd') || selectedMotivoNome.toLowerCase().includes('solicitação de desenvolvimento');
+  const isRNC = selectedMotivoNome.toLowerCase() === 'rnc';
+  const isAmostras = selectedMotivoNome.toLowerCase() === 'amostras';
+  const isBook = selectedMotivoNome.toLowerCase() === 'book';
+  const hasSpecialForm = isSD || isRNC || isAmostras || isBook;
+
+  // Modal states for special forms
+  const [showSDForm, setShowSDForm] = useState(false);
+  const [showRNCForm, setShowRNCForm] = useState(false);
+  const [showAmostrasForm, setShowAmostrasForm] = useState(false);
+  const [showBookForm, setShowBookForm] = useState(false);
+
+  // Special form data
+  interface SDFormData { produto: string; referencia: string; cor: string; largura: string; gramatura: string; aplicacao: string; observacoes: string }
+  interface RNCFormData { nfNumero: string; produto: string; lote: string; defeito: string; quantidade: string; observacoes: string }
+  interface AmostrasFormData { produto: string; referencia: string; cor: string; quantidade: string; tamanho: string; destino: string; observacoes: string }
+  interface BookFormData { tipoBook: string; quantidade: string; destino: string; observacoes: string }
+
+  const [sdForm, setSdForm] = useState<SDFormData>({ produto: '', referencia: '', cor: '', largura: '', gramatura: '', aplicacao: '', observacoes: '' });
+  const [rncForm, setRncForm] = useState<RNCFormData>({ nfNumero: '', produto: '', lote: '', defeito: '', quantidade: '', observacoes: '' });
+  const [amostrasForm, setAmostrasForm] = useState<AmostrasFormData>({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
+  const [bookForm, setBookForm] = useState<BookFormData>({ tipoBook: '', quantidade: '', destino: '', observacoes: '' });
+  const [specialFormFilled, setSpecialFormFilled] = useState(false);
+
+  const buildSpecialDescricao = () => {
+    if (isSD) return `[SD] Produto: ${sdForm.produto}, Referência: ${sdForm.referencia}, Cor: ${sdForm.cor}, Largura: ${sdForm.largura}, Gramatura: ${sdForm.gramatura}, Aplicação: ${sdForm.aplicacao}${sdForm.observacoes ? '\nObservações: ' + sdForm.observacoes : ''}`;
+    if (isRNC) return `[RNC] NF: ${rncForm.nfNumero}, Produto: ${rncForm.produto}, Lote: ${rncForm.lote}, Defeito: ${rncForm.defeito}, Quantidade: ${rncForm.quantidade}${rncForm.observacoes ? '\nObservações: ' + rncForm.observacoes : ''}`;
+    if (isAmostras) return `[Amostras] Produto: ${amostrasForm.produto}, Referência: ${amostrasForm.referencia}, Cor: ${amostrasForm.cor}, Quantidade: ${amostrasForm.quantidade}, Tamanho: ${amostrasForm.tamanho}, Destino: ${amostrasForm.destino}${amostrasForm.observacoes ? '\nObservações: ' + amostrasForm.observacoes : ''}`;
+    if (isBook) return `[Book] Tipo: ${bookForm.tipoBook}, Quantidade: ${bookForm.quantidade}, Destino: ${bookForm.destino}${bookForm.observacoes ? '\nObservações: ' + bookForm.observacoes : ''}`;
+    return '';
+  };
+
   // Helper to build description from structured fields
   const buildDescricao = (negociacao: boolean) => {
+    if (hasSpecialForm && specialFormFilled) {
+      const specialDesc = buildSpecialDescricao();
+      return descricaoTexto ? `${specialDesc}\n\nObservações: ${descricaoTexto}` : specialDesc;
+    }
     if (!negociacao) return descricaoTexto;
     const prodLines = produtos.map((p, i) => 
       `Produto ${i + 1}: Cód: ${p.codProduto}, Produto: ${p.produto}, Preço: ${p.preco}, Metros: ${p.metros}`
@@ -100,10 +139,6 @@ export default function NovoChamado() {
     const structured = `${prodLines}\nPrazo: ${prazo}\nTipo de Entrega: ${tipoEntrega}`;
     return descricaoTexto ? `${structured}\n\nObservações: ${descricaoTexto}` : structured;
   };
-
-  // Check if motivo is Negociação
-  const selectedMotivoNome = motivos.find(m => m.id === selectedMotivo)?.nome || '';
-  const isNegociacao = selectedMotivoNome.toLowerCase() === 'negociação';
 
   // Created tickets (from session + loaded from DB)
   const [chamadosCriados, setChamadosCriados] = useState<ChamadoCriado[]>([]);
@@ -502,6 +537,11 @@ export default function NovoChamado() {
       setPrazo('');
       setTipoEntrega('');
       setDescricaoTexto('');
+      setSdForm({ produto: '', referencia: '', cor: '', largura: '', gramatura: '', aplicacao: '', observacoes: '' });
+      setRncForm({ nfNumero: '', produto: '', lote: '', defeito: '', quantidade: '', observacoes: '' });
+      setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
+      setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' });
+      setSpecialFormFilled(false);
       setAnexos([]);
       setFileErrors([]);
     } catch (err: any) {
@@ -532,6 +572,11 @@ export default function NovoChamado() {
     setPrazo('');
     setTipoEntrega('');
     setDescricaoTexto('');
+    setSdForm({ produto: '', referencia: '', cor: '', largura: '', gramatura: '', aplicacao: '', observacoes: '' });
+    setRncForm({ nfNumero: '', produto: '', lote: '', defeito: '', quantidade: '', observacoes: '' });
+    setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
+    setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' });
+    setSpecialFormFilled(false);
     setAnexos([]);
     setFileErrors([]);
   };
@@ -658,7 +703,7 @@ export default function NovoChamado() {
               </div>
               <div>
                 <Label className="text-xs font-semibold text-destructive">* Motivo Principal da Solicitação</Label>
-                <Select onValueChange={v => { setSelectedMotivo(v); setSelectedSubmotivo(''); }} value={selectedMotivo}>
+                <Select onValueChange={v => { setSelectedMotivo(v); setSelectedSubmotivo(''); setSpecialFormFilled(false); setSdForm({ produto: '', referencia: '', cor: '', largura: '', gramatura: '', aplicacao: '', observacoes: '' }); setRncForm({ nfNumero: '', produto: '', lote: '', defeito: '', quantidade: '', observacoes: '' }); setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' }); setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' }); setDescricaoTexto(''); }} value={selectedMotivo}>
                   <SelectTrigger className="mt-1 border-destructive/50"><SelectValue placeholder="Selecione o Motivo" /></SelectTrigger>
                   <SelectContent>
                     {motivos.map(m => (
@@ -850,6 +895,37 @@ export default function NovoChamado() {
                       <Label className="text-[10px] text-muted-foreground">Observações</Label>
                       <Textarea
                         className="mt-1 min-h-[80px] text-xs"
+                        placeholder="Descrição adicional..."
+                        value={descricaoTexto}
+                        onChange={e => setDescricaoTexto(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                ) : hasSpecialForm ? (
+                  <div className="mt-1 space-y-3">
+                    <Button
+                      type="button"
+                      variant={specialFormFilled ? 'default' : 'outline'}
+                      className="w-full"
+                      onClick={() => {
+                        if (isSD) setShowSDForm(true);
+                        else if (isRNC) setShowRNCForm(true);
+                        else if (isAmostras) setShowAmostrasForm(true);
+                        else if (isBook) setShowBookForm(true);
+                      }}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      {specialFormFilled ? '✓ ' : ''}Preencher Solicitação de {isSD ? 'SD' : isRNC ? 'RNC' : isAmostras ? 'Amostras' : 'Books'}
+                    </Button>
+                    {specialFormFilled && (
+                      <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground whitespace-pre-line">
+                        {buildSpecialDescricao()}
+                      </div>
+                    )}
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Observações</Label>
+                      <Textarea
+                        className="mt-1 min-h-[80px]"
                         placeholder="Descrição adicional..."
                         value={descricaoTexto}
                         onChange={e => setDescricaoTexto(e.target.value)}
@@ -1087,6 +1163,102 @@ export default function NovoChamado() {
             <Button size="sm" onClick={handleSaveNewClient} disabled={savingClient}>
               {savingClient ? 'Salvando...' : 'Cadastrar'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* SD Form Dialog */}
+      <Dialog open={showSDForm} onOpenChange={setShowSDForm}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Solicitação de SD</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs">Produto *</Label><Input className="mt-1" value={sdForm.produto} onChange={e => setSdForm(p => ({ ...p, produto: e.target.value }))} /></div>
+              <div><Label className="text-xs">Referência *</Label><Input className="mt-1" value={sdForm.referencia} onChange={e => setSdForm(p => ({ ...p, referencia: e.target.value }))} /></div>
+              <div><Label className="text-xs">Cor *</Label><Input className="mt-1" value={sdForm.cor} onChange={e => setSdForm(p => ({ ...p, cor: e.target.value }))} /></div>
+              <div><Label className="text-xs">Largura *</Label><Input className="mt-1" value={sdForm.largura} onChange={e => setSdForm(p => ({ ...p, largura: e.target.value }))} /></div>
+              <div><Label className="text-xs">Gramatura *</Label><Input className="mt-1" value={sdForm.gramatura} onChange={e => setSdForm(p => ({ ...p, gramatura: e.target.value }))} /></div>
+              <div><Label className="text-xs">Aplicação *</Label><Input className="mt-1" value={sdForm.aplicacao} onChange={e => setSdForm(p => ({ ...p, aplicacao: e.target.value }))} /></div>
+            </div>
+            <div><Label className="text-xs">Observações</Label><Textarea className="mt-1" value={sdForm.observacoes} onChange={e => setSdForm(p => ({ ...p, observacoes: e.target.value }))} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSDForm(false)}>Cancelar</Button>
+            <Button onClick={() => {
+              if (!sdForm.produto || !sdForm.referencia || !sdForm.cor || !sdForm.largura || !sdForm.gramatura || !sdForm.aplicacao) { toast.error('Preencha todos os campos obrigatórios.'); return; }
+              setSpecialFormFilled(true); setShowSDForm(false);
+            }}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* RNC Form Dialog */}
+      <Dialog open={showRNCForm} onOpenChange={setShowRNCForm}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Solicitação de RNC</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs">Nº NF *</Label><Input className="mt-1" value={rncForm.nfNumero} onChange={e => setRncForm(p => ({ ...p, nfNumero: e.target.value }))} /></div>
+              <div><Label className="text-xs">Produto *</Label><Input className="mt-1" value={rncForm.produto} onChange={e => setRncForm(p => ({ ...p, produto: e.target.value }))} /></div>
+              <div><Label className="text-xs">Lote *</Label><Input className="mt-1" value={rncForm.lote} onChange={e => setRncForm(p => ({ ...p, lote: e.target.value }))} /></div>
+              <div><Label className="text-xs">Defeito *</Label><Input className="mt-1" value={rncForm.defeito} onChange={e => setRncForm(p => ({ ...p, defeito: e.target.value }))} /></div>
+              <div><Label className="text-xs">Quantidade *</Label><Input className="mt-1" value={rncForm.quantidade} onChange={e => setRncForm(p => ({ ...p, quantidade: e.target.value }))} /></div>
+            </div>
+            <div><Label className="text-xs">Observações</Label><Textarea className="mt-1" value={rncForm.observacoes} onChange={e => setRncForm(p => ({ ...p, observacoes: e.target.value }))} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRNCForm(false)}>Cancelar</Button>
+            <Button onClick={() => {
+              if (!rncForm.nfNumero || !rncForm.produto || !rncForm.lote || !rncForm.defeito || !rncForm.quantidade) { toast.error('Preencha todos os campos obrigatórios.'); return; }
+              setSpecialFormFilled(true); setShowRNCForm(false);
+            }}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Amostras Form Dialog */}
+      <Dialog open={showAmostrasForm} onOpenChange={setShowAmostrasForm}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Solicitação de Amostras</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs">Produto *</Label><Input className="mt-1" value={amostrasForm.produto} onChange={e => setAmostrasForm(p => ({ ...p, produto: e.target.value }))} /></div>
+              <div><Label className="text-xs">Referência *</Label><Input className="mt-1" value={amostrasForm.referencia} onChange={e => setAmostrasForm(p => ({ ...p, referencia: e.target.value }))} /></div>
+              <div><Label className="text-xs">Cor *</Label><Input className="mt-1" value={amostrasForm.cor} onChange={e => setAmostrasForm(p => ({ ...p, cor: e.target.value }))} /></div>
+              <div><Label className="text-xs">Quantidade *</Label><Input className="mt-1" value={amostrasForm.quantidade} onChange={e => setAmostrasForm(p => ({ ...p, quantidade: e.target.value }))} /></div>
+              <div><Label className="text-xs">Tamanho *</Label><Input className="mt-1" value={amostrasForm.tamanho} onChange={e => setAmostrasForm(p => ({ ...p, tamanho: e.target.value }))} /></div>
+              <div><Label className="text-xs">Destino *</Label><Input className="mt-1" value={amostrasForm.destino} onChange={e => setAmostrasForm(p => ({ ...p, destino: e.target.value }))} /></div>
+            </div>
+            <div><Label className="text-xs">Observações</Label><Textarea className="mt-1" value={amostrasForm.observacoes} onChange={e => setAmostrasForm(p => ({ ...p, observacoes: e.target.value }))} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAmostrasForm(false)}>Cancelar</Button>
+            <Button onClick={() => {
+              if (!amostrasForm.produto || !amostrasForm.referencia || !amostrasForm.cor || !amostrasForm.quantidade || !amostrasForm.tamanho || !amostrasForm.destino) { toast.error('Preencha todos os campos obrigatórios.'); return; }
+              setSpecialFormFilled(true); setShowAmostrasForm(false);
+            }}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Book Form Dialog */}
+      <Dialog open={showBookForm} onOpenChange={setShowBookForm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Solicitação de Books</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs">Tipo de Book *</Label><Input className="mt-1" value={bookForm.tipoBook} onChange={e => setBookForm(p => ({ ...p, tipoBook: e.target.value }))} /></div>
+              <div><Label className="text-xs">Quantidade *</Label><Input className="mt-1" value={bookForm.quantidade} onChange={e => setBookForm(p => ({ ...p, quantidade: e.target.value }))} /></div>
+            </div>
+            <div><Label className="text-xs">Destino *</Label><Input className="mt-1" value={bookForm.destino} onChange={e => setBookForm(p => ({ ...p, destino: e.target.value }))} /></div>
+            <div><Label className="text-xs">Observações</Label><Textarea className="mt-1" value={bookForm.observacoes} onChange={e => setBookForm(p => ({ ...p, observacoes: e.target.value }))} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBookForm(false)}>Cancelar</Button>
+            <Button onClick={() => {
+              if (!bookForm.tipoBook || !bookForm.quantidade || !bookForm.destino) { toast.error('Preencha todos os campos obrigatórios.'); return; }
+              setSpecialFormFilled(true); setShowBookForm(false);
+            }}>Confirmar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
