@@ -86,9 +86,10 @@ export default function NovoChamado() {
   const [statusAgendamento, setStatusAgendamento] = useState('');
   const [descricao, setDescricao] = useState('');
 
-  // Created tickets
+  // Created tickets (from session + loaded from DB)
   const [chamadosCriados, setChamadosCriados] = useState<ChamadoCriado[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingTickets, setLoadingTickets] = useState(false);
 
   // New client dialog
   const [showNewClientDialog, setShowNewClientDialog] = useState(false);
@@ -145,6 +146,75 @@ export default function NovoChamado() {
       }
     };
     fetchData();
+  }, []);
+
+  // Load existing open/THOR chamados from DB
+  useEffect(() => {
+    const loadExistingTickets = async () => {
+      setLoadingTickets(true);
+      try {
+        const { data, error } = await supabase
+          .from('chamados')
+          .select('*')
+          .eq('status', 'aberto')
+          .eq('etapa', 'thor')
+          .order('created_at', { ascending: false })
+          .limit(100);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          // Resolve names for loaded chamados
+          const supIds = [...new Set(data.map(d => d.supervisor_id).filter(Boolean))];
+          const repIds = [...new Set(data.map(d => d.representante_id).filter(Boolean))];
+          const clienteIds = [...new Set(data.map(d => d.cliente_id).filter(Boolean))];
+          
+          const [supRes, repRes, clienteRes, redeRes] = await Promise.all([
+            supIds.length > 0 ? supabase.from('supervisores').select('id, nome').in('id', supIds) : { data: [] },
+            repIds.length > 0 ? supabase.from('representantes').select('id, nome').in('id', repIds) : { data: [] },
+            clienteIds.length > 0 ? supabase.from('clientes').select('id, codigo, nome, rede_id').in('id', clienteIds) : { data: [] },
+            supabase.from('redes').select('id, nome'),
+          ]);
+
+          const supMap = new Map((supRes.data || []).map((s: any) => [s.id, s.nome]));
+          const repMap = new Map((repRes.data || []).map((r: any) => [r.id, r.nome]));
+          const clienteMap = new Map((clienteRes.data || []).map((c: any) => [c.id, c]));
+          const redeMap = new Map((redeRes.data || []).map((r: any) => [r.id, r.nome]));
+
+          const mapped: ChamadoCriado[] = data.map((d: any) => {
+            const cliente = clienteMap.get(d.cliente_id);
+            return {
+              id: d.id,
+              status: d.status,
+              etapa: d.etapa?.toUpperCase() || 'THOR',
+              supervisor: supMap.get(d.supervisor_id) || '',
+              representante: repMap.get(d.representante_id) || '',
+              cliente: d.cliente_nome || '',
+              codigoCliente: cliente?.codigo?.toString() || '',
+              rede: cliente?.rede_id ? (redeMap.get(cliente.rede_id) || '') : '',
+              dataContato: d.data_contato || '',
+              dataRetorno: d.data_retorno || '',
+              motivo: d.motivo || '',
+              submotivo: d.submotivo || '',
+              metrosTotais: '',
+              negociadoCom: '',
+              nfe: '',
+              tipoSolicitacao: '',
+              gestor: '',
+              statusAgendamento: '',
+              descricao: d.descricao || '',
+              anexosNomes: [],
+              anexos: [],
+              criadoEm: new Date(d.created_at).toLocaleString('pt-BR'),
+            };
+          });
+          setChamadosCriados(mapped);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar tickets:', err);
+      } finally {
+        setLoadingTickets(false);
+      }
+    };
+    loadExistingTickets();
   }, []);
 
   // Auto-fill supervisor/representante based on logged-in user role
@@ -322,7 +392,7 @@ export default function NovoChamado() {
         criadoEm: new Date().toLocaleString('pt-BR'),
       };
 
-      setChamadosCriados(prev => [novoChamado, ...prev]);
+      setChamadosCriados(prev => [novoChamado, ...prev.filter(c => c.id !== novoChamado.id)]);
 
       // Register creation in history
       let userProfileId: string | null = null;
@@ -686,20 +756,23 @@ export default function NovoChamado() {
             </div>
           </div>
 
-          {/* Chamados Criados */}
-          {chamadosCriados.length > 0 && (
+          {/* Chamados Criados - only show status=aberto & etapa=THOR */}
+          {chamadosCriados.filter(c => c.status === 'aberto' && c.etapa.toLowerCase() === 'thor').length > 0 && (
             <div className="mt-6 space-y-4">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
                 <h2 className="text-sm font-semibold">Tickets Criados</h2>
-                <Badge variant="secondary" className="ml-1">{chamadosCriados.length}</Badge>
+                <Badge variant="secondary" className="ml-1">{chamadosCriados.filter(c => c.status === 'aberto' && c.etapa.toLowerCase() === 'thor').length}</Badge>
               </div>
-              {chamadosCriados.map(c => (
+              {chamadosCriados.filter(c => c.status === 'aberto' && c.etapa.toLowerCase() === 'thor').map(c => (
                 <ChamadoCard
                   key={c.id}
                   chamado={c}
                   onUpdate={(updated) => {
                     setChamadosCriados(prev => prev.map(item => item.id === updated.id ? updated : item));
+                  }}
+                  onDelete={(id) => {
+                    setChamadosCriados(prev => prev.filter(item => item.id !== id));
                   }}
                 />
               ))}
