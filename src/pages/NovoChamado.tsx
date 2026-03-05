@@ -485,7 +485,8 @@ export default function NovoChamado() {
       // Upload attachments to Supabase Storage
       const uploadedFiles: { nome: string; path: string }[] = [];
       for (const file of anexos) {
-        const filePath = `${data.id}/${Date.now()}_${file.name}`;
+        const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const filePath = `${data.id}/${Date.now()}_${sanitizedName}`;
         const { error: uploadError } = await supabase.storage
           .from('chamado-anexos')
           .upload(filePath, file, {
