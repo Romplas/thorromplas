@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Pencil, Save, X, Paperclip, Download, Eye, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Pencil, Save, X, Paperclip, Download, Eye, Trash2, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -47,6 +47,21 @@ interface ChamadoCardProps {
   onDelete?: (id: number) => void;
 }
 
+const ACCEPTED_TYPES: Record<string, { label: string; maxMB: number }> = {
+  'application/pdf': { label: 'PDF', maxMB: 10 },
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { label: 'DOCX', maxMB: 10 },
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { label: 'XLSX', maxMB: 10 },
+  'video/mp4': { label: 'MP4', maxMB: 50 },
+  'video/quicktime': { label: 'MOV', maxMB: 50 },
+  'video/x-msvideo': { label: 'AVI', maxMB: 50 },
+  'video/webm': { label: 'WEBM', maxMB: 50 },
+  'image/jpeg': { label: 'JPEG', maxMB: 5 },
+  'image/png': { label: 'PNG', maxMB: 5 },
+  'audio/mpeg': { label: 'MP3', maxMB: 15 },
+  'text/plain': { label: 'TXT', maxMB: 2 },
+};
+const ACCEPT_STRING = Object.keys(ACCEPTED_TYPES).join(',');
+
 function ReadOnlyField({ label, value, className }: { label: string; value: string; className?: string }) {
   return (
     <div className={className}>
@@ -60,9 +75,7 @@ function ReadOnlyField({ label, value, className }: { label: string; value: stri
 
 function formatDateBR(dateStr: string): string {
   if (!dateStr) return '';
-  // If already in dd/mm/yyyy format
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
-  // If in yyyy-mm-dd format
   if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
     const [y, m, d] = dateStr.substring(0, 10).split('-');
     return `${d}/${m}/${y}`;
@@ -89,8 +102,79 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // Editable only when status=aberto AND etapa=THOR (case-insensitive)
+  // Anexos loaded from storage
+  const [storageAnexos, setStorageAnexos] = useState<AnexoFile[]>([]);
+  const [loadingAnexos, setLoadingAnexos] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const canEdit = chamado.status === 'aberto' && chamado.etapa.toLowerCase() === 'thor';
+
+  // Load anexos from Supabase Storage
+  useEffect(() => {
+    loadAnexosFromStorage();
+  }, [chamado.id]);
+
+  const loadAnexosFromStorage = async () => {
+    setLoadingAnexos(true);
+    try {
+      const { data, error } = await supabase.storage
+        .from('chamado-anexos')
+        .list(String(chamado.id));
+      if (data && !error) {
+        setStorageAnexos(data.map(f => ({ nome: f.name, path: `${chamado.id}/${f.name}` })));
+      } else {
+        setStorageAnexos([]);
+      }
+    } catch {
+      setStorageAnexos([]);
+    }
+    setLoadingAnexos(false);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+    const files = Array.from(e.target.files);
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const typeInfo = ACCEPTED_TYPES[file.type];
+        if (!typeInfo) {
+          toast.error(`Tipo não suportado: ${file.name}`);
+          continue;
+        }
+        if (file.size > typeInfo.maxMB * 1024 * 1024) {
+          toast.error(`${file.name} excede ${typeInfo.maxMB}MB`);
+          continue;
+        }
+        const filePath = `${chamado.id}/${Date.now()}_${file.name}`;
+        const { error } = await supabase.storage
+          .from('chamado-anexos')
+          .upload(filePath, file, { contentType: file.type, upsert: true });
+        if (error) {
+          toast.error(`Erro ao enviar ${file.name}: ${error.message}`);
+        } else {
+          toast.success(`${file.name} anexado!`);
+        }
+      }
+      await loadAnexosFromStorage();
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteAnexo = async (anexo: AnexoFile) => {
+    const { error } = await supabase.storage
+      .from('chamado-anexos')
+      .remove([anexo.path]);
+    if (error) {
+      toast.error('Erro ao remover anexo');
+    } else {
+      toast.success('Anexo removido');
+      await loadAnexosFromStorage();
+    }
+  };
 
   const handleEdit = () => {
     setDraft({ ...chamado });
@@ -168,7 +252,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
   const etapaColor = chamado.etapa.toLowerCase() === 'thor' ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground';
 
   const c = editing ? draft : chamado;
-  const hasAnexos = (chamado.anexos && chamado.anexos.length > 0) || (chamado.anexosNomes && chamado.anexosNomes.length > 0);
+  const totalAnexos = storageAnexos.length;
 
   return (
     <>
@@ -184,12 +268,10 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
             <span className="text-xs text-muted-foreground">Criado em {chamado.criadoEm}</span>
           </div>
           <div className="flex items-center gap-2">
-            {hasAnexos && (
-              <Button variant="outline" size="sm" onClick={() => setShowAnexos(true)}>
-                <Paperclip className="h-4 w-4 mr-1.5" />
-                Anexos ({chamado.anexos?.length || chamado.anexosNomes?.length || 0})
-              </Button>
-            )}
+            <Button variant="outline" size="sm" onClick={() => setShowAnexos(true)}>
+              <Paperclip className="h-4 w-4 mr-1.5" />
+              Anexos ({totalAnexos})
+            </Button>
             {editing ? (
               <>
                 <Button variant="ghost" size="sm" onClick={handleCancel} disabled={saving}>
@@ -288,7 +370,18 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
           {editing ? (
             <div>
               <Label className="text-xs font-semibold">Negociado com</Label>
-              <Input className="mt-1" value={draft.negociadoCom} onChange={e => setDraft(d => ({ ...d, negociadoCom: e.target.value }))} />
+              <Select value={draft.negociadoCom || 'none'} onValueChange={v => setDraft(d => ({ ...d, negociadoCom: v === 'none' ? '' : v }))}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Selecione —</SelectItem>
+                  <SelectItem value="André">André</SelectItem>
+                  <SelectItem value="Douglas">Douglas</SelectItem>
+                  <SelectItem value="Vinicius">Vinicius</SelectItem>
+                  <SelectItem value="João Pedro">João Pedro</SelectItem>
+                  <SelectItem value="Sr Ivo">Sr Ivo</SelectItem>
+                  <SelectItem value="Tathy">Tathy</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           ) : (
             <ReadOnlyField label="Negociado com" value={c.negociadoCom} />
@@ -304,23 +397,30 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
           {editing ? (
             <div>
               <Label className="text-xs font-semibold">Tipo de Solicitação</Label>
-              <Input className="mt-1" value={draft.tipoSolicitacao} onChange={e => setDraft(d => ({ ...d, tipoSolicitacao: e.target.value }))} />
+              <Select value={draft.tipoSolicitacao || 'none'} onValueChange={v => setDraft(d => ({ ...d, tipoSolicitacao: v === 'none' ? '' : v }))}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Selecione —</SelectItem>
+                  <SelectItem value="Interna">Interna</SelectItem>
+                  <SelectItem value="Romplas">Romplas</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           ) : (
             <ReadOnlyField label="Tipo de Solicitação" value={c.tipoSolicitacao} />
           )}
-          {editing ? (
-            <div>
-              <Label className="text-xs font-semibold">Gestor</Label>
-              <Input className="mt-1" value={draft.gestor} onChange={e => setDraft(d => ({ ...d, gestor: e.target.value }))} />
-            </div>
-          ) : (
-            <ReadOnlyField label="Gestor" value={c.gestor} />
-          )}
+          <ReadOnlyField label="Gestor" value={c.gestor} />
           {editing ? (
             <div>
               <Label className="text-xs font-semibold">Status Agendamento</Label>
-              <Input className="mt-1" value={draft.statusAgendamento} onChange={e => setDraft(d => ({ ...d, statusAgendamento: e.target.value }))} />
+              <Select value={draft.statusAgendamento || 'none'} onValueChange={v => setDraft(d => ({ ...d, statusAgendamento: v === 'none' ? '' : v }))}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Selecione —</SelectItem>
+                  <SelectItem value="Agendado">Agendado</SelectItem>
+                  <SelectItem value="Concluído">Concluído</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           ) : (
             <ReadOnlyField label="Status Agendamento" value={c.statusAgendamento} />
@@ -354,15 +454,39 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
         </div>
       </div>
 
-      {/* Anexos Dialog */}
+      {/* Anexos Dialog - with upload support */}
       <Dialog open={showAnexos} onOpenChange={setShowAnexos}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Anexos do Chamado #{chamado.id}</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Anexos do Chamado #{chamado.id}</DialogTitle>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept={ACCEPT_STRING}
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  {uploading ? 'Enviando...' : 'Anexar'}
+                </Button>
+              </div>
+            </div>
           </DialogHeader>
           <div className="space-y-2">
-            {chamado.anexos && chamado.anexos.length > 0 ? (
-              chamado.anexos.map((anexo, i) => (
+            {loadingAnexos ? (
+              <p className="text-xs text-muted-foreground animate-pulse">Carregando anexos...</p>
+            ) : storageAnexos.length > 0 ? (
+              storageAnexos.map((anexo, i) => (
                 <div key={i} className="flex items-center justify-between gap-2 p-3 bg-muted rounded-md">
                   <div className="flex items-center gap-2 min-w-0">
                     <Paperclip className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -375,20 +499,21 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(anexo)} title="Baixar">
                       <Download className="h-4 w-4" />
                     </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteAnexo(anexo)} title="Remover">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               ))
-            ) : chamado.anexosNomes && chamado.anexosNomes.length > 0 ? (
-              chamado.anexosNomes.map((nome, i) => (
-                <div key={i} className="flex items-center gap-2 p-3 bg-muted rounded-md text-sm">
-                  <Paperclip className="h-4 w-4 text-muted-foreground" />
-                  <span>{nome}</span>
-                  <span className="text-xs text-muted-foreground ml-auto">(sem link)</span>
-                </div>
-              ))
             ) : (
-              <p className="text-sm text-muted-foreground">Nenhum anexo.</p>
+              <p className="text-sm text-muted-foreground">Nenhum anexo encontrado.</p>
             )}
+          </div>
+          <div className="border-t pt-2 mt-2">
+            <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
+              <span className="font-semibold">Formatos e limites:</span>{' '}
+              PDF, DOCX, XLSX (até 10 MB) · MP4 (até 50 MB) · JPEG, PNG (até 5 MB) · MP3 (até 15 MB) · TXT (até 2 MB)
+            </p>
           </div>
         </DialogContent>
       </Dialog>
