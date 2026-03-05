@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import jsPDF from 'jspdf';
 import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2, Eye, Pencil, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
@@ -107,19 +108,50 @@ export default function NovoChamado() {
   const [showBookForm, setShowBookForm] = useState(false);
 
   // Special form data
-  interface SDFormData { produto: string; referencia: string; cor: string; largura: string; gramatura: string; aplicacao: string; observacoes: string }
+  interface SDFormData {
+    cliente: string; representante: string; segmentoMercado: string; aplicacaoProduto: string;
+    estimativaConsumo: string; precoAlvo: string;
+    necessitaAmostra: string; amostraTipo: string; // 'placa' | 'metros'
+    desenvolvimento: string; // 'nova_cor' | 'novo_produto' | 'extrusado' | 'espalmado'
+    amostraReferenciaAnexa: string; qualFabricante: string;
+    gramaturaTotal: string; espessura: string; substrato: string; gravacao: string;
+    aditivos: string; quaisAditivos: string;
+    corPantone: string; qualPantone: string;
+    observacoesComplementares: string;
+  }
   interface RNCFormData { nfNumero: string; produto: string; lote: string; defeito: string; quantidade: string; observacoes: string }
   interface AmostrasFormData { produto: string; referencia: string; cor: string; quantidade: string; tamanho: string; destino: string; observacoes: string }
   interface BookFormData { tipoBook: string; quantidade: string; destino: string; observacoes: string }
 
-  const [sdForm, setSdForm] = useState<SDFormData>({ produto: '', referencia: '', cor: '', largura: '', gramatura: '', aplicacao: '', observacoes: '' });
+  const defaultSdForm: SDFormData = { cliente: '', representante: '', segmentoMercado: '', aplicacaoProduto: '', estimativaConsumo: '', precoAlvo: '', necessitaAmostra: 'nao', amostraTipo: '', desenvolvimento: '', amostraReferenciaAnexa: 'nao', qualFabricante: '', gramaturaTotal: '', espessura: '', substrato: '', gravacao: '', aditivos: 'nao', quaisAditivos: '', corPantone: 'nao', qualPantone: '', observacoesComplementares: '' };
+  const [sdForm, setSdForm] = useState<SDFormData>({ ...defaultSdForm });
   const [rncForm, setRncForm] = useState<RNCFormData>({ nfNumero: '', produto: '', lote: '', defeito: '', quantidade: '', observacoes: '' });
   const [amostrasForm, setAmostrasForm] = useState<AmostrasFormData>({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
   const [bookForm, setBookForm] = useState<BookFormData>({ tipoBook: '', quantidade: '', destino: '', observacoes: '' });
   const [specialFormFilled, setSpecialFormFilled] = useState(false);
 
   const buildSpecialDescricao = () => {
-    if (isSD) return `[SD] Produto: ${sdForm.produto}, Referência: ${sdForm.referencia}, Cor: ${sdForm.cor}, Largura: ${sdForm.largura}, Gramatura: ${sdForm.gramatura}, Aplicação: ${sdForm.aplicacao}${sdForm.observacoes ? '\nObservações: ' + sdForm.observacoes : ''}`;
+    if (isSD) {
+      const lines = [
+        `[SDP - Solicitação de Desenvolvimento de Produto]`,
+        `Cliente: ${sdForm.cliente}`,
+        `Representante: ${sdForm.representante}`,
+        `Segmento de Mercado: ${sdForm.segmentoMercado}`,
+        `Aplicação do Produto: ${sdForm.aplicacaoProduto}`,
+        `Estimativa de Consumo em Metros: ${sdForm.estimativaConsumo}`,
+        `Preço Alvo: ${sdForm.precoAlvo}`,
+        `Necessita de Amostra: ${sdForm.necessitaAmostra === 'sim' ? `Sim (${sdForm.amostraTipo})` : 'Não'}`,
+        `Desenvolvimento: ${sdForm.desenvolvimento}`,
+        `Amostra Referência Anexa: ${sdForm.amostraReferenciaAnexa === 'sim' ? `Sim - Fabricante: ${sdForm.qualFabricante}` : 'Não'}`,
+      ];
+      if (sdForm.amostraReferenciaAnexa !== 'sim') {
+        lines.push(`Gramatura Total: ${sdForm.gramaturaTotal}`, `Espessura: ${sdForm.espessura}`, `Substrato: ${sdForm.substrato}`, `Gravação: ${sdForm.gravacao}`);
+        lines.push(`Aditivos: ${sdForm.aditivos === 'sim' ? `Sim - ${sdForm.quaisAditivos}` : 'Não'}`);
+        lines.push(`Cor Pantone: ${sdForm.corPantone === 'sim' ? `Sim - ${sdForm.qualPantone}` : 'Não'}`);
+      }
+      if (sdForm.observacoesComplementares) lines.push(`Observações Complementares: ${sdForm.observacoesComplementares}`);
+      return lines.join('\n');
+    }
     if (isRNC) return `[RNC] NF: ${rncForm.nfNumero}, Produto: ${rncForm.produto}, Lote: ${rncForm.lote}, Defeito: ${rncForm.defeito}, Quantidade: ${rncForm.quantidade}${rncForm.observacoes ? '\nObservações: ' + rncForm.observacoes : ''}`;
     if (isAmostras) return `[Amostras] Produto: ${amostrasForm.produto}, Referência: ${amostrasForm.referencia}, Cor: ${amostrasForm.cor}, Quantidade: ${amostrasForm.quantidade}, Tamanho: ${amostrasForm.tamanho}, Destino: ${amostrasForm.destino}${amostrasForm.observacoes ? '\nObservações: ' + amostrasForm.observacoes : ''}`;
     if (isBook) return `[Book] Tipo: ${bookForm.tipoBook}, Quantidade: ${bookForm.quantidade}, Destino: ${bookForm.destino}${bookForm.observacoes ? '\nObservações: ' + bookForm.observacoes : ''}`;
@@ -537,7 +569,7 @@ export default function NovoChamado() {
       setPrazo('');
       setTipoEntrega('');
       setDescricaoTexto('');
-      setSdForm({ produto: '', referencia: '', cor: '', largura: '', gramatura: '', aplicacao: '', observacoes: '' });
+      setSdForm({ ...defaultSdForm });
       setRncForm({ nfNumero: '', produto: '', lote: '', defeito: '', quantidade: '', observacoes: '' });
       setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
       setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' });
@@ -572,7 +604,7 @@ export default function NovoChamado() {
     setPrazo('');
     setTipoEntrega('');
     setDescricaoTexto('');
-    setSdForm({ produto: '', referencia: '', cor: '', largura: '', gramatura: '', aplicacao: '', observacoes: '' });
+    setSdForm({ ...defaultSdForm });
     setRncForm({ nfNumero: '', produto: '', lote: '', defeito: '', quantidade: '', observacoes: '' });
     setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
     setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' });
@@ -703,7 +735,7 @@ export default function NovoChamado() {
               </div>
               <div>
                 <Label className="text-xs font-semibold text-destructive">* Motivo Principal da Solicitação</Label>
-                <Select onValueChange={v => { setSelectedMotivo(v); setSelectedSubmotivo(''); setSpecialFormFilled(false); setSdForm({ produto: '', referencia: '', cor: '', largura: '', gramatura: '', aplicacao: '', observacoes: '' }); setRncForm({ nfNumero: '', produto: '', lote: '', defeito: '', quantidade: '', observacoes: '' }); setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' }); setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' }); setDescricaoTexto(''); }} value={selectedMotivo}>
+                <Select onValueChange={v => { setSelectedMotivo(v); setSelectedSubmotivo(''); setSpecialFormFilled(false); setSdForm({ ...defaultSdForm }); setRncForm({ nfNumero: '', produto: '', lote: '', defeito: '', quantidade: '', observacoes: '' }); setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' }); setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' }); setDescricaoTexto(''); }} value={selectedMotivo}>
                   <SelectTrigger className="mt-1 border-destructive/50"><SelectValue placeholder="Selecione o Motivo" /></SelectTrigger>
                   <SelectContent>
                     {motivos.map(m => (
@@ -1169,24 +1201,142 @@ export default function NovoChamado() {
 
       {/* SD Form Dialog */}
       <Dialog open={showSDForm} onOpenChange={setShowSDForm}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Solicitação de SD</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Produto *</Label><Input className="mt-1" value={sdForm.produto} onChange={e => setSdForm(p => ({ ...p, produto: e.target.value }))} /></div>
-              <div><Label className="text-xs">Referência *</Label><Input className="mt-1" value={sdForm.referencia} onChange={e => setSdForm(p => ({ ...p, referencia: e.target.value }))} /></div>
-              <div><Label className="text-xs">Cor *</Label><Input className="mt-1" value={sdForm.cor} onChange={e => setSdForm(p => ({ ...p, cor: e.target.value }))} /></div>
-              <div><Label className="text-xs">Largura *</Label><Input className="mt-1" value={sdForm.largura} onChange={e => setSdForm(p => ({ ...p, largura: e.target.value }))} /></div>
-              <div><Label className="text-xs">Gramatura *</Label><Input className="mt-1" value={sdForm.gramatura} onChange={e => setSdForm(p => ({ ...p, gramatura: e.target.value }))} /></div>
-              <div><Label className="text-xs">Aplicação *</Label><Input className="mt-1" value={sdForm.aplicacao} onChange={e => setSdForm(p => ({ ...p, aplicacao: e.target.value }))} /></div>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>ROMPLAS - SDP - Solicitação de Desenvolvimento de Produto</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div><Label className="text-xs">Cliente *</Label><Input className="mt-1" value={sdForm.cliente} onChange={e => setSdForm(p => ({ ...p, cliente: e.target.value }))} /></div>
+              <div><Label className="text-xs">Representante *</Label><Input className="mt-1" value={sdForm.representante} onChange={e => setSdForm(p => ({ ...p, representante: e.target.value }))} /></div>
             </div>
-            <div><Label className="text-xs">Observações</Label><Textarea className="mt-1" value={sdForm.observacoes} onChange={e => setSdForm(p => ({ ...p, observacoes: e.target.value }))} /></div>
+            <div><Label className="text-xs">Segmento de Mercado *</Label><Input className="mt-1" value={sdForm.segmentoMercado} onChange={e => setSdForm(p => ({ ...p, segmentoMercado: e.target.value }))} /></div>
+            <div><Label className="text-xs">Aplicação do Produto *</Label><Input className="mt-1" value={sdForm.aplicacaoProduto} onChange={e => setSdForm(p => ({ ...p, aplicacaoProduto: e.target.value }))} /></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div><Label className="text-xs">Estimativa de Consumo em Metros *</Label><Input className="mt-1" value={sdForm.estimativaConsumo} onChange={e => setSdForm(p => ({ ...p, estimativaConsumo: e.target.value }))} /></div>
+              <div><Label className="text-xs">Preço Alvo *</Label><Input className="mt-1" value={sdForm.precoAlvo} onChange={e => setSdForm(p => ({ ...p, precoAlvo: e.target.value }))} /></div>
+            </div>
+
+            {/* Necessita de Amostra */}
+            <div className="border rounded-lg p-3 space-y-2">
+              <Label className="text-xs font-semibold">Necessita de Amostra?</Label>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="necessitaAmostra" checked={sdForm.necessitaAmostra === 'nao'} onChange={() => setSdForm(p => ({ ...p, necessitaAmostra: 'nao', amostraTipo: '' }))} /> Não</label>
+                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="necessitaAmostra" checked={sdForm.necessitaAmostra === 'sim'} onChange={() => setSdForm(p => ({ ...p, necessitaAmostra: 'sim' }))} /> Sim</label>
+              </div>
+              {sdForm.necessitaAmostra === 'sim' && (
+                <div className="flex items-center gap-4 ml-4">
+                  <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="amostraTipo" checked={sdForm.amostraTipo === 'placa'} onChange={() => setSdForm(p => ({ ...p, amostraTipo: 'placa' }))} /> Placa</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="amostraTipo" checked={sdForm.amostraTipo === 'metros'} onChange={() => setSdForm(p => ({ ...p, amostraTipo: 'metros' }))} /> Metros</label>
+                </div>
+              )}
+            </div>
+
+            {/* Desenvolvimento */}
+            <div className="border rounded-lg p-3 space-y-2">
+              <Label className="text-xs font-semibold">Desenvolvimento *</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="desenvolvimento" checked={sdForm.desenvolvimento === 'nova_cor'} onChange={() => setSdForm(p => ({ ...p, desenvolvimento: 'nova_cor' }))} /> Nova Cor em Produto de Linha</label>
+                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="desenvolvimento" checked={sdForm.desenvolvimento === 'novo_produto'} onChange={() => setSdForm(p => ({ ...p, desenvolvimento: 'novo_produto' }))} /> Novo Produto / Cor</label>
+                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="desenvolvimento" checked={sdForm.desenvolvimento === 'extrusado'} onChange={() => setSdForm(p => ({ ...p, desenvolvimento: 'extrusado' }))} /> Extrusado</label>
+                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="desenvolvimento" checked={sdForm.desenvolvimento === 'espalmado'} onChange={() => setSdForm(p => ({ ...p, desenvolvimento: 'espalmado' }))} /> Espalmado</label>
+              </div>
+            </div>
+
+            {/* No caso de novos produtos */}
+            <div className="border rounded-lg p-3 space-y-2">
+              <Label className="text-xs font-semibold">No caso de novos produtos</Label>
+              <div className="space-y-2">
+                <Label className="text-xs">Amostra Referência Anexa:</Label>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="amostraRef" checked={sdForm.amostraReferenciaAnexa === 'nao'} onChange={() => setSdForm(p => ({ ...p, amostraReferenciaAnexa: 'nao', qualFabricante: '' }))} /> Não</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="amostraRef" checked={sdForm.amostraReferenciaAnexa === 'sim'} onChange={() => setSdForm(p => ({ ...p, amostraReferenciaAnexa: 'sim' }))} /> Sim</label>
+                </div>
+                {sdForm.amostraReferenciaAnexa === 'sim' && (
+                  <div><Label className="text-xs">Qual Fabricante?</Label><Input className="mt-1" value={sdForm.qualFabricante} onChange={e => setSdForm(p => ({ ...p, qualFabricante: e.target.value }))} /></div>
+                )}
+              </div>
+              {sdForm.amostraReferenciaAnexa !== 'sim' && (
+                <div className="space-y-3 pt-2 border-t">
+                  <p className="text-[10px] text-muted-foreground italic">Se for SIM no caso acima, não é necessário especificar os campos abaixo:</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div><Label className="text-xs">Gramatura Total</Label><Input className="mt-1" value={sdForm.gramaturaTotal} onChange={e => setSdForm(p => ({ ...p, gramaturaTotal: e.target.value }))} /></div>
+                    <div><Label className="text-xs">Espessura</Label><Input className="mt-1" value={sdForm.espessura} onChange={e => setSdForm(p => ({ ...p, espessura: e.target.value }))} /></div>
+                    <div><Label className="text-xs">Substrato</Label><Input className="mt-1" value={sdForm.substrato} onChange={e => setSdForm(p => ({ ...p, substrato: e.target.value }))} /></div>
+                    <div><Label className="text-xs">Gravação</Label><Input className="mt-1" value={sdForm.gravacao} onChange={e => setSdForm(p => ({ ...p, gravacao: e.target.value }))} /></div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Aditivos:</Label>
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="aditivos" checked={sdForm.aditivos === 'nao'} onChange={() => setSdForm(p => ({ ...p, aditivos: 'nao', quaisAditivos: '' }))} /> Não</label>
+                      <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="aditivos" checked={sdForm.aditivos === 'sim'} onChange={() => setSdForm(p => ({ ...p, aditivos: 'sim' }))} /> Sim</label>
+                    </div>
+                    {sdForm.aditivos === 'sim' && <Input placeholder="Quais?" value={sdForm.quaisAditivos} onChange={e => setSdForm(p => ({ ...p, quaisAditivos: e.target.value }))} />}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Cor Pantone:</Label>
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="corPantone" checked={sdForm.corPantone === 'nao'} onChange={() => setSdForm(p => ({ ...p, corPantone: 'nao', qualPantone: '' }))} /> Não</label>
+                      <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="corPantone" checked={sdForm.corPantone === 'sim'} onChange={() => setSdForm(p => ({ ...p, corPantone: 'sim' }))} /> Sim</label>
+                    </div>
+                    {sdForm.corPantone === 'sim' && <Input placeholder="Qual?" value={sdForm.qualPantone} onChange={e => setSdForm(p => ({ ...p, qualPantone: e.target.value }))} />}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Observações Complementares */}
+            <div><Label className="text-xs">Observações Complementares</Label><Textarea className="mt-1" value={sdForm.observacoesComplementares} onChange={e => setSdForm(p => ({ ...p, observacoesComplementares: e.target.value }))} /></div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowSDForm(false)}>Cancelar</Button>
+            <Button variant="secondary" onClick={() => {
+              if (!sdForm.cliente || !sdForm.representante || !sdForm.segmentoMercado || !sdForm.aplicacaoProduto || !sdForm.estimativaConsumo || !sdForm.precoAlvo || !sdForm.desenvolvimento) {
+                toast.error('Preencha todos os campos obrigatórios.');
+                return;
+              }
+              // Generate PDF
+              const doc = new jsPDF();
+              doc.setFontSize(14);
+              doc.text('ROMPLAS - SDP', 105, 15, { align: 'center' });
+              doc.setFontSize(10);
+              doc.text('Solicitação de Desenvolvimento de Produto', 105, 22, { align: 'center' });
+              doc.setFontSize(9);
+              let y = 35;
+              const addLine = (label: string, value: string) => { doc.text(`${label}: ${value}`, 15, y); y += 7; if (y > 275) { doc.addPage(); y = 15; } };
+              addLine('Cliente', sdForm.cliente);
+              addLine('Representante', sdForm.representante);
+              addLine('Segmento de Mercado', sdForm.segmentoMercado);
+              addLine('Aplicação do Produto', sdForm.aplicacaoProduto);
+              addLine('Estimativa de Consumo em Metros', sdForm.estimativaConsumo);
+              addLine('Preço Alvo', sdForm.precoAlvo);
+              addLine('Necessita de Amostra', sdForm.necessitaAmostra === 'sim' ? `Sim (${sdForm.amostraTipo || '-'})` : 'Não');
+              const devLabels: Record<string, string> = { nova_cor: 'Nova Cor em Produto de Linha', novo_produto: 'Novo Produto/Cor', extrusado: 'Extrusado', espalmado: 'Espalmado' };
+              addLine('Desenvolvimento', devLabels[sdForm.desenvolvimento] || sdForm.desenvolvimento);
+              addLine('Amostra Referência Anexa', sdForm.amostraReferenciaAnexa === 'sim' ? `Sim - ${sdForm.qualFabricante}` : 'Não');
+              if (sdForm.amostraReferenciaAnexa !== 'sim') {
+                addLine('Gramatura Total', sdForm.gramaturaTotal || '-');
+                addLine('Espessura', sdForm.espessura || '-');
+                addLine('Substrato', sdForm.substrato || '-');
+                addLine('Gravação', sdForm.gravacao || '-');
+                addLine('Aditivos', sdForm.aditivos === 'sim' ? `Sim - ${sdForm.quaisAditivos}` : 'Não');
+                addLine('Cor Pantone', sdForm.corPantone === 'sim' ? `Sim - ${sdForm.qualPantone}` : 'Não');
+              }
+              if (sdForm.observacoesComplementares) addLine('Observações', sdForm.observacoesComplementares);
+              const pdfBlob = doc.output('blob');
+              const pdfFile = new globalThis.File([pdfBlob], `SDP_${sdForm.cliente || 'solicitacao'}.pdf`, { type: 'application/pdf' });
+              setAnexos(prev => [...prev, pdfFile]);
+              setSpecialFormFilled(true);
+              setShowSDForm(false);
+              toast.success('Formulário SDP salvo e PDF anexado!');
+            }}>
+              <FileText className="h-4 w-4 mr-1.5" /> Confirmar e Anexar PDF
+            </Button>
             <Button onClick={() => {
-              if (!sdForm.produto || !sdForm.referencia || !sdForm.cor || !sdForm.largura || !sdForm.gramatura || !sdForm.aplicacao) { toast.error('Preencha todos os campos obrigatórios.'); return; }
-              setSpecialFormFilled(true); setShowSDForm(false);
+              if (!sdForm.cliente || !sdForm.representante || !sdForm.segmentoMercado || !sdForm.aplicacaoProduto || !sdForm.estimativaConsumo || !sdForm.precoAlvo || !sdForm.desenvolvimento) {
+                toast.error('Preencha todos os campos obrigatórios.');
+                return;
+              }
+              setSpecialFormFilled(true);
+              setShowSDForm(false);
             }}>Confirmar</Button>
           </DialogFooter>
         </DialogContent>
