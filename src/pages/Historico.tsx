@@ -116,6 +116,7 @@ export default function Historico() {
   const [filterSubmotivo, setFilterSubmotivo] = useState('todos');
   const [filterCliente, setFilterCliente] = useState('todos');
   const [filterStatus, setFilterStatus] = useState('todos');
+  const [filterEtapa, setFilterEtapa] = useState('todos');
   const [filterGestor, setFilterGestor] = useState('todos');
 
   // Reference data
@@ -289,6 +290,7 @@ export default function Historico() {
         if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
         if (filterSubmotivo !== 'todos' && c.submotivo !== filterSubmotivo) return false;
         if (filterStatus !== 'todos' && c.status !== filterStatus) return false;
+        if (filterEtapa !== 'todos' && c.etapa !== filterEtapa) return false;
         if (filterGestor !== 'todos' && c.gestor_id !== filterGestor) return false;
         return true;
       })
@@ -561,6 +563,16 @@ export default function Historico() {
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 {filteredSubmotivos.map(s => <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Etapa</span>
+            <Select value={filterEtapa} onValueChange={setFilterEtapa}>
+              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {dbEtapas.map(e => <SelectItem key={e.nome} value={e.nome}>{e.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
