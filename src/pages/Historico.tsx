@@ -681,7 +681,7 @@ export default function Historico() {
                         <div className="w-[65%] flex flex-col">
                           {/* Description box */}
                           <div className="bg-white/15 text-white px-3 py-2 mx-2 mt-2 rounded text-[11px] min-h-[60px]">
-                            <p className="font-semibold">Descrição : {entry.descricao_ticket ?? chamado?.descricao ?? '—'}</p>
+                            <p className="font-semibold">Descrição : {chamado?.descricao ?? '—'}</p>
                           </div>
 
                           {/* Bottom status row */}
@@ -746,7 +746,7 @@ export default function Historico() {
                 <div className="space-y-1">
                   <Label className="text-[11px] font-semibold text-muted-foreground">Descrição</Label>
                   <div className="px-3 py-2 border border-border rounded-md bg-muted/40 text-sm min-h-[100px] whitespace-pre-wrap">
-                    {selectedEntry?.descricao_ticket ?? selectedChamado.descricao ?? '—'}
+                    {selectedChamado.descricao ?? '—'}
                   </div>
                 </div>
 
