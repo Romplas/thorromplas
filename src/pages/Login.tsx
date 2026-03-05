@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Shield } from 'lucide-react';
+import { FileText, Shield, Eye, EyeOff } from 'lucide-react';
 import logoThor from '@/assets/logo-thor.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ export default function Login() {
   const [nome, setNome] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,13 +159,17 @@ export default function Login() {
               </div>
               <div>
                 <Label htmlFor="senha">Senha</Label>
-                <Input
-                id="senha"
-                type="password"
-                placeholder="••••••"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)} />
-              
+                <div className="relative">
+                  <Input
+                    id="senha"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)} />
+                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Entrando...' : 'Entrar'}
@@ -186,7 +191,12 @@ export default function Login() {
               </div>
               <div>
                 <Label htmlFor="signup-senha">Senha</Label>
-                <Input id="signup-senha" type="password" placeholder="••••••" value={senha} onChange={(e) => setSenha(e.target.value)} />
+                <div className="relative">
+                  <Input id="signup-senha" type={showPassword ? 'text' : 'password'} placeholder="••••••" value={senha} onChange={(e) => setSenha(e.target.value)} />
+                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Cadastrando...' : 'Cadastrar'}
