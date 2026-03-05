@@ -83,6 +83,11 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   const [status, setStatus] = useState('');
   const [etapa, setEtapa] = useState('');
   const [gestorId, setGestorId] = useState('');
+  const [metrosTotais, setMetrosTotais] = useState('');
+  const [negociadoCom, setNegociadoCom] = useState('');
+  const [nfe, setNfe] = useState('');
+  const [tipoSolicitacao, setTipoSolicitacao] = useState('');
+  const [statusAgendamento, setStatusAgendamento] = useState('');
   const [saving, setSaving] = useState(false);
   const [anexos, setAnexos] = useState<AnexoFile[]>([]);
   const [loadingAnexos, setLoadingAnexos] = useState(false);
@@ -127,8 +132,24 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       setGestorId(chamado.gestor_id || 'none');
       loadAnexos(chamado.id);
       resolveNames(chamado);
+      // Load extra fields
+      loadExtraFields(chamado.id);
     }
   }, [chamado, open]);
+
+  const loadExtraFields = async (chamadoId: number) => {
+    const { data } = await supabase
+      .from('chamados')
+      .select('*')
+      .eq('id', chamadoId)
+      .maybeSingle();
+    const raw = data as any;
+    setMetrosTotais(raw?.metros_totais || '');
+    setNegociadoCom(raw?.negociado_com || '');
+    setNfe(raw?.nfe || '');
+    setTipoSolicitacao(raw?.tipo_solicitacao || '');
+    setStatusAgendamento(raw?.status_agendamento || '');
+  };
 
   const resolveNames = async (c: ChamadoFull) => {
     // Supervisor: look up in supervisores table
@@ -253,7 +274,12 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
         status: status as any,
         etapa,
         gestor_id: gestorId === 'none' ? null : gestorId,
-      }).eq('id', chamado.id);
+        metros_totais: metrosTotais || null,
+        negociado_com: negociadoCom || null,
+        nfe: nfe || null,
+        tipo_solicitacao: tipoSolicitacao || null,
+        status_agendamento: statusAgendamento || null,
+      } as any).eq('id', chamado.id);
       if (error) throw error;
 
       // Insert single consolidated history entry
@@ -387,28 +413,64 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
             <div>
               <p className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Informações Adicionais</p>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <ReadOnlyField label="Metros Totais" value="" />
-                <ReadOnlyField label="Negociado com" value="" />
-                <ReadOnlyField label="Nº NFE" value="" />
-                <ReadOnlyField label="Tipo de Solicitação" value="" />
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Metros Totais</Label>
+                  <input className="w-full px-3 py-2.5 border border-border rounded-lg bg-background text-sm h-[40px]" value={metrosTotais} onChange={e => setMetrosTotais(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Negociado com</Label>
+                  <Select value={negociadoCom || 'none'} onValueChange={v => setNegociadoCom(v === 'none' ? '' : v)}>
+                    <SelectTrigger className="h-[40px]"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Nenhum —</SelectItem>
+                      <SelectItem value="André">André</SelectItem>
+                      <SelectItem value="Douglas">Douglas</SelectItem>
+                      <SelectItem value="Vinicius">Vinicius</SelectItem>
+                      <SelectItem value="João Pedro">João Pedro</SelectItem>
+                      <SelectItem value="Sr Ivo">Sr Ivo</SelectItem>
+                      <SelectItem value="Tathy">Tathy</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Nº NFE</Label>
+                  <input className="w-full px-3 py-2.5 border border-border rounded-lg bg-background text-sm h-[40px]" value={nfe} onChange={e => setNfe(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Tipo de Solicitação</Label>
+                  <Select value={tipoSolicitacao || 'none'} onValueChange={v => setTipoSolicitacao(v === 'none' ? '' : v)}>
+                    <SelectTrigger className="h-[40px]"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Nenhum —</SelectItem>
+                      <SelectItem value="Interna">Interna</SelectItem>
+                      <SelectItem value="Romplas">Romplas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 {/* Gestor editable */}
-                {isEditable ? (
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Gestor</Label>
-                    <Select value={gestorId} onValueChange={setGestorId}>
-                      <SelectTrigger className="h-[40px]"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">— Nenhum —</SelectItem>
-                        {gestorProfiles.map(g => (
-                          <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <ReadOnlyField label="Gestor" value={gestorProfiles.find(g => g.id === gestorId)?.nome || gestorNome || 'Nenhum'} />
-                )}
-                <ReadOnlyField label="Status Agendamento" value="" />
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Gestor</Label>
+                  <Select value={gestorId} onValueChange={setGestorId}>
+                    <SelectTrigger className="h-[40px]"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Nenhum —</SelectItem>
+                      {gestorProfiles.map(g => (
+                        <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Status Agendamento</Label>
+                  <Select value={statusAgendamento || 'none'} onValueChange={v => setStatusAgendamento(v === 'none' ? '' : v)}>
+                    <SelectTrigger className="h-[40px]"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Nenhum —</SelectItem>
+                      <SelectItem value="Agendado">Agendado</SelectItem>
+                      <SelectItem value="Concluído">Concluído</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 

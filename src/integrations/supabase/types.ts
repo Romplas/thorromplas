@@ -71,12 +71,17 @@ export type Database = {
           etapa: string | null
           gestor_id: string | null
           id: number
+          metros_totais: string | null
           motivo: string
+          negociado_com: string | null
+          nfe: string | null
           prioridade: Database["public"]["Enums"]["ticket_prioridade"]
           representante_id: string | null
           status: Database["public"]["Enums"]["ticket_status"]
+          status_agendamento: string | null
           submotivo: string | null
           supervisor_id: string | null
+          tipo_solicitacao: string | null
           updated_at: string
         }
         Insert: {
@@ -90,12 +95,17 @@ export type Database = {
           etapa?: string | null
           gestor_id?: string | null
           id?: never
+          metros_totais?: string | null
           motivo: string
+          negociado_com?: string | null
+          nfe?: string | null
           prioridade?: Database["public"]["Enums"]["ticket_prioridade"]
           representante_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
+          status_agendamento?: string | null
           submotivo?: string | null
           supervisor_id?: string | null
+          tipo_solicitacao?: string | null
           updated_at?: string
         }
         Update: {
@@ -109,12 +119,17 @@ export type Database = {
           etapa?: string | null
           gestor_id?: string | null
           id?: never
+          metros_totais?: string | null
           motivo?: string
+          negociado_com?: string | null
+          nfe?: string | null
           prioridade?: Database["public"]["Enums"]["ticket_prioridade"]
           representante_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
+          status_agendamento?: string | null
           submotivo?: string | null
           supervisor_id?: string | null
+          tipo_solicitacao?: string | null
           updated_at?: string
         }
         Relationships: [
