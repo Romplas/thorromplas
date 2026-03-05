@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Save, Paperclip, Eye, Download } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Save, Paperclip, Eye, Download, Upload, X, Trash2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -54,12 +55,30 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
   );
 }
 
+const ACCEPTED_TYPES: Record<string, { label: string; maxMB: number }> = {
+  'application/pdf': { label: 'PDF', maxMB: 10 },
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { label: 'DOCX', maxMB: 10 },
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { label: 'XLSX', maxMB: 10 },
+  'video/mp4': { label: 'MP4', maxMB: 50 },
+  'video/quicktime': { label: 'MOV', maxMB: 50 },
+  'video/x-msvideo': { label: 'AVI', maxMB: 50 },
+  'video/webm': { label: 'WEBM', maxMB: 50 },
+  'image/jpeg': { label: 'JPEG', maxMB: 5 },
+  'image/png': { label: 'PNG', maxMB: 5 },
+  'audio/mpeg': { label: 'MP3', maxMB: 15 },
+  'text/plain': { label: 'TXT', maxMB: 2 },
+};
+const ACCEPT_STRING = Object.keys(ACCEPTED_TYPES).join(',');
+
 function getFileUrl(path: string): string {
   const { data } = supabase.storage.from('chamado-anexos').getPublicUrl(path);
   return data.publicUrl;
 }
 
 export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved, profileMap }: Props) {
+  const { role } = useAuth();
+  const canUpload = role === 'admin' || role === 'gestor' || role === 'supervisor';
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [descricao, setDescricao] = useState('');
   const [status, setStatus] = useState('');
   const [etapa, setEtapa] = useState('');
@@ -67,6 +86,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   const [saving, setSaving] = useState(false);
   const [anexos, setAnexos] = useState<AnexoFile[]>([]);
   const [loadingAnexos, setLoadingAnexos] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState('');
 
@@ -278,6 +298,51 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
     document.body.removeChild(a);
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!chamado || !e.target.files?.length) return;
+    const files = Array.from(e.target.files);
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const typeInfo = ACCEPTED_TYPES[file.type];
+        if (!typeInfo) {
+          toast.error(`Tipo não suportado: ${file.name}`);
+          continue;
+        }
+        if (file.size > typeInfo.maxMB * 1024 * 1024) {
+          toast.error(`${file.name} excede ${typeInfo.maxMB}MB`);
+          continue;
+        }
+        const filePath = `${chamado.id}/${file.name}`;
+        const { error } = await supabase.storage
+          .from('chamado-anexos')
+          .upload(filePath, file, { contentType: file.type, upsert: true });
+        if (error) {
+          toast.error(`Erro ao enviar ${file.name}: ${error.message}`);
+        } else {
+          toast.success(`${file.name} anexado!`);
+        }
+      }
+      await loadAnexos(chamado.id);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteAnexo = async (anexo: AnexoFile) => {
+    if (!chamado) return;
+    const { error } = await supabase.storage
+      .from('chamado-anexos')
+      .remove([anexo.path]);
+    if (error) {
+      toast.error('Erro ao remover anexo');
+    } else {
+      toast.success('Anexo removido');
+      await loadAnexos(chamado.id);
+    }
+  };
+
   if (!chamado) return null;
 
   const gestorNome = chamado.gestor_id ? profileMap.get(chamado.gestor_id) || chamado.gestor_nome || '' : '';
@@ -406,7 +471,31 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
                   </div>
                 )}
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Anexos</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Anexos</Label>
+                    {canUpload && (
+                      <>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          multiple
+                          accept={ACCEPT_STRING}
+                          className="hidden"
+                          onChange={handleFileUpload}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploading}
+                        >
+                          <Upload className="h-3.5 w-3.5" />
+                          {uploading ? 'Enviando...' : 'Anexar'}
+                        </Button>
+                      </>
+                    )}
+                  </div>
                   <div className="border border-border rounded-lg p-3 space-y-2 min-h-[140px] bg-muted/20">
                     {loadingAnexos ? (
                       <p className="text-xs text-muted-foreground animate-pulse">Carregando anexos...</p>
@@ -426,6 +515,11 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(anexo)} title="Baixar">
                               <Download className="h-4 w-4" />
                             </Button>
+                            {canUpload && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteAnexo(anexo)} title="Remover">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </div>
                       ))
