@@ -80,6 +80,16 @@ export default function Kanban() {
   // Profile map for name resolution in modal
   const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
 
+  // Keep editTicket in sync with latest chamados data
+  useEffect(() => {
+    if (editTicket && editOpen) {
+      const updated = chamados.find(c => c.id === editTicket.id);
+      if (updated && (updated.updated_at !== editTicket.updated_at || updated.descricao !== editTicket.descricao || updated.etapa !== editTicket.etapa || updated.status !== editTicket.status || updated.gestor_id !== editTicket.gestor_id)) {
+        setEditTicket(updated);
+      }
+    }
+  }, [chamados]);
+
   // Reference data
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
   const [representantes, setRepresentantes] = useState<Representante[]>([]);
