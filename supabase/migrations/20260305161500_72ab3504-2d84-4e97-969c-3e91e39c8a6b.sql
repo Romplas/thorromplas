@@ -1,0 +1,1 @@
+ALTER TABLE public.chamados REPLICA IDENTITY FULL;

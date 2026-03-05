@@ -125,7 +125,20 @@ export default function Kanban() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'chamados' },
-        () => {
+        (payload) => {
+          // If a chamado was deleted, close edit modal if it was showing that ticket
+          if (payload.eventType === 'DELETE' && payload.old && (payload.old as any).id) {
+            const deletedId = (payload.old as any).id;
+            setEditTicket((prev) => {
+              if (prev && prev.id === deletedId) {
+                setEditOpen(false);
+                return null;
+              }
+              return prev;
+            });
+            // Also remove from local state immediately
+            setChamados((prev) => prev.filter((c) => c.id !== deletedId));
+          }
           fetchData();
         }
       )
