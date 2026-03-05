@@ -84,18 +84,21 @@ export default function NovoChamado() {
   const [tipoSolicitacao, setTipoSolicitacao] = useState('');
   const [gestor, setGestor] = useState('');
   const [statusAgendamento, setStatusAgendamento] = useState('');
-  // Structured description fields
+  // Structured description fields (for Negociação)
   interface ProdutoItem { codProduto: string; produto: string; preco: string; metros: string }
   const [produtos, setProdutos] = useState<ProdutoItem[]>([{ codProduto: '', produto: '', preco: '', metros: '' }]);
   const [prazo, setPrazo] = useState('');
   const [tipoEntrega, setTipoEntrega] = useState('');
+  const [descricaoTexto, setDescricaoTexto] = useState('');
 
   // Helper to build description from structured fields
-  const buildDescricao = () => {
+  const buildDescricao = (negociacao: boolean) => {
+    if (!negociacao) return descricaoTexto;
     const prodLines = produtos.map((p, i) => 
       `Produto ${i + 1}: Cód: ${p.codProduto}, Produto: ${p.produto}, Preço: ${p.preco}, Metros: ${p.metros}`
     ).join('\n');
-    return `${prodLines}\nPrazo: ${prazo}\nTipo de Entrega: ${tipoEntrega}`;
+    const structured = `${prodLines}\nPrazo: ${prazo}\nTipo de Entrega: ${tipoEntrega}`;
+    return descricaoTexto ? `${structured}\n\nObservações: ${descricaoTexto}` : structured;
   };
 
   // Check if motivo is Negociação
@@ -365,19 +368,21 @@ export default function NovoChamado() {
         return;
       }
     }
-    // Validate structured description fields
-    const hasEmptyProduct = produtos.some(p => !p.codProduto || !p.produto || !p.preco || !p.metros);
-    if (hasEmptyProduct) {
-      toast.error('Preencha todos os campos de produto na descrição.');
-      return;
-    }
-    if (!prazo) {
-      toast.error('Informe o prazo na descrição.');
-      return;
-    }
-    if (!tipoEntrega) {
-      toast.error('Selecione o tipo de entrega na descrição.');
-      return;
+    // Validate structured description fields only for Negociação
+    if (isNegociacao) {
+      const hasEmptyProduct = produtos.some(p => !p.codProduto || !p.produto || !p.preco || !p.metros);
+      if (hasEmptyProduct) {
+        toast.error('Preencha todos os campos de produto na descrição.');
+        return;
+      }
+      if (!prazo) {
+        toast.error('Informe o prazo na descrição.');
+        return;
+      }
+      if (!tipoEntrega) {
+        toast.error('Selecione o tipo de entrega na descrição.');
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -391,7 +396,7 @@ export default function NovoChamado() {
         cliente_nome: clienteObj?.nome || '',
         motivo: motivoNome,
         submotivo: submotivoNome || null,
-        descricao: buildDescricao() || null,
+        descricao: buildDescricao(isNegociacao) || null,
         status: 'aberto',
         etapa: 'thor',
         supervisor_id: selectedSupervisor || null,
@@ -447,7 +452,7 @@ export default function NovoChamado() {
         tipoSolicitacao,
         gestor: gestorProfiles.find(g => g.id === gestor)?.nome || '',
         statusAgendamento,
-        descricao: buildDescricao(),
+        descricao: buildDescricao(isNegociacao),
         anexosNomes: anexos.map(f => f.name),
         anexos: uploadedFiles,
         criadoEm: new Date().toLocaleString('pt-BR'),
@@ -471,7 +476,7 @@ export default function NovoChamado() {
         user_id: userProfileId,
         acao: 'Ticket Criado',
         descricao: `Ticket criado — Cliente: ${clienteObj?.nome || ''}, Motivo: ${motivoNome}${submotivoNome ? ', Objetivo: ' + submotivoNome : ''}, Status: Aberto, Etapa: THOR`,
-        descricao_ticket: buildDescricao() || null,
+        descricao_ticket: buildDescricao(isNegociacao) || null,
       } as any);
       if (histError) console.error('Erro ao inserir histórico de criação:', histError);
 
@@ -496,6 +501,7 @@ export default function NovoChamado() {
       setProdutos([{ codProduto: '', produto: '', preco: '', metros: '' }]);
       setPrazo('');
       setTipoEntrega('');
+      setDescricaoTexto('');
       setAnexos([]);
       setFileErrors([]);
     } catch (err: any) {
@@ -525,6 +531,7 @@ export default function NovoChamado() {
     setProdutos([{ codProduto: '', produto: '', preco: '', metros: '' }]);
     setPrazo('');
     setTipoEntrega('');
+    setDescricaoTexto('');
     setAnexos([]);
     setFileErrors([]);
   };
@@ -734,109 +741,129 @@ export default function NovoChamado() {
             {/* Row 4 - Descrição (campos estruturados) + Anexos */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="text-xs font-semibold text-destructive">* Descrição</Label>
-                <div className="mt-1 border border-destructive/50 rounded-lg p-4 space-y-3">
-                  {/* Produtos */}
-                  {produtos.map((prod, i) => (
-                    <div key={i} className="grid grid-cols-2 md:grid-cols-4 gap-2 items-end">
-                      <div>
-                        <Label className="text-[10px] text-muted-foreground">Cód Produto *</Label>
-                        <Input
-                          className="h-8 text-xs border-destructive/50"
-                          placeholder="Código"
-                          value={prod.codProduto}
-                          onChange={e => {
-                            const updated = [...produtos];
-                            updated[i] = { ...updated[i], codProduto: e.target.value };
-                            setProdutos(updated);
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] text-muted-foreground">Produto *</Label>
-                        <Input
-                          className="h-8 text-xs border-destructive/50"
-                          placeholder="Produto"
-                          value={prod.produto}
-                          onChange={e => {
-                            const updated = [...produtos];
-                            updated[i] = { ...updated[i], produto: e.target.value };
-                            setProdutos(updated);
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] text-muted-foreground">Preço *</Label>
-                        <Input
-                          className="h-8 text-xs border-destructive/50"
-                          placeholder="R$ 0,00"
-                          value={prod.preco}
-                          onChange={e => {
-                            const updated = [...produtos];
-                            updated[i] = { ...updated[i], preco: e.target.value };
-                            setProdutos(updated);
-                          }}
-                        />
-                      </div>
-                      <div className="flex gap-1 items-end">
-                        <div className="flex-1">
-                          <Label className="text-[10px] text-muted-foreground">Metros *</Label>
+                <Label className="text-xs font-semibold">{isNegociacao ? <span className="text-destructive">* </span> : ''}Descrição</Label>
+                {isNegociacao ? (
+                  <div className="mt-1 border border-destructive/50 rounded-lg p-4 space-y-3">
+                    {/* Produtos */}
+                    {produtos.map((prod, i) => (
+                      <div key={i} className="grid grid-cols-2 md:grid-cols-4 gap-2 items-end">
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">Cód Produto *</Label>
                           <Input
                             className="h-8 text-xs border-destructive/50"
-                            placeholder="Metros"
-                            value={prod.metros}
+                            placeholder="Código"
+                            value={prod.codProduto}
                             onChange={e => {
                               const updated = [...produtos];
-                              updated[i] = { ...updated[i], metros: e.target.value };
+                              updated[i] = { ...updated[i], codProduto: e.target.value };
                               setProdutos(updated);
                             }}
                           />
                         </div>
-                        {produtos.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => setProdutos(prev => prev.filter((_, idx) => idx !== i))}
-                            className="h-8 w-8 flex items-center justify-center text-destructive hover:bg-destructive/10 rounded"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        )}
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">Produto *</Label>
+                          <Input
+                            className="h-8 text-xs border-destructive/50"
+                            placeholder="Produto"
+                            value={prod.produto}
+                            onChange={e => {
+                              const updated = [...produtos];
+                              updated[i] = { ...updated[i], produto: e.target.value };
+                              setProdutos(updated);
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">Preço *</Label>
+                          <Input
+                            className="h-8 text-xs border-destructive/50"
+                            placeholder="R$ 0,00"
+                            value={prod.preco}
+                            onChange={e => {
+                              const updated = [...produtos];
+                              updated[i] = { ...updated[i], preco: e.target.value };
+                              setProdutos(updated);
+                            }}
+                          />
+                        </div>
+                        <div className="flex gap-1 items-end">
+                          <div className="flex-1">
+                            <Label className="text-[10px] text-muted-foreground">Metros *</Label>
+                            <Input
+                              className="h-8 text-xs border-destructive/50"
+                              placeholder="Metros"
+                              value={prod.metros}
+                              onChange={e => {
+                                const updated = [...produtos];
+                                updated[i] = { ...updated[i], metros: e.target.value };
+                                setProdutos(updated);
+                              }}
+                            />
+                          </div>
+                          {produtos.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setProdutos(prev => prev.filter((_, idx) => idx !== i))}
+                              className="h-8 w-8 flex items-center justify-center text-destructive hover:bg-destructive/10 rounded"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setProdutos(prev => [...prev, { codProduto: '', produto: '', preco: '', metros: '' }])}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar Produto
+                    </Button>
+
+                    {/* Prazo e Tipo de Entrega */}
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">Prazo *</Label>
+                        <Input
+                          className="h-8 text-xs border-destructive/50"
+                          placeholder="Ex: 30 dias"
+                          value={prazo}
+                          onChange={e => setPrazo(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">Tipo de Entrega *</Label>
+                        <Select value={tipoEntrega} onValueChange={setTipoEntrega}>
+                          <SelectTrigger className="h-8 text-xs border-destructive/50"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Imediata">Imediata</SelectItem>
+                            <SelectItem value="Programada">Programada</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setProdutos(prev => [...prev, { codProduto: '', produto: '', preco: '', metros: '' }])}
-                  >
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar Produto
-                  </Button>
 
-                  {/* Prazo e Tipo de Entrega */}
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-                    <div>
-                      <Label className="text-[10px] text-muted-foreground">Prazo *</Label>
-                      <Input
-                        className="h-8 text-xs border-destructive/50"
-                        placeholder="Ex: 30 dias"
-                        value={prazo}
-                        onChange={e => setPrazo(e.target.value)}
+                    {/* Descrição livre abaixo dos campos estruturados */}
+                    <div className="pt-2 border-t">
+                      <Label className="text-[10px] text-muted-foreground">Observações</Label>
+                      <Textarea
+                        className="mt-1 min-h-[80px] text-xs"
+                        placeholder="Descrição adicional..."
+                        value={descricaoTexto}
+                        onChange={e => setDescricaoTexto(e.target.value)}
                       />
                     </div>
-                    <div>
-                      <Label className="text-[10px] text-muted-foreground">Tipo de Entrega *</Label>
-                      <Select value={tipoEntrega} onValueChange={setTipoEntrega}>
-                        <SelectTrigger className="h-8 text-xs border-destructive/50"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Imediata">Imediata</SelectItem>
-                          <SelectItem value="Programada">Programada</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </div>
-                </div>
+                ) : (
+                  <Textarea
+                    className="mt-1 min-h-[140px]"
+                    placeholder="Descrição do chamado..."
+                    value={descricaoTexto}
+                    onChange={e => setDescricaoTexto(e.target.value)}
+                  />
+                )}
               </div>
               <div>
                 <Label className="text-xs font-semibold">Anexos</Label>
