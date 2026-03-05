@@ -465,25 +465,13 @@ export default function Historico() {
       return;
     }
     try {
-      // Log deletion in history before deleting
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      let userProfileId: string | null = null;
-      if (currentUser) {
-        const { data: prof } = await supabase.from('profiles').select('id').eq('user_id', currentUser.id).maybeSingle();
-        userProfileId = prof?.id || null;
-      }
+      // Delete all history records for this chamado
+      await supabase.from('chamado_historico').delete().eq('chamado_id', deleteTicketId);
 
-      await supabase.from('chamado_historico').insert({
-        chamado_id: deleteTicketId,
-        user_id: userProfileId,
-        acao: 'Ticket Excluído',
-        descricao: `Motivo da exclusão: ${deleteMotivo.trim()}`,
-        descricao_ticket: null,
-      } as any);
-
+      // Delete the chamado itself
       const { error } = await supabase.from('chamados').delete().eq('id', deleteTicketId);
       if (error) throw error;
-      toast.success(`Ticket #${deleteTicketId} excluído com sucesso`);
+      toast.success(`Ticket #${deleteTicketId} excluído definitivamente`);
       setDeleteDialogOpen(false);
       setSelectedEntryId(null);
       fetchData();
