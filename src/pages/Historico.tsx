@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Pencil, Trash2, Eye, Eraser, Paperclip, Download, FileDown } from 'lucide-react';
 import SDPFormModal from '@/components/chamado/SDPFormModal';
+import RNCFormModal from '@/components/chamado/RNCFormModal';
+import AmostrasFormModal from '@/components/chamado/AmostrasFormModal';
+import BookFormModal from '@/components/chamado/BookFormModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -108,6 +111,9 @@ export default function Historico() {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [sdpModalOpen, setSdpModalOpen] = useState(false);
+  const [rncModalOpen, setRncModalOpen] = useState(false);
+  const [amostrasModalOpen, setAmostrasModalOpen] = useState(false);
+  const [bookModalOpen, setBookModalOpen] = useState(false);
   const [anexosDialogOpen, setAnexosDialogOpen] = useState(false);
   const [anexos, setAnexos] = useState<{ nome: string; path: string }[]>([]);
   const [loadingAnexos, setLoadingAnexos] = useState(false);
@@ -764,6 +770,24 @@ export default function Historico() {
                       SDP
                     </Button>
                   )}
+                  {selectedChamado.motivo.toLowerCase().includes('rnc') && (
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setRncModalOpen(true)} title="Visualizar / Editar RNC">
+                      <Eye className="h-4 w-4" />
+                      RNC
+                    </Button>
+                  )}
+                  {selectedChamado.motivo.toLowerCase().includes('amostra') && (
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setAmostrasModalOpen(true)} title="Visualizar / Editar Amostras">
+                      <Eye className="h-4 w-4" />
+                      Amostras
+                    </Button>
+                  )}
+                  {selectedChamado.motivo.toLowerCase().includes('book') && (
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setBookModalOpen(true)} title="Visualizar / Editar Book">
+                      <Eye className="h-4 w-4" />
+                      Book
+                    </Button>
+                  )}
                   <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => handleDeleteRequest(selectedChamado.id)}>
                     <Trash2 className="h-4 w-4" />
                     Excluir
@@ -897,6 +921,39 @@ export default function Historico() {
           <SDPFormModal
             open={sdpModalOpen}
             onOpenChange={setSdpModalOpen}
+            chamadoId={selectedChamado.id}
+            clienteNome={selectedChamado.cliente_nome}
+            representanteNome={representanteNome}
+            onPdfUploaded={fetchData}
+          />
+        )}
+        {/* RNC Form Modal */}
+        {selectedChamado && (
+          <RNCFormModal
+            open={rncModalOpen}
+            onOpenChange={setRncModalOpen}
+            chamadoId={selectedChamado.id}
+            clienteNome={selectedChamado.cliente_nome}
+            representanteNome={representanteNome}
+            onPdfUploaded={fetchData}
+          />
+        )}
+        {/* Amostras Form Modal */}
+        {selectedChamado && (
+          <AmostrasFormModal
+            open={amostrasModalOpen}
+            onOpenChange={setAmostrasModalOpen}
+            chamadoId={selectedChamado.id}
+            clienteNome={selectedChamado.cliente_nome}
+            representanteNome={representanteNome}
+            onPdfUploaded={fetchData}
+          />
+        )}
+        {/* Book Form Modal */}
+        {selectedChamado && (
+          <BookFormModal
+            open={bookModalOpen}
+            onOpenChange={setBookModalOpen}
             chamadoId={selectedChamado.id}
             clienteNome={selectedChamado.cliente_nome}
             representanteNome={representanteNome}
