@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil, Save, X, Paperclip, Download, Eye } from 'lucide-react';
+import { Pencil, Save, X, Paperclip, Download, Eye, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -43,6 +44,7 @@ export interface ChamadoCriado {
 interface ChamadoCardProps {
   chamado: ChamadoCriado;
   onUpdate: (updated: ChamadoCriado) => void;
+  onDelete?: (id: number) => void;
 }
 
 function ReadOnlyField({ label, value, className }: { label: string; value: string; className?: string }) {
@@ -56,6 +58,18 @@ function ReadOnlyField({ label, value, className }: { label: string; value: stri
   );
 }
 
+function formatDateBR(dateStr: string): string {
+  if (!dateStr) return '';
+  // If already in dd/mm/yyyy format
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
+  // If in yyyy-mm-dd format
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+    const [y, m, d] = dateStr.substring(0, 10).split('-');
+    return `${d}/${m}/${y}`;
+  }
+  return dateStr;
+}
+
 function getFileUrl(path: string): string {
   const { data } = supabase.storage.from('chamado-anexos').getPublicUrl(path);
   return data.publicUrl;
@@ -66,13 +80,17 @@ function isPreviewable(nome: string): boolean {
   return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'].includes(ext);
 }
 
-export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
+export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCardProps) {
   const [editing, setEditing] = useState(false);
   const [showAnexos, setShowAnexos] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState('');
   const [draft, setDraft] = useState(chamado);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // Editable only when status=aberto AND etapa=THOR (case-insensitive)
+  const canEdit = chamado.status === 'aberto' && chamado.etapa.toLowerCase() === 'thor';
 
   const handleEdit = () => {
     setDraft({ ...chamado });
@@ -90,9 +108,9 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
         motivo: draft.motivo,
         submotivo: draft.submotivo || null,
         descricao: draft.descricao || null,
-        status: draft.status as any,
-        etapa: draft.etapa,
-      }).eq('id', chamado.id);
+        data_contato: draft.dataContato || null,
+        data_retorno: draft.dataRetorno || null,
+      } as any).eq('id', chamado.id);
 
       if (error) throw error;
 
@@ -103,6 +121,20 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
       toast.error('Erro ao salvar: ' + (err.message || 'Erro desconhecido'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from('chamados').delete().eq('id', chamado.id);
+      if (error) throw error;
+      toast.success(`Chamado #${chamado.id} excluído!`);
+      onDelete?.(chamado.id);
+    } catch (err: any) {
+      toast.error('Erro ao excluir: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -133,7 +165,7 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
     fechado: 'bg-muted text-muted-foreground border-border',
   };
 
-  const etapaColor = chamado.etapa === 'THOR' ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground';
+  const etapaColor = chamado.etapa.toLowerCase() === 'thor' ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground';
 
   const c = editing ? draft : chamado;
   const hasAnexos = (chamado.anexos && chamado.anexos.length > 0) || (chamado.anexosNomes && chamado.anexosNomes.length > 0);
@@ -148,7 +180,7 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
             <Badge variant="outline" className={`text-xs ${statusColor[c.status as keyof typeof statusColor] || statusColor.aberto}`}>
               {c.status === 'aberto' ? 'Aberto' : c.status === 'em_progresso' ? 'Em Progresso' : 'Fechado'}
             </Badge>
-            <Badge className={`text-xs ${etapaColor}`}>{c.etapa}</Badge>
+            <Badge className={`text-xs ${etapaColor}`}>{c.etapa.toUpperCase()}</Badge>
             <span className="text-xs text-muted-foreground">Criado em {chamado.criadoEm}</span>
           </div>
           <div className="flex items-center gap-2">
@@ -168,9 +200,32 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
                 </Button>
               </>
             ) : (
-              <Button variant="outline" size="sm" onClick={handleEdit} disabled={chamado.etapa !== 'THOR'} title={chamado.etapa !== 'THOR' ? 'Edição disponível apenas na etapa THOR' : ''}>
-                <Pencil className="h-4 w-4 mr-1.5" />Editar
-              </Button>
+              <>
+                <Button variant="outline" size="sm" onClick={handleEdit} disabled={!canEdit} title={!canEdit ? 'Edição disponível apenas com Status Aberto e Etapa THOR' : ''}>
+                  <Pencil className="h-4 w-4 mr-1.5" />Editar
+                </Button>
+                {canEdit && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" disabled={deleting}>
+                        <Trash2 className="h-4 w-4 mr-1.5" />Excluir
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir Chamado #{chamado.id}?</AlertDialogTitle>
+                        <AlertDialogDescription>Esta ação não pode ser desfeita. O chamado será removido permanentemente.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -186,34 +241,90 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
         {/* Row 2 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-5">
           <ReadOnlyField label="Rede" value={c.rede} />
-          <ReadOnlyField label="Data Contato" value={c.dataContato} />
-          <ReadOnlyField label="Data Retorno" value={c.dataRetorno} />
           {editing ? (
             <div>
-              <Label className="text-xs font-semibold">Status</Label>
-              <Select value={draft.status} onValueChange={v => setDraft(d => ({ ...d, status: v }))}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="aberto">Aberto</SelectItem>
-                  <SelectItem value="em_progresso">Em Progresso</SelectItem>
-                  <SelectItem value="fechado">Fechado</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label className="text-xs font-semibold">Data Contato</Label>
+              <Input type="date" className="mt-1" value={draft.dataContato} onChange={e => setDraft(d => ({ ...d, dataContato: e.target.value }))} />
+            </div>
+          ) : (
+            <ReadOnlyField label="Data Contato" value={formatDateBR(c.dataContato)} />
+          )}
+          {editing ? (
+            <div>
+              <Label className="text-xs font-semibold">Data Retorno</Label>
+              <Input type="date" className="mt-1" value={draft.dataRetorno} onChange={e => setDraft(d => ({ ...d, dataRetorno: e.target.value }))} />
+            </div>
+          ) : (
+            <ReadOnlyField label="Data Retorno" value={formatDateBR(c.dataRetorno)} />
+          )}
+          {editing ? (
+            <div>
+              <Label className="text-xs font-semibold">Motivo</Label>
+              <Input className="mt-1" value={draft.motivo} onChange={e => setDraft(d => ({ ...d, motivo: e.target.value }))} />
             </div>
           ) : (
             <ReadOnlyField label="Motivo" value={c.motivo} />
           )}
-          <ReadOnlyField label="Submotivo" value={c.submotivo} />
+          {editing ? (
+            <div>
+              <Label className="text-xs font-semibold">Submotivo</Label>
+              <Input className="mt-1" value={draft.submotivo} onChange={e => setDraft(d => ({ ...d, submotivo: e.target.value }))} />
+            </div>
+          ) : (
+            <ReadOnlyField label="Submotivo" value={c.submotivo} />
+          )}
         </div>
 
         {/* Row 3 */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-5">
-          <ReadOnlyField label="Metros Totais" value={c.metrosTotais} />
-          <ReadOnlyField label="Negociado com" value={c.negociadoCom} />
-          <ReadOnlyField label="Nº NFE" value={c.nfe} />
-          <ReadOnlyField label="Tipo de Solicitação" value={c.tipoSolicitacao} />
-          <ReadOnlyField label="Gestor" value={c.gestor} />
-          <ReadOnlyField label="Status Agendamento" value={c.statusAgendamento} />
+          {editing ? (
+            <div>
+              <Label className="text-xs font-semibold">Metros Totais</Label>
+              <Input className="mt-1" value={draft.metrosTotais} onChange={e => setDraft(d => ({ ...d, metrosTotais: e.target.value }))} />
+            </div>
+          ) : (
+            <ReadOnlyField label="Metros Totais" value={c.metrosTotais} />
+          )}
+          {editing ? (
+            <div>
+              <Label className="text-xs font-semibold">Negociado com</Label>
+              <Input className="mt-1" value={draft.negociadoCom} onChange={e => setDraft(d => ({ ...d, negociadoCom: e.target.value }))} />
+            </div>
+          ) : (
+            <ReadOnlyField label="Negociado com" value={c.negociadoCom} />
+          )}
+          {editing ? (
+            <div>
+              <Label className="text-xs font-semibold">Nº NFE</Label>
+              <Input className="mt-1" value={draft.nfe} onChange={e => setDraft(d => ({ ...d, nfe: e.target.value }))} />
+            </div>
+          ) : (
+            <ReadOnlyField label="Nº NFE" value={c.nfe} />
+          )}
+          {editing ? (
+            <div>
+              <Label className="text-xs font-semibold">Tipo de Solicitação</Label>
+              <Input className="mt-1" value={draft.tipoSolicitacao} onChange={e => setDraft(d => ({ ...d, tipoSolicitacao: e.target.value }))} />
+            </div>
+          ) : (
+            <ReadOnlyField label="Tipo de Solicitação" value={c.tipoSolicitacao} />
+          )}
+          {editing ? (
+            <div>
+              <Label className="text-xs font-semibold">Gestor</Label>
+              <Input className="mt-1" value={draft.gestor} onChange={e => setDraft(d => ({ ...d, gestor: e.target.value }))} />
+            </div>
+          ) : (
+            <ReadOnlyField label="Gestor" value={c.gestor} />
+          )}
+          {editing ? (
+            <div>
+              <Label className="text-xs font-semibold">Status Agendamento</Label>
+              <Input className="mt-1" value={draft.statusAgendamento} onChange={e => setDraft(d => ({ ...d, statusAgendamento: e.target.value }))} />
+            </div>
+          ) : (
+            <ReadOnlyField label="Status Agendamento" value={c.statusAgendamento} />
+          )}
         </div>
 
         {/* Controle do Ticket */}
@@ -221,11 +332,11 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
           <h3 className="text-xs font-semibold text-primary uppercase tracking-wide mb-3">Controle do Ticket</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <ReadOnlyField label="Status Ticket" value={c.status === 'aberto' ? 'Aberto' : c.status === 'em_progresso' ? 'Em Progresso' : 'Fechado'} />
-            <ReadOnlyField label="Etapa Ticket" value={c.etapa} />
+            <ReadOnlyField label="Etapa Ticket" value={c.etapa.toUpperCase()} />
           </div>
         </div>
 
-        {/* Row 4 */}
+        {/* Row 4 - Description */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {editing ? (
             <div>
@@ -238,12 +349,6 @@ export default function ChamadoCard({ chamado, onUpdate }: ChamadoCardProps) {
               <div className="mt-1 px-3 py-2 border rounded-md bg-muted/50 text-sm min-h-[60px] whitespace-pre-wrap">
                 {c.descricao || '—'}
               </div>
-            </div>
-          )}
-          {editing && (
-            <div>
-              <Label className="text-xs font-semibold">Etapa</Label>
-              <Input className="mt-1" value={draft.etapa} onChange={e => setDraft(d => ({ ...d, etapa: e.target.value }))} />
             </div>
           )}
         </div>
