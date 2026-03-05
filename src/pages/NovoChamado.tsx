@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import jsPDF from 'jspdf';
-import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2, Eye, Pencil, Plus } from 'lucide-react';
+import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2, Eye, Pencil, Plus, Trash2 } from 'lucide-react';
 import romplasLogo from '@/assets/romplas-logo.png';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
@@ -121,10 +121,10 @@ export default function NovoChamado() {
     observacoesComplementares: string;
     statusAprovacao: string; motivoReprovacao: string;
   }
+  interface RNCProduto { produto: string; cod: string; metros: string; }
   interface RNCFormData {
     cliente: string; representante: string;
-    produto1: string; produto1Cod: string; produto1Metros: string;
-    produto2: string; produto2Cod: string; produto2Metros: string;
+    produtos: RNCProduto[];
     amostraAnexa: string; imagensVideo: boolean; imagensFotos: boolean;
     nfVenda: string;
     descricaoNaoConformidade: string;
@@ -143,8 +143,7 @@ export default function NovoChamado() {
   const [sdForm, setSdForm] = useState<SDFormData>({ ...defaultSdForm });
   const defaultRncForm: RNCFormData = {
     cliente: '', representante: '',
-    produto1: '', produto1Cod: '', produto1Metros: '',
-    produto2: '', produto2Cod: '', produto2Metros: '',
+    produtos: [{ produto: '', cod: '', metros: '' }],
     amostraAnexa: 'nao', imagensVideo: false, imagensFotos: false,
     nfVenda: '', descricaoNaoConformidade: '',
     objetivoAlertarEmpresa: false, objetivoDevParcial: false, objetivoDevTotal: false, objetivoNegociacao: false,
@@ -180,7 +179,7 @@ export default function NovoChamado() {
       if (sdForm.observacoesComplementares) lines.push(`Observações Complementares: ${sdForm.observacoesComplementares}`);
       return lines.join('\n');
     }
-    if (isRNC) return `[RNC] NF Venda: ${rncForm.nfVenda}, Produto: ${rncForm.produto1}${rncForm.produto2 ? ', Produto 2: ' + rncForm.produto2 : ''}${rncForm.descricaoNaoConformidade ? '\nDescrição: ' + rncForm.descricaoNaoConformidade : ''}`;
+    if (isRNC) return `[RNC] NF Venda: ${rncForm.nfVenda}, Produtos: ${rncForm.produtos.filter(p => p.produto).map((p, i) => `${p.produto} (Cód: ${p.cod || '-'}, Metros: ${p.metros || '-'})`).join('; ')}${rncForm.descricaoNaoConformidade ? '\nDescrição: ' + rncForm.descricaoNaoConformidade : ''}`;
     if (isAmostras) return `[Amostras] Produto: ${amostrasForm.produto}, Referência: ${amostrasForm.referencia}, Cor: ${amostrasForm.cor}, Quantidade: ${amostrasForm.quantidade}, Tamanho: ${amostrasForm.tamanho}, Destino: ${amostrasForm.destino}${amostrasForm.observacoes ? '\nObservações: ' + amostrasForm.observacoes : ''}`;
     if (isBook) return `[Book] Tipo: ${bookForm.tipoBook}, Quantidade: ${bookForm.quantidade}, Destino: ${bookForm.destino}${bookForm.observacoes ? '\nObservações: ' + bookForm.observacoes : ''}`;
     return '';
@@ -1623,18 +1622,26 @@ export default function NovoChamado() {
               <div><Label className="text-xs">Representante *</Label><Input className="mt-1" value={rncForm.representante} disabled /></div>
             </div>
 
-            {/* Produto 1 */}
-            <div className="grid grid-cols-3 gap-3">
-              <div><Label className="text-xs">Produto *</Label><Input className="mt-1" value={rncForm.produto1} onChange={e => setRncForm(p => ({ ...p, produto1: e.target.value }))} /></div>
-              <div><Label className="text-xs">Cód.</Label><Input className="mt-1" value={rncForm.produto1Cod} onChange={e => setRncForm(p => ({ ...p, produto1Cod: e.target.value }))} /></div>
-              <div><Label className="text-xs">Metros</Label><Input className="mt-1" value={rncForm.produto1Metros} onChange={e => setRncForm(p => ({ ...p, produto1Metros: e.target.value }))} /></div>
-            </div>
-            {/* Produto 2 */}
-            <div className="grid grid-cols-3 gap-3">
-              <div><Label className="text-xs">Produto 2</Label><Input className="mt-1" value={rncForm.produto2} onChange={e => setRncForm(p => ({ ...p, produto2: e.target.value }))} /></div>
-              <div><Label className="text-xs">Cód.</Label><Input className="mt-1" value={rncForm.produto2Cod} onChange={e => setRncForm(p => ({ ...p, produto2Cod: e.target.value }))} /></div>
-              <div><Label className="text-xs">Metros</Label><Input className="mt-1" value={rncForm.produto2Metros} onChange={e => setRncForm(p => ({ ...p, produto2Metros: e.target.value }))} /></div>
-            </div>
+            {/* Produtos dinâmicos */}
+            {rncForm.produtos.map((prod, idx) => (
+              <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
+                <div><Label className="text-xs">Produto {idx === 0 ? '*' : idx + 1}</Label><Input className="mt-1" value={prod.produto} onChange={e => { const prods = [...rncForm.produtos]; prods[idx] = { ...prods[idx], produto: e.target.value }; setRncForm(p => ({ ...p, produtos: prods })); }} /></div>
+                <div><Label className="text-xs">Cód.</Label><Input className="mt-1" value={prod.cod} onChange={e => { const prods = [...rncForm.produtos]; prods[idx] = { ...prods[idx], cod: e.target.value }; setRncForm(p => ({ ...p, produtos: prods })); }} /></div>
+                <div><Label className="text-xs">Metros</Label><Input className="mt-1" value={prod.metros} onChange={e => { const prods = [...rncForm.produtos]; prods[idx] = { ...prods[idx], metros: e.target.value }; setRncForm(p => ({ ...p, produtos: prods })); }} /></div>
+                <div className="flex gap-1 pb-0.5">
+                  {idx === rncForm.produtos.length - 1 && (
+                    <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setRncForm(p => ({ ...p, produtos: [...p.produtos, { produto: '', cod: '', metros: '' }] }))}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {rncForm.produtos.length > 1 && (
+                    <Button type="button" variant="outline" size="icon" className="h-8 w-8 text-destructive" onClick={() => { const prods = rncForm.produtos.filter((_, i) => i !== idx); setRncForm(p => ({ ...p, produtos: prods })); }}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
 
             {/* Amostra Anexa + Imagens */}
             <div className="border rounded-lg p-3 space-y-2">
@@ -1716,7 +1723,7 @@ export default function NovoChamado() {
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowRNCForm(false)}>Cancelar</Button>
             <Button variant="secondary" onClick={async () => {
-              if (!rncForm.cliente || !rncForm.produto1 || !rncForm.nfVenda || !rncForm.descricaoNaoConformidade) {
+              if (!rncForm.cliente || !rncForm.produtos[0]?.produto || !rncForm.nfVenda || !rncForm.descricaoNaoConformidade) {
                 toast.error('Preencha os campos obrigatórios (Cliente, Produto, NF Venda, Descrição).');
                 return;
               }
@@ -1745,18 +1752,14 @@ export default function NovoChamado() {
               const addFieldRow = (l1: string, v1: string, l2: string, v2: string) => { checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(l1, margin, y); doc.setFont('helvetica', 'normal'); doc.text(v1 || '-', margin + doc.getTextWidth(l1) + 3, y); const col2X = pageW / 2 + 5; doc.setFont('helvetica', 'bold'); doc.text(l2, col2X, y); doc.setFont('helvetica', 'normal'); doc.text(v2 || '-', col2X + doc.getTextWidth(l2) + 3, y); y += 7; };
 
               addFieldRow('CLIENTE:', rncForm.cliente, 'REPRESENTANTE:', rncForm.representante); y += 2;
-              // Produto 1
-              checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-              doc.text('PRODUTO:', margin, y); doc.setFont('helvetica', 'normal'); doc.text(rncForm.produto1 || '-', margin + doc.getTextWidth('PRODUTO: ') + 2, y);
+              // Produtos
               const col2 = pageW / 2 - 10; const col3 = pageW / 2 + 25;
-              doc.setFont('helvetica', 'bold'); doc.text('CÓD:', col2, y); doc.setFont('helvetica', 'normal'); doc.text(rncForm.produto1Cod || '-', col2 + doc.getTextWidth('CÓD: ') + 2, y);
-              doc.setFont('helvetica', 'bold'); doc.text('METROS:', col3, y); doc.setFont('helvetica', 'normal'); doc.text(rncForm.produto1Metros || '-', col3 + doc.getTextWidth('METROS: ') + 2, y); y += 7;
-              // Produto 2
-              if (rncForm.produto2) {
-                doc.setFont('helvetica', 'bold'); doc.text('PRODUTO:', margin, y); doc.setFont('helvetica', 'normal'); doc.text(rncForm.produto2, margin + doc.getTextWidth('PRODUTO: ') + 2, y);
-                doc.setFont('helvetica', 'bold'); doc.text('CÓD:', col2, y); doc.setFont('helvetica', 'normal'); doc.text(rncForm.produto2Cod || '-', col2 + doc.getTextWidth('CÓD: ') + 2, y);
-                doc.setFont('helvetica', 'bold'); doc.text('METROS:', col3, y); doc.setFont('helvetica', 'normal'); doc.text(rncForm.produto2Metros || '-', col3 + doc.getTextWidth('METROS: ') + 2, y); y += 7;
-              }
+              rncForm.produtos.filter(p => p.produto).forEach((prod) => {
+                checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+                doc.text('PRODUTO:', margin, y); doc.setFont('helvetica', 'normal'); doc.text(prod.produto || '-', margin + doc.getTextWidth('PRODUTO: ') + 2, y);
+                doc.setFont('helvetica', 'bold'); doc.text('CÓD:', col2, y); doc.setFont('helvetica', 'normal'); doc.text(prod.cod || '-', col2 + doc.getTextWidth('CÓD: ') + 2, y);
+                doc.setFont('helvetica', 'bold'); doc.text('METROS:', col3, y); doc.setFont('helvetica', 'normal'); doc.text(prod.metros || '-', col3 + doc.getTextWidth('METROS: ') + 2, y); y += 7;
+              });
               y += 3;
 
               // Amostra + Imagens
@@ -1824,7 +1827,7 @@ export default function NovoChamado() {
               <FileText className="h-4 w-4 mr-1.5" /> Confirmar e Anexar PDF
             </Button>
             <Button onClick={() => {
-              if (!rncForm.cliente || !rncForm.produto1 || !rncForm.nfVenda || !rncForm.descricaoNaoConformidade) { toast.error('Preencha os campos obrigatórios.'); return; }
+              if (!rncForm.cliente || !rncForm.produtos[0]?.produto || !rncForm.nfVenda || !rncForm.descricaoNaoConformidade) { toast.error('Preencha os campos obrigatórios.'); return; }
               setSpecialFormFilled(true); setShowRNCForm(false);
             }}>Confirmar</Button>
           </DialogFooter>
