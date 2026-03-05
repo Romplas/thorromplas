@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, Clock, Users, LogOut, User, Columns3, Upload, Settings } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Clock, Users, LogOut, User, Columns3, Upload, Settings, RefreshCw } from 'lucide-react';
 import logoThor from '@/assets/logo-thor.png';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -98,6 +98,13 @@ export default function Layout({ children }: LayoutProps) {
               >
                 <User className="h-4 w-4" />
                 Meu Perfil
+              </button>
+              <button
+                onClick={() => { setMenuOpen(false); window.location.reload(); }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Atualizar App
               </button>
               <button
                 onClick={handleSignOut}
