@@ -1300,34 +1300,160 @@ export default function NovoChamado() {
                 toast.error('Preencha todos os campos obrigatórios.');
                 return;
               }
-              // Generate PDF
+              // Generate PDF matching modal layout
               const doc = new jsPDF();
-              doc.setFontSize(14);
-              doc.text('ROMPLAS - SDP', 105, 15, { align: 'center' });
+              const pageW = doc.internal.pageSize.getWidth();
+              const margin = 15;
+              const contentW = pageW - margin * 2;
+              let y = 15;
+
+              const checkPage = (needed: number) => { if (y + needed > 280) { doc.addPage(); y = 15; } };
+
+              // Header
+              doc.setFontSize(16);
+              doc.setFont('helvetica', 'bold');
+              doc.text('ROMPLAS - SDP', pageW / 2, y, { align: 'center' });
+              y += 7;
               doc.setFontSize(10);
-              doc.text('Solicitação de Desenvolvimento de Produto', 105, 22, { align: 'center' });
-              doc.setFontSize(9);
-              let y = 35;
-              const addLine = (label: string, value: string) => { doc.text(`${label}: ${value}`, 15, y); y += 7; if (y > 275) { doc.addPage(); y = 15; } };
-              addLine('Cliente', sdForm.cliente);
-              addLine('Representante', sdForm.representante);
-              addLine('Segmento de Mercado', sdForm.segmentoMercado);
-              addLine('Aplicação do Produto', sdForm.aplicacaoProduto);
-              addLine('Estimativa de Consumo em Metros', sdForm.estimativaConsumo);
-              addLine('Preço Alvo', sdForm.precoAlvo);
-              addLine('Necessita de Amostra', sdForm.necessitaAmostra === 'sim' ? `Sim (${sdForm.amostraTipo || '-'})` : 'Não');
+              doc.setFont('helvetica', 'normal');
+              doc.text('Solicitação de Desenvolvimento de Produto', pageW / 2, y, { align: 'center' });
+              y += 10;
+
+              // Linha separadora
+              doc.setDrawColor(180);
+              doc.line(margin, y, pageW - margin, y);
+              y += 8;
+
+              // Campos em grid (label em bold + valor)
+              const addField = (label: string, value: string) => {
+                checkPage(12);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9);
+                doc.text(label, margin, y);
+                doc.setFont('helvetica', 'normal');
+                doc.text(value || '-', margin + doc.getTextWidth(label) + 3, y);
+                y += 7;
+              };
+
+              const addFieldRow = (label1: string, val1: string, label2: string, val2: string) => {
+                checkPage(12);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9);
+                doc.text(label1, margin, y);
+                doc.setFont('helvetica', 'normal');
+                doc.text(val1 || '-', margin + doc.getTextWidth(label1) + 3, y);
+                const col2X = pageW / 2 + 5;
+                doc.setFont('helvetica', 'bold');
+                doc.text(label2, col2X, y);
+                doc.setFont('helvetica', 'normal');
+                doc.text(val2 || '-', col2X + doc.getTextWidth(label2) + 3, y);
+                y += 7;
+              };
+
+              const addSectionBox = (title: string, contentFn: () => void) => {
+                checkPage(25);
+                const startY = y;
+                y += 2;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9);
+                doc.text(title, margin + 3, y + 4);
+                y += 9;
+                doc.setFont('helvetica', 'normal');
+                contentFn();
+                y += 2;
+                doc.setDrawColor(200);
+                doc.roundedRect(margin, startY, contentW, y - startY, 2, 2, 'S');
+                y += 6;
+              };
+
+              // Cliente / Representante
+              addFieldRow('Cliente:', sdForm.cliente, 'Representante:', sdForm.representante);
+              y += 2;
+              addField('Segmento de Mercado:', sdForm.segmentoMercado);
+              addField('Aplicação do Produto:', sdForm.aplicacaoProduto);
+              addFieldRow('Estimativa de Consumo em Metros:', sdForm.estimativaConsumo, 'Preço Alvo:', sdForm.precoAlvo);
+              y += 3;
+
+              // Necessita de Amostra - boxed
+              addSectionBox('Necessita de Amostra?', () => {
+                const amostraText = sdForm.necessitaAmostra === 'sim'
+                  ? `Sim — ${sdForm.amostraTipo === 'placa' ? 'Placa' : sdForm.amostraTipo === 'metros' ? 'Metros' : '-'}`
+                  : 'Não';
+                doc.text(amostraText, margin + 3, y);
+                y += 5;
+              });
+
+              // Desenvolvimento - boxed
               const devLabels: Record<string, string> = { nova_cor: 'Nova Cor em Produto de Linha', novo_produto: 'Novo Produto/Cor', extrusado: 'Extrusado', espalmado: 'Espalmado' };
-              addLine('Desenvolvimento', devLabels[sdForm.desenvolvimento] || sdForm.desenvolvimento);
-              addLine('Amostra Referência Anexa', sdForm.amostraReferenciaAnexa === 'sim' ? `Sim - ${sdForm.qualFabricante}` : 'Não');
-              if (sdForm.amostraReferenciaAnexa !== 'sim') {
-                addLine('Gramatura Total', sdForm.gramaturaTotal || '-');
-                addLine('Espessura', sdForm.espessura || '-');
-                addLine('Substrato', sdForm.substrato || '-');
-                addLine('Gravação', sdForm.gravacao || '-');
-                addLine('Aditivos', sdForm.aditivos === 'sim' ? `Sim - ${sdForm.quaisAditivos}` : 'Não');
-                addLine('Cor Pantone', sdForm.corPantone === 'sim' ? `Sim - ${sdForm.qualPantone}` : 'Não');
+              addSectionBox('Desenvolvimento:', () => {
+                doc.text(devLabels[sdForm.desenvolvimento] || sdForm.desenvolvimento, margin + 3, y);
+                y += 5;
+              });
+
+              // No caso de novos produtos - boxed
+              addSectionBox('No caso de novos produtos', () => {
+                doc.setFont('helvetica', 'bold');
+                doc.text('Amostra Referência Anexa:', margin + 3, y);
+                doc.setFont('helvetica', 'normal');
+                const refText = sdForm.amostraReferenciaAnexa === 'sim' ? `Sim — Fabricante: ${sdForm.qualFabricante}` : 'Não';
+                doc.text(refText, margin + 3 + doc.getTextWidth('Amostra Referência Anexa: ') + 2, y);
+                y += 7;
+
+                if (sdForm.amostraReferenciaAnexa !== 'sim') {
+                  doc.setFontSize(7);
+                  doc.setTextColor(130);
+                  doc.text('Se for SIM no caso acima, não é necessário especificar os campos abaixo:', margin + 3, y);
+                  doc.setTextColor(0);
+                  doc.setFontSize(9);
+                  y += 6;
+
+                  // Grid fields
+                  const col2X = pageW / 2 + 5;
+                  doc.setFont('helvetica', 'bold');
+                  doc.text('Gramatura Total:', margin + 3, y);
+                  doc.setFont('helvetica', 'normal');
+                  doc.text(sdForm.gramaturaTotal || '-', margin + 3 + doc.getTextWidth('Gramatura Total: ') + 2, y);
+                  doc.setFont('helvetica', 'bold');
+                  doc.text('Espessura:', col2X, y);
+                  doc.setFont('helvetica', 'normal');
+                  doc.text(sdForm.espessura || '-', col2X + doc.getTextWidth('Espessura: ') + 2, y);
+                  y += 7;
+
+                  doc.setFont('helvetica', 'bold');
+                  doc.text('Substrato:', margin + 3, y);
+                  doc.setFont('helvetica', 'normal');
+                  doc.text(sdForm.substrato || '-', margin + 3 + doc.getTextWidth('Substrato: ') + 2, y);
+                  doc.setFont('helvetica', 'bold');
+                  doc.text('Gravação:', col2X, y);
+                  doc.setFont('helvetica', 'normal');
+                  doc.text(sdForm.gravacao || '-', col2X + doc.getTextWidth('Gravação: ') + 2, y);
+                  y += 7;
+
+                  doc.setFont('helvetica', 'bold');
+                  doc.text('Aditivos:', margin + 3, y);
+                  doc.setFont('helvetica', 'normal');
+                  doc.text(sdForm.aditivos === 'sim' ? `Sim — ${sdForm.quaisAditivos}` : 'Não', margin + 3 + doc.getTextWidth('Aditivos: ') + 2, y);
+                  y += 7;
+
+                  doc.setFont('helvetica', 'bold');
+                  doc.text('Cor Pantone:', margin + 3, y);
+                  doc.setFont('helvetica', 'normal');
+                  doc.text(sdForm.corPantone === 'sim' ? `Sim — ${sdForm.qualPantone}` : 'Não', margin + 3 + doc.getTextWidth('Cor Pantone: ') + 2, y);
+                  y += 5;
+                }
+              });
+
+              // Observações
+              if (sdForm.observacoesComplementares) {
+                checkPage(15);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Observações Complementares:', margin, y);
+                y += 6;
+                doc.setFont('helvetica', 'normal');
+                const obsLines = doc.splitTextToSize(sdForm.observacoesComplementares, contentW);
+                doc.text(obsLines, margin, y);
+                y += obsLines.length * 5;
               }
-              if (sdForm.observacoesComplementares) addLine('Observações', sdForm.observacoesComplementares);
               const pdfBlob = doc.output('blob');
               const pdfFile = new globalThis.File([pdfBlob], `SDP_${sdForm.cliente || 'solicitacao'}.pdf`, { type: 'application/pdf' });
               setAnexos(prev => [...prev, pdfFile]);
