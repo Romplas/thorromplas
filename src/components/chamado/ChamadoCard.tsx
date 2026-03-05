@@ -194,6 +194,11 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
         descricao: draft.descricao || null,
         data_contato: draft.dataContato || null,
         data_retorno: draft.dataRetorno || null,
+        metros_totais: draft.metrosTotais || null,
+        negociado_com: draft.negociadoCom || null,
+        nfe: draft.nfe || null,
+        tipo_solicitacao: draft.tipoSolicitacao || null,
+        status_agendamento: draft.statusAgendamento || null,
       } as any).eq('id', chamado.id);
 
       if (error) throw error;
