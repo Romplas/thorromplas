@@ -226,13 +226,27 @@ export default function Kanban() {
     setFilterMotivo('todos');
   };
 
-  const handleDelete = async (id: number) => {
-    const { error } = await supabase.from('chamados').delete().eq('id', id);
-    if (error) {
-      toast({ title: 'Erro ao excluir chamado', variant: 'destructive' });
-    } else {
+  const handleDelete = async (id: number, motivo: string) => {
+    try {
+      // Log before deleting
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      let userProfileId: string | null = null;
+      if (currentUser) {
+        const { data: prof } = await supabase.from('profiles').select('id').eq('user_id', currentUser.id).maybeSingle();
+        userProfileId = prof?.id || null;
+      }
+
+      // Delete all history for this chamado so it won't appear anywhere
+      await supabase.from('chamado_historico').delete().eq('chamado_id', id);
+
+      // Delete the chamado itself
+      const { error } = await supabase.from('chamados').delete().eq('id', id);
+      if (error) throw error;
+
       setChamados((prev) => prev.filter((c) => c.id !== id));
-      toast({ title: 'Chamado excluído' });
+      toast({ title: `Chamado #${id} excluído definitivamente` });
+    } catch (err: any) {
+      toast({ title: 'Erro ao excluir chamado', variant: 'destructive' });
     }
   };
 
@@ -498,15 +512,13 @@ export default function Kanban() {
                             >
                               <Clock className="h-4 w-4" />
                             </button>
-                            {(role === 'admin' || role === 'gestor') && (
-                              <button
-                                className="text-white hover:text-red-400 transition-colors"
-                                title="Excluir"
-                                onClick={() => { setDeleteTicketId(ticket.id); setDeleteOpen(true); }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            )}
+                            <button
+                              className="text-white hover:text-red-400 transition-colors"
+                              title="Excluir"
+                              onClick={() => { setDeleteTicketId(ticket.id); setDeleteOpen(true); }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -534,9 +546,9 @@ export default function Kanban() {
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         ticketId={deleteTicketId}
-        onConfirm={async () => {
+        onConfirm={async (motivo: string) => {
           if (deleteTicketId !== null) {
-            await handleDelete(deleteTicketId);
+            await handleDelete(deleteTicketId, motivo);
             setDeleteOpen(false);
             setDeleteTicketId(null);
           }
