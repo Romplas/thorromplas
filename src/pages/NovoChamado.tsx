@@ -566,9 +566,16 @@ export default function NovoChamado() {
           userProfileId = prof?.id || null;
         }
       }
-      // Save SDP form data if special form was filled
-      if (hasSpecialForm && specialFormFilled && motivoNome.toLowerCase().includes('sd')) {
-        await supabase.from('chamados').update({ sdp_data: sdForm as any } as any).eq('id', data.id);
+      // Save special form data to sdp_data column
+      if (hasSpecialForm && specialFormFilled) {
+        let formData: any = null;
+        if (isSD) formData = { ...sdForm, formType: 'sdp' };
+        else if (isRNC) formData = { ...rncForm, formType: 'rnc' };
+        else if (isAmostras) formData = { ...amostrasForm, formType: 'amostras' };
+        else if (isBook) formData = { ...bookForm, formType: 'book' };
+        if (formData) {
+          await supabase.from('chamados').update({ sdp_data: formData as any } as any).eq('id', data.id);
+        }
       }
 
       const { error: histError } = await supabase.from('chamado_historico').insert({
