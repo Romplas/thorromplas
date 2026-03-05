@@ -290,12 +290,52 @@ export default function Historico() {
         if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
         if (filterSubmotivo !== 'todos' && c.submotivo !== filterSubmotivo) return false;
         if (filterStatus !== 'todos' && c.status !== filterStatus) return false;
-        if (filterEtapa !== 'todos' && c.etapa !== filterEtapa) return false;
+        // filterEtapa is applied per-historico-entry below, not here
         if (filterGestor !== 'todos' && c.gestor_id !== filterGestor) return false;
         return true;
       })
       .map(c => c.id)
   );
+
+  // Build entryEtapaMap BEFORE filtered so we can filter by per-entry etapa
+  const entryEtapaMap = (() => {
+    const map = new Map<string, string>();
+    const dynamicLabelToKey = new Map<string, string>();
+    dbEtapas.forEach(e => dynamicLabelToKey.set(e.label.toLowerCase(), e.nome));
+    Object.entries(etapaLabelsMap).forEach(([k, v]) => {
+      if (!dynamicLabelToKey.has(v.toLowerCase())) dynamicLabelToKey.set(v.toLowerCase(), k);
+    });
+    const resolveLabel = (label: string): string | undefined => {
+      return dynamicLabelToKey.get(label.toLowerCase());
+    };
+    const byChamado = new Map<number, HistoricoEntry[]>();
+    historico.forEach(h => {
+      if (!byChamado.has(h.chamado_id)) byChamado.set(h.chamado_id, []);
+      byChamado.get(h.chamado_id)!.push(h);
+    });
+    byChamado.forEach((entries, chamadoId) => {
+      const sorted = [...entries].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      let currentEtapa = 'thor';
+      sorted.forEach(entry => {
+        if (entry.descricao) {
+          let newLabel: string | null = null;
+          if (entry.acao === 'Alteração de Etapa') {
+            const match = entry.descricao.match(/para "([^"]+)"/);
+            if (match) newLabel = match[1];
+          } else if (entry.descricao.includes('Etapa:')) {
+            const match = entry.descricao.match(/Etapa:.*?→\s*"([^"]+)"/);
+            if (match) newLabel = match[1];
+          }
+          if (newLabel) {
+            const key = resolveLabel(newLabel);
+            if (key) currentEtapa = key;
+          }
+        }
+        map.set(entry.id, currentEtapa);
+      });
+    });
+    return map;
+  })();
 
   const filtered = (() => {
     const seenIds = new Set<string>();
@@ -305,6 +345,11 @@ export default function Historico() {
         seenIds.add(h.id);
         if (selectedTicketId !== 'todos' && String(h.chamado_id) !== selectedTicketId) return false;
         if (!filteredChamadoIds.has(h.chamado_id)) return false;
+        // Filter by per-entry etapa
+        if (filterEtapa !== 'todos') {
+          const entryEtapa = entryEtapaMap.get(h.id) || 'thor';
+          if (entryEtapa !== filterEtapa) return false;
+        }
         return true;
       })
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -335,60 +380,7 @@ export default function Historico() {
     return new Date(d).toLocaleDateString('pt-BR');
   };
 
-  // Build a map of etapa at each history entry by reconstructing the timeline
-  const entryEtapaMap = (() => {
-    const map = new Map<string, string>();
-
-    // Build dynamic label→key map from DB etapas (more reliable than hardcoded)
-    const dynamicLabelToKey = new Map<string, string>();
-    dbEtapas.forEach(e => dynamicLabelToKey.set(e.label.toLowerCase(), e.nome));
-    // Also add hardcoded as fallback
-    Object.entries(etapaLabelsMap).forEach(([k, v]) => {
-      if (!dynamicLabelToKey.has(v.toLowerCase())) dynamicLabelToKey.set(v.toLowerCase(), k);
-    });
-
-    // Helper to resolve a label to a key
-    const resolveLabel = (label: string): string | undefined => {
-      return dynamicLabelToKey.get(label.toLowerCase());
-    };
-
-    // Group history by chamado_id, sorted ascending (oldest first)
-    const byChamado = new Map<number, HistoricoEntry[]>();
-    historico.forEach(h => {
-      if (!byChamado.has(h.chamado_id)) byChamado.set(h.chamado_id, []);
-      byChamado.get(h.chamado_id)!.push(h);
-    });
-
-    // Build chamado etapa lookup for initial etapa
-    const chamadoEtapaMap = new Map<number, string>();
-    chamados.forEach(c => chamadoEtapaMap.set(c.id, (c as any).etapa || 'thor'));
-
-    byChamado.forEach((entries, chamadoId) => {
-      // Sort ascending by date
-      const sorted = [...entries].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      // Start with the first known etapa - if there's only a "Ticket Criado" with no etapa info, use 'thor'
-      let currentEtapa = 'thor';
-      sorted.forEach(entry => {
-        // Check if this entry changes the etapa
-        if (entry.descricao) {
-          let newLabel: string | null = null;
-          if (entry.acao === 'Alteração de Etapa') {
-            const match = entry.descricao.match(/para "([^"]+)"/);
-            if (match) newLabel = match[1];
-          } else if (entry.descricao.includes('Etapa:')) {
-            const match = entry.descricao.match(/Etapa:.*?→\s*"([^"]+)"/);
-            if (match) newLabel = match[1];
-          }
-          if (newLabel) {
-            const key = resolveLabel(newLabel);
-            if (key) currentEtapa = key;
-          }
-        }
-        map.set(entry.id, currentEtapa);
-      });
-    });
-    return map;
-  })();
+  // entryEtapaMap is already defined above (before filtered)
 
   // Build a map of gestor name at each history entry by reconstructing the timeline
   const entryGestorNameMap = (() => {
