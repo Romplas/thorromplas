@@ -272,31 +272,25 @@ export default function Historico() {
   const filteredChamadoIds = new Set(
     chamados
       .filter(c => {
-        // Supervisor filter: filter by linked representantes' clients
         if (filterSupervisor !== 'todos') {
-          const repIdsForSupervisor = srLinks
-            .filter(sr => sr.supervisor_id === filterSupervisor)
-            .map(sr => sr.representante_id);
-          // If representante filter is also set, narrow further
-          const effectiveRepIds = filterRepresentante !== 'todos'
-            ? repIdsForSupervisor.filter(id => id === filterRepresentante)
-            : repIdsForSupervisor;
-          const clienteNamesForReps = allClientes
-            .filter(cl => cl.representante_id && effectiveRepIds.includes(cl.representante_id))
-            .map(cl => cl.nome);
-          if (!clienteNamesForReps.includes(c.cliente_nome)) return false;
+          // Direct match on supervisor_id
+          if (c.supervisor_id === filterSupervisor) {
+            // Match - now check representante if needed
+          } else {
+            // Also check via representante link
+            const repIdsForSupervisor = srLinks
+              .filter(sr => sr.supervisor_id === filterSupervisor)
+              .map(sr => sr.representante_id);
+            if (!c.representante_id || !repIdsForSupervisor.includes(c.representante_id)) return false;
+          }
+          if (filterRepresentante !== 'todos' && c.representante_id !== filterRepresentante) return false;
         } else if (filterRepresentante !== 'todos') {
-          // Only representante filter without supervisor
-          const clienteNamesForRep = allClientes
-            .filter(cl => cl.representante_id === filterRepresentante)
-            .map(cl => cl.nome);
-          if (!clienteNamesForRep.includes(c.cliente_nome)) return false;
+          if (c.representante_id !== filterRepresentante) return false;
         }
         if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
         if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
         if (filterSubmotivo !== 'todos' && c.submotivo !== filterSubmotivo) return false;
         if (filterStatus !== 'todos' && c.status !== filterStatus) return false;
-        // filterEtapa is applied per-historico-entry below, not here
         if (filterGestor !== 'todos' && c.gestor_id !== filterGestor) return false;
         return true;
       })
