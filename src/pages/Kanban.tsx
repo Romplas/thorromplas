@@ -236,7 +236,13 @@ export default function Kanban() {
         userProfileId = prof?.id || null;
       }
 
-      // Delete all history for this chamado so it won't appear anywhere
+      // Clean up storage attachments
+      const { data: files } = await supabase.storage.from('chamado-anexos').list(String(id));
+      if (files && files.length > 0) {
+        await supabase.storage.from('chamado-anexos').remove(files.map(f => `${id}/${f.name}`));
+      }
+
+      // Delete history (cascade would handle it, but explicit for safety)
       await supabase.from('chamado_historico').delete().eq('chamado_id', id);
 
       // Delete the chamado itself
