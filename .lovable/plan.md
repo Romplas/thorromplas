@@ -1,18 +1,47 @@
 
 
-## Problem Analysis
+## Analysis
 
-The `entryEtapaMap` in `Historico.tsx` (line 285) only detects etapa changes from history entries where `acao === 'Alteração de Etapa'`. However, after the recent consolidation change in `EditChamadoModal`, edits now create entries with `acao === 'Atualização de Ticket'` and the etapa change is embedded in the description as `Etapa: "THOR" → "Aguardando Resposta"`.
+The deletion logic is already implemented in both Kanban and Historico pages, and it works correctly at the database level:
+- The FK from `chamado_historico` to `chamados` has `ON DELETE CASCADE`, so deleting a chamado automatically deletes its history records.
+- Both pages have realtime subscriptions (`event: '*'`) that call `fetchData()` on any change, including DELETE events.
 
-This means the etapa reconstruction logic never picks up etapa changes made through the edit modal, so all subsequent cards remain colored as THOR (red).
+**However, there are two issues to fix:**
+
+### Issue 1: Storage attachments are not cleaned up
+When a chamado is deleted, any files uploaded to the `chamado-anexos` bucket under the chamado's folder remain as orphaned files. The delete handler should also remove these files from storage.
+
+### Issue 2: Redundant history deletion before cascade
+Both `handleDelete` functions manually delete from `chamado_historico` before deleting the chamado. Since the FK is `ON DELETE CASCADE`, this is redundant but not harmful. We can keep it for safety or remove it.
+
+### Issue 3: Dashboard might still show deleted chamados
+Need to check if the Dashboard page also fetches chamados and would need realtime updates.
 
 ## Plan
 
-**Edit `src/pages/Historico.tsx`** -- Update the `entryEtapaMap` builder (lines 283-295) to also parse etapa changes from consolidated "Atualização de Ticket" entries. The logic should:
+### 1. Add storage cleanup to Kanban `handleDelete`
+Before deleting the chamado, list and remove all files in the `chamado-anexos` bucket under the path `{chamadoId}/`.
 
-1. Keep existing check for `acao === 'Alteração de Etapa'` with `para "X"` pattern
-2. Add a check for entries containing `Etapa:` in the description, parsing the `→ "X"` pattern to extract the new etapa label
-3. Convert the label back to the key using `etapaLabelsMap` as before
+### 2. Add storage cleanup to Historico `handleDeleteConfirm`
+Same storage cleanup logic.
 
-This is a ~5 line change in the `entryEtapaMap` builder function.
+### 3. Verify Dashboard has realtime subscription
+If Dashboard fetches chamados, ensure it also uses realtime to reflect deletions.
+
+### Technical Details
+
+In both `Kanban.tsx` and `Historico.tsx` delete handlers, add before the chamado deletion:
+
+```typescript
+// Clean up storage attachments
+const { data: files } = await supabase.storage
+  .from('chamado-anexos')
+  .list(String(id));
+if (files && files.length > 0) {
+  const filePaths = files.map(f => `${id}/${f.name}`);
+  await supabase.storage.from('chamado-anexos').remove(filePaths);
+}
+```
+
+No database changes needed -- the cascade and realtime are already correctly configured. The core deletion + cross-screen sync already works via the realtime subscriptions. The main improvement is ensuring storage cleanup.
 
