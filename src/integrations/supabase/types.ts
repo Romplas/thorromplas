@@ -77,6 +77,7 @@ export type Database = {
           nfe: string | null
           prioridade: Database["public"]["Enums"]["ticket_prioridade"]
           representante_id: string | null
+          sdp_data: Json | null
           status: Database["public"]["Enums"]["ticket_status"]
           status_agendamento: string | null
           submotivo: string | null
@@ -101,6 +102,7 @@ export type Database = {
           nfe?: string | null
           prioridade?: Database["public"]["Enums"]["ticket_prioridade"]
           representante_id?: string | null
+          sdp_data?: Json | null
           status?: Database["public"]["Enums"]["ticket_status"]
           status_agendamento?: string | null
           submotivo?: string | null
@@ -125,6 +127,7 @@ export type Database = {
           nfe?: string | null
           prioridade?: Database["public"]["Enums"]["ticket_prioridade"]
           representante_id?: string | null
+          sdp_data?: Json | null
           status?: Database["public"]["Enums"]["ticket_status"]
           status_agendamento?: string | null
           submotivo?: string | null
