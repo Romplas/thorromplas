@@ -1310,7 +1310,7 @@ export default function NovoChamado() {
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowSDForm(false)}>Cancelar</Button>
-            <Button variant="secondary" onClick={() => {
+            <Button variant="secondary" onClick={async () => {
               if (!sdForm.cliente || !sdForm.representante || !sdForm.segmentoMercado || !sdForm.aplicacaoProduto || !sdForm.estimativaConsumo || !sdForm.precoAlvo || !sdForm.desenvolvimento) {
                 toast.error('Preencha todos os campos obrigatórios.');
                 return;
@@ -1320,19 +1320,30 @@ export default function NovoChamado() {
               const pageW = doc.internal.pageSize.getWidth();
               const margin = 15;
               const contentW = pageW - margin * 2;
-              let y = 15;
+              let y = 12;
 
               const checkPage = (needed: number) => { if (y + needed > 280) { doc.addPage(); y = 15; } };
 
+              // Logo centralizada
+              try {
+                const logoImg = new window.Image();
+                logoImg.crossOrigin = 'anonymous';
+                await new Promise<void>((resolve, reject) => {
+                  logoImg.onload = () => resolve();
+                  logoImg.onerror = () => reject();
+                  logoImg.src = '/images/romplas-logo-pdf.png';
+                });
+                const logoH = 12;
+                const logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
+                doc.addImage(logoImg, 'PNG', (pageW - logoW) / 2, y, logoW, logoH);
+                y += logoH + 4;
+              } catch { /* fallback sem logo */ }
+
               // Header
-              doc.setFontSize(16);
+              doc.setFontSize(13);
               doc.setFont('helvetica', 'bold');
-              doc.text('ROMPLAS - SDP', pageW / 2, y, { align: 'center' });
-              y += 7;
-              doc.setFontSize(10);
-              doc.setFont('helvetica', 'normal');
               doc.text('Solicitação de Desenvolvimento de Produto', pageW / 2, y, { align: 'center' });
-              y += 10;
+              y += 8;
 
               // Linha separadora
               doc.setDrawColor(180);
