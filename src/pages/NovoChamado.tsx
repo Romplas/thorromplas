@@ -121,13 +121,39 @@ export default function NovoChamado() {
     observacoesComplementares: string;
     statusAprovacao: string; motivoReprovacao: string;
   }
-  interface RNCFormData { nfNumero: string; produto: string; lote: string; defeito: string; quantidade: string; observacoes: string }
+  interface RNCFormData {
+    cliente: string; representante: string;
+    produto1: string; produto1Cod: string; produto1Metros: string;
+    produto2: string; produto2Cod: string; produto2Metros: string;
+    amostraAnexa: string; imagensVideo: boolean; imagensFotos: boolean;
+    nfVenda: string;
+    descricaoNaoConformidade: string;
+    objetivoAlertarEmpresa: boolean; objetivoDevParcial: boolean; objetivoDevTotal: boolean; objetivoNegociacao: boolean;
+    parecerFabrica: string; // 'procede' | 'nao_procede'
+    motivo: string;
+    fechamentoRnc: string;
+    dataComercial: string; assinaturaComercial: string;
+    dataQualidade: string; assinaturaQualidade: string;
+    dataFinanceiro: string; assinaturaFinanceiro: string;
+  }
   interface AmostrasFormData { produto: string; referencia: string; cor: string; quantidade: string; tamanho: string; destino: string; observacoes: string }
   interface BookFormData { tipoBook: string; quantidade: string; destino: string; observacoes: string }
 
   const defaultSdForm: SDFormData = { cliente: '', representante: '', segmentoMercado: '', aplicacaoProduto: '', estimativaConsumo: '', precoAlvo: '', necessitaAmostra: 'nao', amostraTipo: '', desenvolvimento: '', amostraReferenciaAnexa: 'nao', qualFabricante: '', gramaturaTotal: '', espessura: '', substrato: '', gravacao: '', aditivos: 'nao', quaisAditivos: '', corPantone: 'nao', qualPantone: '', observacoesComplementares: '', statusAprovacao: '', motivoReprovacao: '' };
   const [sdForm, setSdForm] = useState<SDFormData>({ ...defaultSdForm });
-  const [rncForm, setRncForm] = useState<RNCFormData>({ nfNumero: '', produto: '', lote: '', defeito: '', quantidade: '', observacoes: '' });
+  const defaultRncForm: RNCFormData = {
+    cliente: '', representante: '',
+    produto1: '', produto1Cod: '', produto1Metros: '',
+    produto2: '', produto2Cod: '', produto2Metros: '',
+    amostraAnexa: 'nao', imagensVideo: false, imagensFotos: false,
+    nfVenda: '', descricaoNaoConformidade: '',
+    objetivoAlertarEmpresa: false, objetivoDevParcial: false, objetivoDevTotal: false, objetivoNegociacao: false,
+    parecerFabrica: '', motivo: '', fechamentoRnc: '',
+    dataComercial: '', assinaturaComercial: '',
+    dataQualidade: '', assinaturaQualidade: '',
+    dataFinanceiro: '', assinaturaFinanceiro: '',
+  };
+  const [rncForm, setRncForm] = useState<RNCFormData>({ ...defaultRncForm });
   const [amostrasForm, setAmostrasForm] = useState<AmostrasFormData>({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
   const [bookForm, setBookForm] = useState<BookFormData>({ tipoBook: '', quantidade: '', destino: '', observacoes: '' });
   const [specialFormFilled, setSpecialFormFilled] = useState(false);
@@ -154,7 +180,7 @@ export default function NovoChamado() {
       if (sdForm.observacoesComplementares) lines.push(`Observações Complementares: ${sdForm.observacoesComplementares}`);
       return lines.join('\n');
     }
-    if (isRNC) return `[RNC] NF: ${rncForm.nfNumero}, Produto: ${rncForm.produto}, Lote: ${rncForm.lote}, Defeito: ${rncForm.defeito}, Quantidade: ${rncForm.quantidade}${rncForm.observacoes ? '\nObservações: ' + rncForm.observacoes : ''}`;
+    if (isRNC) return `[RNC] NF Venda: ${rncForm.nfVenda}, Produto: ${rncForm.produto1}${rncForm.produto2 ? ', Produto 2: ' + rncForm.produto2 : ''}${rncForm.descricaoNaoConformidade ? '\nDescrição: ' + rncForm.descricaoNaoConformidade : ''}`;
     if (isAmostras) return `[Amostras] Produto: ${amostrasForm.produto}, Referência: ${amostrasForm.referencia}, Cor: ${amostrasForm.cor}, Quantidade: ${amostrasForm.quantidade}, Tamanho: ${amostrasForm.tamanho}, Destino: ${amostrasForm.destino}${amostrasForm.observacoes ? '\nObservações: ' + amostrasForm.observacoes : ''}`;
     if (isBook) return `[Book] Tipo: ${bookForm.tipoBook}, Quantidade: ${bookForm.quantidade}, Destino: ${bookForm.destino}${bookForm.observacoes ? '\nObservações: ' + bookForm.observacoes : ''}`;
     return '';
@@ -578,7 +604,7 @@ export default function NovoChamado() {
       setTipoEntrega('');
       setDescricaoTexto('');
       setSdForm({ ...defaultSdForm });
-      setRncForm({ nfNumero: '', produto: '', lote: '', defeito: '', quantidade: '', observacoes: '' });
+      setRncForm({ ...defaultRncForm });
       setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
       setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' });
       setSpecialFormFilled(false);
@@ -613,7 +639,7 @@ export default function NovoChamado() {
     setTipoEntrega('');
     setDescricaoTexto('');
     setSdForm({ ...defaultSdForm });
-    setRncForm({ nfNumero: '', produto: '', lote: '', defeito: '', quantidade: '', observacoes: '' });
+    setRncForm({ ...defaultRncForm });
     setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
     setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' });
     setSpecialFormFilled(false);
@@ -743,7 +769,7 @@ export default function NovoChamado() {
               </div>
               <div>
                 <Label className="text-xs font-semibold text-destructive">* Motivo Principal da Solicitação</Label>
-                <Select onValueChange={v => { setSelectedMotivo(v); setSelectedSubmotivo(''); setSpecialFormFilled(false); setSdForm({ ...defaultSdForm }); setRncForm({ nfNumero: '', produto: '', lote: '', defeito: '', quantidade: '', observacoes: '' }); setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' }); setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' }); setDescricaoTexto(''); }} value={selectedMotivo}>
+                <Select onValueChange={v => { setSelectedMotivo(v); setSelectedSubmotivo(''); setSpecialFormFilled(false); setSdForm({ ...defaultSdForm }); setRncForm({ ...defaultRncForm }); setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' }); setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' }); setDescricaoTexto(''); }} value={selectedMotivo}>
                   <SelectTrigger className="mt-1 border-destructive/50"><SelectValue placeholder="Selecione o Motivo" /></SelectTrigger>
                   <SelectContent>
                     {motivos.map(m => (
@@ -954,7 +980,12 @@ export default function NovoChamado() {
                             setSdForm(p => ({ ...p, representante: repNome }));
                             setShowSDForm(true);
                           }
-                          else if (isRNC) setShowRNCForm(true);
+                          else if (isRNC) {
+                            const repNome = representantes.find(r => r.id === selectedRepresentante)?.nome || '';
+                            const clienteNome = clientes.find(c => c.id === selectedCliente)?.nome || '';
+                            setRncForm(p => ({ ...p, representante: repNome, cliente: clienteNome }));
+                            setShowRNCForm(true);
+                          }
                           else if (isAmostras) setShowAmostrasForm(true);
                           else if (isBook) setShowBookForm(true);
                         }}
@@ -974,7 +1005,12 @@ export default function NovoChamado() {
                               setSdForm(p => ({ ...p, representante: repNome }));
                               setShowSDForm(true);
                             }
-                            else if (isRNC) setShowRNCForm(true);
+                            else if (isRNC) {
+                              const repNome = representantes.find(r => r.id === selectedRepresentante)?.nome || '';
+                              const clienteNome = clientes.find(c => c.id === selectedCliente)?.nome || '';
+                              setRncForm(p => ({ ...p, representante: repNome, cliente: clienteNome }));
+                              setShowRNCForm(true);
+                            }
                             else if (isAmostras) setShowAmostrasForm(true);
                             else if (isBook) setShowBookForm(true);
                           }}
@@ -1573,22 +1609,222 @@ export default function NovoChamado() {
 
       {/* RNC Form Dialog */}
       <Dialog open={showRNCForm} onOpenChange={setShowRNCForm}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Solicitação de RNC</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Nº NF *</Label><Input className="mt-1" value={rncForm.nfNumero} onChange={e => setRncForm(p => ({ ...p, nfNumero: e.target.value }))} /></div>
-              <div><Label className="text-xs">Produto *</Label><Input className="mt-1" value={rncForm.produto} onChange={e => setRncForm(p => ({ ...p, produto: e.target.value }))} /></div>
-              <div><Label className="text-xs">Lote *</Label><Input className="mt-1" value={rncForm.lote} onChange={e => setRncForm(p => ({ ...p, lote: e.target.value }))} /></div>
-              <div><Label className="text-xs">Defeito *</Label><Input className="mt-1" value={rncForm.defeito} onChange={e => setRncForm(p => ({ ...p, defeito: e.target.value }))} /></div>
-              <div><Label className="text-xs">Quantidade *</Label><Input className="mt-1" value={rncForm.quantidade} onChange={e => setRncForm(p => ({ ...p, quantidade: e.target.value }))} /></div>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex justify-center mb-2">
+              <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
             </div>
-            <div><Label className="text-xs">Observações</Label><Textarea className="mt-1" value={rncForm.observacoes} onChange={e => setRncForm(p => ({ ...p, observacoes: e.target.value }))} /></div>
+            <DialogTitle className="text-center">RNC - Relatório de Não Conformidade</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Cliente / Representante */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div><Label className="text-xs">Cliente *</Label><Input className="mt-1" value={rncForm.cliente} onChange={e => setRncForm(p => ({ ...p, cliente: e.target.value }))} /></div>
+              <div><Label className="text-xs">Representante *</Label><Input className="mt-1" value={rncForm.representante} disabled /></div>
+            </div>
+
+            {/* Produto 1 */}
+            <div className="grid grid-cols-3 gap-3">
+              <div><Label className="text-xs">Produto *</Label><Input className="mt-1" value={rncForm.produto1} onChange={e => setRncForm(p => ({ ...p, produto1: e.target.value }))} /></div>
+              <div><Label className="text-xs">Cód.</Label><Input className="mt-1" value={rncForm.produto1Cod} onChange={e => setRncForm(p => ({ ...p, produto1Cod: e.target.value }))} /></div>
+              <div><Label className="text-xs">Metros</Label><Input className="mt-1" value={rncForm.produto1Metros} onChange={e => setRncForm(p => ({ ...p, produto1Metros: e.target.value }))} /></div>
+            </div>
+            {/* Produto 2 */}
+            <div className="grid grid-cols-3 gap-3">
+              <div><Label className="text-xs">Produto 2</Label><Input className="mt-1" value={rncForm.produto2} onChange={e => setRncForm(p => ({ ...p, produto2: e.target.value }))} /></div>
+              <div><Label className="text-xs">Cód.</Label><Input className="mt-1" value={rncForm.produto2Cod} onChange={e => setRncForm(p => ({ ...p, produto2Cod: e.target.value }))} /></div>
+              <div><Label className="text-xs">Metros</Label><Input className="mt-1" value={rncForm.produto2Metros} onChange={e => setRncForm(p => ({ ...p, produto2Metros: e.target.value }))} /></div>
+            </div>
+
+            {/* Amostra Anexa + Imagens */}
+            <div className="border rounded-lg p-3 space-y-2">
+              <div className="flex items-center gap-6 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs font-semibold">OBRIGATÓRIO - AMOSTRA ANEXA?</Label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-amostraAnexa" checked={rncForm.amostraAnexa === 'nao'} onChange={() => setRncForm(p => ({ ...p, amostraAnexa: 'nao' }))} /> NÃO</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-amostraAnexa" checked={rncForm.amostraAnexa === 'sim'} onChange={() => setRncForm(p => ({ ...p, amostraAnexa: 'sim' }))} /> SIM</label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Label className="text-xs font-semibold">IMAGENS:</Label>
+                  <label className="flex items-center gap-1.5 text-xs">
+                    <input type="checkbox" checked={rncForm.imagensVideo} onChange={e => setRncForm(p => ({ ...p, imagensVideo: e.target.checked }))} /> VÍDEO
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs">
+                    <input type="checkbox" checked={rncForm.imagensFotos} onChange={e => setRncForm(p => ({ ...p, imagensFotos: e.target.checked }))} /> FOTOS
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* NF Venda */}
+            <div><Label className="text-xs">Número da Nota Fiscal de Venda *</Label><Input className="mt-1" value={rncForm.nfVenda} onChange={e => setRncForm(p => ({ ...p, nfVenda: e.target.value }))} /></div>
+
+            {/* Descrição da Não Conformidade */}
+            <div>
+              <Label className="text-xs font-semibold">DESCRIÇÃO DA NÃO CONFORMIDADE *</Label>
+              <Textarea className="mt-1 min-h-[100px]" value={rncForm.descricaoNaoConformidade} onChange={e => setRncForm(p => ({ ...p, descricaoNaoConformidade: e.target.value }))} />
+            </div>
+
+            {/* Objetivo da RNC */}
+            <div className="border rounded-lg p-3 space-y-2">
+              <Label className="text-xs font-semibold text-center block">OBJETIVO DA RNC</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={rncForm.objetivoAlertarEmpresa} onChange={e => setRncForm(p => ({ ...p, objetivoAlertarEmpresa: e.target.checked }))} /> ALERTAR A EMPRESA (ROMPLAS)</label>
+                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={rncForm.objetivoDevParcial} onChange={e => setRncForm(p => ({ ...p, objetivoDevParcial: e.target.checked }))} /> DEVOLUÇÃO PARCIAL</label>
+                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={rncForm.objetivoDevTotal} onChange={e => setRncForm(p => ({ ...p, objetivoDevTotal: e.target.checked }))} /> DEVOLUÇÃO TOTAL</label>
+                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={rncForm.objetivoNegociacao} onChange={e => setRncForm(p => ({ ...p, objetivoNegociacao: e.target.checked }))} /> NEGOCIAÇÃO</label>
+              </div>
+            </div>
+
+            {/* Parecer da Fábrica */}
+            <div className="border rounded-lg p-3 space-y-2">
+              <Label className="text-xs font-semibold text-center block">PARECER DA FÁBRICA (ROMPLAS)</Label>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={rncForm.parecerFabrica === 'procede'} onChange={() => setRncForm(p => ({ ...p, parecerFabrica: 'procede' }))} /> PROCEDE</label>
+                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={rncForm.parecerFabrica === 'nao_procede'} onChange={() => setRncForm(p => ({ ...p, parecerFabrica: 'nao_procede' }))} /> NÃO PROCEDE, POR QUE?</label>
+              </div>
+            </div>
+
+            {/* Motivo */}
+            <div>
+              <Label className="text-xs font-semibold text-center block">MOTIVO</Label>
+              <Textarea className="mt-1 min-h-[80px]" placeholder="R:" value={rncForm.motivo} onChange={e => setRncForm(p => ({ ...p, motivo: e.target.value }))} />
+            </div>
+
+            {/* Fechamento da RNC */}
+            <div>
+              <Label className="text-xs font-semibold text-center block">FECHAMENTO DA RNC (COMERCIAL/FINANCEIRO)</Label>
+              <Textarea className="mt-1 min-h-[80px]" placeholder="R:" value={rncForm.fechamentoRnc} onChange={e => setRncForm(p => ({ ...p, fechamentoRnc: e.target.value }))} />
+            </div>
+
+            {/* Assinaturas */}
+            <div className="border rounded-lg p-3 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Data Comercial</Label><Input type="date" className="mt-1" value={rncForm.dataComercial} onChange={e => setRncForm(p => ({ ...p, dataComercial: e.target.value }))} /></div>
+                <div><Label className="text-xs">Assinatura Comercial</Label><Input className="mt-1" value={rncForm.assinaturaComercial} onChange={e => setRncForm(p => ({ ...p, assinaturaComercial: e.target.value }))} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Data Qualidade</Label><Input type="date" className="mt-1" value={rncForm.dataQualidade} onChange={e => setRncForm(p => ({ ...p, dataQualidade: e.target.value }))} /></div>
+                <div><Label className="text-xs">Assinatura Qualidade</Label><Input className="mt-1" value={rncForm.assinaturaQualidade} onChange={e => setRncForm(p => ({ ...p, assinaturaQualidade: e.target.value }))} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Data Financeiro</Label><Input type="date" className="mt-1" value={rncForm.dataFinanceiro} onChange={e => setRncForm(p => ({ ...p, dataFinanceiro: e.target.value }))} /></div>
+                <div><Label className="text-xs">Assinatura Financeiro</Label><Input className="mt-1" value={rncForm.assinaturaFinanceiro} onChange={e => setRncForm(p => ({ ...p, assinaturaFinanceiro: e.target.value }))} /></div>
+              </div>
+            </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowRNCForm(false)}>Cancelar</Button>
+            <Button variant="secondary" onClick={async () => {
+              if (!rncForm.cliente || !rncForm.produto1 || !rncForm.nfVenda || !rncForm.descricaoNaoConformidade) {
+                toast.error('Preencha os campos obrigatórios (Cliente, Produto, NF Venda, Descrição).');
+                return;
+              }
+              // Generate PDF
+              const doc = new jsPDF();
+              const pageW = doc.internal.pageSize.getWidth();
+              const margin = 15;
+              const contentW = pageW - margin * 2;
+              let y = 12;
+              const checkPage = (needed: number) => { if (y + needed > 280) { doc.addPage(); y = 15; } };
+
+              // Logo
+              try {
+                const logoImg = new window.Image();
+                logoImg.crossOrigin = 'anonymous';
+                await new Promise<void>((resolve, reject) => { logoImg.onload = () => resolve(); logoImg.onerror = () => reject(); logoImg.src = '/images/romplas-logo-pdf.png'; });
+                const logoH = 12; const logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
+                doc.addImage(logoImg, 'PNG', (pageW - logoW) / 2, y, logoW, logoH); y += logoH + 4;
+              } catch { /* fallback */ }
+
+              doc.setFontSize(13); doc.setFont('helvetica', 'bold');
+              doc.text('ROMPLAS - RNC - RELATÓRIO DE NÃO CONFORMIDADE', pageW / 2, y, { align: 'center' }); y += 8;
+              doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 8;
+
+              const addField = (label: string, value: string) => { checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(label, margin, y); doc.setFont('helvetica', 'normal'); doc.text(value || '-', margin + doc.getTextWidth(label) + 3, y); y += 7; };
+              const addFieldRow = (l1: string, v1: string, l2: string, v2: string) => { checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(l1, margin, y); doc.setFont('helvetica', 'normal'); doc.text(v1 || '-', margin + doc.getTextWidth(l1) + 3, y); const col2X = pageW / 2 + 5; doc.setFont('helvetica', 'bold'); doc.text(l2, col2X, y); doc.setFont('helvetica', 'normal'); doc.text(v2 || '-', col2X + doc.getTextWidth(l2) + 3, y); y += 7; };
+
+              addFieldRow('CLIENTE:', rncForm.cliente, 'REPRESENTANTE:', rncForm.representante); y += 2;
+              // Produto 1
+              checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+              doc.text('PRODUTO:', margin, y); doc.setFont('helvetica', 'normal'); doc.text(rncForm.produto1 || '-', margin + doc.getTextWidth('PRODUTO: ') + 2, y);
+              const col2 = pageW / 2 - 10; const col3 = pageW / 2 + 25;
+              doc.setFont('helvetica', 'bold'); doc.text('CÓD:', col2, y); doc.setFont('helvetica', 'normal'); doc.text(rncForm.produto1Cod || '-', col2 + doc.getTextWidth('CÓD: ') + 2, y);
+              doc.setFont('helvetica', 'bold'); doc.text('METROS:', col3, y); doc.setFont('helvetica', 'normal'); doc.text(rncForm.produto1Metros || '-', col3 + doc.getTextWidth('METROS: ') + 2, y); y += 7;
+              // Produto 2
+              if (rncForm.produto2) {
+                doc.setFont('helvetica', 'bold'); doc.text('PRODUTO:', margin, y); doc.setFont('helvetica', 'normal'); doc.text(rncForm.produto2, margin + doc.getTextWidth('PRODUTO: ') + 2, y);
+                doc.setFont('helvetica', 'bold'); doc.text('CÓD:', col2, y); doc.setFont('helvetica', 'normal'); doc.text(rncForm.produto2Cod || '-', col2 + doc.getTextWidth('CÓD: ') + 2, y);
+                doc.setFont('helvetica', 'bold'); doc.text('METROS:', col3, y); doc.setFont('helvetica', 'normal'); doc.text(rncForm.produto2Metros || '-', col3 + doc.getTextWidth('METROS: ') + 2, y); y += 7;
+              }
+              y += 3;
+
+              // Amostra + Imagens
+              checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+              const amostraText = `OBRIGATÓRIO - AMOSTRA ANEXA? ${rncForm.amostraAnexa === 'sim' ? 'SIM' : 'NÃO'}    IMAGENS: ${rncForm.imagensVideo ? 'VÍDEO (X)' : 'VÍDEO ( )'} ${rncForm.imagensFotos ? 'FOTOS (X)' : 'FOTOS ( )'}`;
+              doc.text(amostraText, margin, y); y += 7;
+              addField('NÚMERO DA NOTA FISCAL DE VENDA:', rncForm.nfVenda); y += 3;
+
+              // Descrição
+              checkPage(20);
+              doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+              doc.text('DESCRIÇÃO DA NÃO CONFORMIDADE', pageW / 2, y, { align: 'center' }); y += 6;
+              doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+              const descLines = doc.splitTextToSize(rncForm.descricaoNaoConformidade, contentW);
+              doc.text(descLines, margin, y); y += descLines.length * 5 + 5;
+
+              // Objetivo
+              checkPage(20);
+              doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+              doc.text('OBJETIVO DA RNC', pageW / 2, y, { align: 'center' }); y += 6;
+              doc.setFontSize(9);
+              const obj1 = `(${rncForm.objetivoAlertarEmpresa ? 'X' : ' '}) ALERTAR A EMPRESA    (${rncForm.objetivoDevParcial ? 'X' : ' '}) DEVOLUÇÃO PARCIAL    (${rncForm.objetivoDevTotal ? 'X' : ' '}) DEVOLUÇÃO TOTAL`;
+              doc.setFont('helvetica', 'normal'); doc.text(obj1, margin, y); y += 6;
+              doc.text(`(${rncForm.objetivoNegociacao ? 'X' : ' '}) NEGOCIAÇÃO`, margin, y); y += 8;
+
+              // Parecer
+              checkPage(20);
+              doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+              doc.text('PARECER DA FÁBRICA (ROMPLAS)', pageW / 2, y, { align: 'center' }); y += 6;
+              doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+              doc.text(`(${rncForm.parecerFabrica === 'procede' ? 'X' : ' '}) PROCEDE    (${rncForm.parecerFabrica === 'nao_procede' ? 'X' : ' '}) NÃO PROCEDE, POR QUE?`, margin, y); y += 8;
+
+              // Motivo
+              doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+              doc.text('MOTIVO', pageW / 2, y, { align: 'center' }); y += 6;
+              doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+              if (rncForm.motivo) { const mLines = doc.splitTextToSize(rncForm.motivo, contentW); doc.text(mLines, margin, y); y += mLines.length * 5; } else { doc.text('R:', margin, y); y += 5; }
+              y += 5;
+
+              // Fechamento
+              checkPage(20);
+              doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+              doc.text('FECHAMENTO DA RNC (COMERCIAL/FINANCEIRO)', pageW / 2, y, { align: 'center' }); y += 6;
+              doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+              if (rncForm.fechamentoRnc) { const fLines = doc.splitTextToSize(rncForm.fechamentoRnc, contentW); doc.text(fLines, margin, y); y += fLines.length * 5; } else { doc.text('R:', margin, y); y += 5; }
+              y += 8;
+
+              // Assinaturas
+              checkPage(30);
+              doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 5;
+              doc.setFontSize(9);
+              const sigCol1 = margin; const sigCol2 = pageW / 2 + 5;
+              doc.setFont('helvetica', 'bold'); doc.text(`DATA: ${rncForm.dataComercial || '___/___/___'}`, sigCol1, y); doc.text(`ASSINATURA COMERCIAL: ${rncForm.assinaturaComercial || '________________'}`, sigCol2, y); y += 7;
+              doc.text(`DATA: ${rncForm.dataQualidade || '___/___/___'}`, sigCol1, y); doc.text(`ASSINATURA QUALIDADE: ${rncForm.assinaturaQualidade || '________________'}`, sigCol2, y); y += 7;
+              doc.text(`DATA: ${rncForm.dataFinanceiro || '___/___/___'}`, sigCol1, y); doc.text(`ASSINATURA FINANCEIRO: ${rncForm.assinaturaFinanceiro || '________________'}`, sigCol2, y);
+
+              const pdfBlob = doc.output('blob');
+              const cleanName = (rncForm.cliente || 'rnc').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
+              const pdfFile = new globalThis.File([pdfBlob], `RNC_${cleanName}.pdf`, { type: 'application/pdf' });
+              setAnexos(prev => [...prev, pdfFile]);
+              setSpecialFormFilled(true);
+              setShowRNCForm(false);
+              toast.success('Formulário RNC salvo e PDF anexado!');
+            }}>
+              <FileText className="h-4 w-4 mr-1.5" /> Confirmar e Anexar PDF
+            </Button>
             <Button onClick={() => {
-              if (!rncForm.nfNumero || !rncForm.produto || !rncForm.lote || !rncForm.defeito || !rncForm.quantidade) { toast.error('Preencha todos os campos obrigatórios.'); return; }
+              if (!rncForm.cliente || !rncForm.produto1 || !rncForm.nfVenda || !rncForm.descricaoNaoConformidade) { toast.error('Preencha os campos obrigatórios.'); return; }
               setSpecialFormFilled(true); setShowRNCForm(false);
             }}>Confirmar</Button>
           </DialogFooter>
