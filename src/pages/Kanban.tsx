@@ -318,19 +318,19 @@ export default function Kanban() {
   // Pre-filter chamados by supervisor+representante to derive dropdown options
   const chamadosForDropdowns = chamados.filter((c) => {
     if (filterSupervisor !== 'todos') {
-      const repIdsForSupervisor = srLinks
-        .filter(sr => sr.supervisor_id === filterSupervisor)
-        .map(sr => sr.representante_id);
-      const clienteNamesForSupervisor = allClientes
-        .filter(cl => cl.representante_id && repIdsForSupervisor.includes(cl.representante_id))
-        .map(cl => cl.nome);
-      if (!clienteNamesForSupervisor.includes(c.cliente_nome)) return false;
+      // Filter directly by supervisor_id on chamado
+      if (c.supervisor_id === filterSupervisor) {
+        // Direct match on supervisor_id
+      } else {
+        // Also check via representante link
+        const repIdsForSupervisor = srLinks
+          .filter(sr => sr.supervisor_id === filterSupervisor)
+          .map(sr => sr.representante_id);
+        if (!c.representante_id || !repIdsForSupervisor.includes(c.representante_id)) return false;
+      }
     }
     if (filterRepresentante !== 'todos') {
-      const clienteNamesForRep = allClientes
-        .filter(cl => cl.representante_id === filterRepresentante)
-        .map(cl => cl.nome);
-      if (!clienteNamesForRep.includes(c.cliente_nome)) return false;
+      if (c.representante_id !== filterRepresentante) return false;
     }
     return true;
   });
