@@ -941,7 +941,11 @@ export default function NovoChamado() {
                       variant={specialFormFilled ? 'default' : 'outline'}
                       className="w-full"
                       onClick={() => {
-                        if (isSD) setShowSDForm(true);
+                        if (isSD) {
+                          const repNome = representantes.find(r => r.id === selectedRepresentante)?.nome || '';
+                          setSdForm(p => ({ ...p, representante: repNome }));
+                          setShowSDForm(true);
+                        }
                         else if (isRNC) setShowRNCForm(true);
                         else if (isAmostras) setShowAmostrasForm(true);
                         else if (isBook) setShowBookForm(true);
@@ -1211,8 +1215,18 @@ export default function NovoChamado() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div><Label className="text-xs">Cliente *</Label><Input className="mt-1" value={sdForm.cliente} onChange={e => setSdForm(p => ({ ...p, cliente: e.target.value }))} /></div>
-              <div><Label className="text-xs">Representante *</Label><Input className="mt-1" value={sdForm.representante} onChange={e => setSdForm(p => ({ ...p, representante: e.target.value }))} /></div>
+              <div>
+                <Label className="text-xs">Cliente *</Label>
+                <SearchableSelect
+                  className="mt-1"
+                  value={sdForm.cliente}
+                  onValueChange={val => setSdForm(p => ({ ...p, cliente: val }))}
+                  placeholder="Selecione o cliente"
+                  searchPlaceholder="Pesquisar cliente..."
+                  options={filteredClientes.map(c => ({ value: c.nome, label: c.nome }))}
+                />
+              </div>
+              <div><Label className="text-xs">Representante *</Label><Input className="mt-1" value={sdForm.representante} disabled /></div>
             </div>
             <div><Label className="text-xs">Segmento de Mercado *</Label><Input className="mt-1" value={sdForm.segmentoMercado} onChange={e => setSdForm(p => ({ ...p, segmentoMercado: e.target.value }))} /></div>
             <div><Label className="text-xs">Aplicação do Produto *</Label><Input className="mt-1" value={sdForm.aplicacaoProduto} onChange={e => setSdForm(p => ({ ...p, aplicacaoProduto: e.target.value }))} /></div>
