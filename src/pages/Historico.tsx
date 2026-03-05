@@ -465,7 +465,13 @@ export default function Historico() {
       return;
     }
     try {
-      // Delete all history records for this chamado
+      // Clean up storage attachments
+      const { data: files } = await supabase.storage.from('chamado-anexos').list(String(deleteTicketId));
+      if (files && files.length > 0) {
+        await supabase.storage.from('chamado-anexos').remove(files.map(f => `${deleteTicketId}/${f.name}`));
+      }
+
+      // Delete history (cascade would handle it, but explicit for safety)
       await supabase.from('chamado_historico').delete().eq('chamado_id', deleteTicketId);
 
       // Delete the chamado itself
