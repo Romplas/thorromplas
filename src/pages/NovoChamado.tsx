@@ -541,6 +541,11 @@ export default function NovoChamado() {
           userProfileId = prof?.id || null;
         }
       }
+      // Save SDP form data if special form was filled
+      if (hasSpecialForm && specialFormFilled && motivoNome.toLowerCase().includes('sd')) {
+        await supabase.from('chamados').update({ sdp_data: sdForm as any } as any).eq('id', data.id);
+      }
+
       const { error: histError } = await supabase.from('chamado_historico').insert({
         chamado_id: data.id,
         user_id: userProfileId,

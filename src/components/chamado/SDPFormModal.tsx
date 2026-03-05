@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import { FileText } from 'lucide-react';
 import romplasLogo from '@/assets/romplas-logo.png';
@@ -38,18 +38,38 @@ interface Props {
   chamadoId: number;
   clienteNome: string;
   representanteNome: string;
+  initialData?: Partial<SDFormData> | null;
   onPdfUploaded?: () => void;
 }
 
-export default function SDPFormModal({ open, onOpenChange, chamadoId, clienteNome, representanteNome, onPdfUploaded }: Props) {
+export default function SDPFormModal({ open, onOpenChange, chamadoId, clienteNome, representanteNome, initialData, onPdfUploaded }: Props) {
   const [sdForm, setSdForm] = useState<SDFormData>({ ...defaultSdForm, cliente: clienteNome, representante: representanteNome });
   const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
-  // Reset form when opening with new data
+  // Load initial data from DB when opening
+  useEffect(() => {
+    if (!open) { setLoaded(false); return; }
+    const loadData = async () => {
+      if (initialData && Object.keys(initialData).length > 0) {
+        setSdForm({ ...defaultSdForm, ...initialData, cliente: clienteNome, representante: representanteNome });
+        setLoaded(true);
+        return;
+      }
+      // Try loading from DB
+      const { data } = await supabase.from('chamados').select('sdp_data').eq('id', chamadoId).maybeSingle();
+      const raw = data as any;
+      if (raw?.sdp_data && typeof raw.sdp_data === 'object') {
+        setSdForm({ ...defaultSdForm, ...raw.sdp_data, cliente: clienteNome, representante: representanteNome });
+      } else {
+        setSdForm({ ...defaultSdForm, cliente: clienteNome, representante: representanteNome });
+      }
+      setLoaded(true);
+    };
+    loadData();
+  }, [open, chamadoId, clienteNome, representanteNome]);
+
   const handleOpenChange = (v: boolean) => {
-    if (v) {
-      setSdForm(prev => ({ ...prev, cliente: clienteNome, representante: representanteNome }));
-    }
     onOpenChange(v);
   };
 
@@ -227,6 +247,9 @@ export default function SDPFormModal({ open, onOpenChange, chamadoId, clienteNom
         .upload(filePath, pdfBlob, { contentType: 'application/pdf', upsert: true });
 
       if (error) throw error;
+
+      // Save form data to DB
+      await supabase.from('chamados').update({ sdp_data: sdForm as any } as any).eq('id', chamadoId);
 
       toast.success('PDF da SDP gerado e anexado ao ticket!');
       onPdfUploaded?.();
