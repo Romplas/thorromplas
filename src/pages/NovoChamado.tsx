@@ -1470,7 +1470,8 @@ export default function NovoChamado() {
                 y += obsLines.length * 5;
               }
               const pdfBlob = doc.output('blob');
-              const pdfFile = new globalThis.File([pdfBlob], `SDP_${sdForm.cliente || 'solicitacao'}.pdf`, { type: 'application/pdf' });
+              const cleanName = (sdForm.cliente || 'solicitacao').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
+              const pdfFile = new globalThis.File([pdfBlob], `SDP_${cleanName}.pdf`, { type: 'application/pdf' });
               setAnexos(prev => [...prev, pdfFile]);
               setSpecialFormFilled(true);
               setShowSDForm(false);
