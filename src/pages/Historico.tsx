@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Pencil, Trash2, Eye, Eraser, Paperclip, Download, FileDown, RefreshCw } from 'lucide-react';
+import { Pencil, Trash2, Eye, Eraser, Paperclip, Download, FileDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -529,18 +529,7 @@ export default function Historico() {
   return (
     <Layout>
       <div className="p-4">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <h1 className="text-xl font-bold">Histórico de Atendimento</h1>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => window.location.reload()}
-          >
-            <RefreshCw className="h-4 w-4" />
-            Atualizar App
-          </Button>
-        </div>
+        <h1 className="text-xl font-bold text-center mb-4">Histórico de Atendimento</h1>
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
