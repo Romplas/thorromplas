@@ -106,6 +106,7 @@ export default function Historico() {
   const [anexosDialogOpen, setAnexosDialogOpen] = useState(false);
   const [anexos, setAnexos] = useState<{ nome: string; path: string }[]>([]);
   const [loadingAnexos, setLoadingAnexos] = useState(false);
+  const [anexoCount, setAnexoCount] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState('');
 
@@ -430,9 +431,18 @@ export default function Historico() {
     return etapaColors[etapa] || 'bg-blue-500';
   };
 
-  const handleCardClick = (entry: HistoricoEntry) => {
+  const handleCardClick = async (entry: HistoricoEntry) => {
     setSelectedEntryId(entry.id);
     setSelectedTicketId(String(entry.chamado_id));
+    // Load anexo count
+    try {
+      const { data } = await supabase.storage
+        .from('chamado-anexos')
+        .list(String(entry.chamado_id));
+      setAnexoCount(data?.length || 0);
+    } catch {
+      setAnexoCount(0);
+    }
   };
 
   const handleClearSelection = () => {
@@ -719,7 +729,7 @@ export default function Historico() {
                   </Button>
                   <Button variant="secondary" size="sm" className="gap-1.5" onClick={handleVerAnexoClick}>
                     <Paperclip className="h-4 w-4" />
-                    Ver Anexo
+                    Ver Anexo{anexoCount > 0 ? ` (${anexoCount})` : ''}
                   </Button>
                 </div>
               </div>
