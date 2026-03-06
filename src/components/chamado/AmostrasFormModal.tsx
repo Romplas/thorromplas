@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -328,16 +327,14 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[92vh] p-0 gap-0">
-        <DialogHeader className="px-6 pt-5 pb-3">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
           <div className="flex justify-center mb-2">
             <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
           </div>
-          <DialogTitle className="text-center text-lg">Solicitação de Amostras</DialogTitle>
+          <DialogTitle className="text-center">Solicitação de Amostras</DialogTitle>
         </DialogHeader>
-
-        <ScrollArea className="px-6 max-h-[calc(92vh-160px)]">
-          <div className="space-y-5 pb-4">
+        <div className="space-y-4">
 
             {/* ── Dados Gerais ── */}
             <div className="rounded-lg border p-4 space-y-3">
@@ -495,11 +492,8 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
               />
               <p className="text-[10px] text-muted-foreground italic">"Tempo máximo de retorno das amostras rolo - 30 dias após o faturamento"</p>
             </div>
-
-          </div>
-        </ScrollArea>
-
-        <DialogFooter className="px-6 py-3 border-t flex-col sm:flex-row gap-2">
+        </div>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={generateAndUploadPdf} disabled={saving}>
             <FileText className="h-4 w-4 mr-1.5" />{saving ? 'Gerando...' : 'Confirmar e Anexar PDF'}
