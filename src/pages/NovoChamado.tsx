@@ -181,7 +181,11 @@ export default function NovoChamado() {
       return lines.join('\n');
     }
     if (isRNC) return `[RNC] NF Venda: ${rncForm.nfVenda}, Produtos: ${rncForm.produtos.filter(p => p.produto).map((p, i) => `${p.produto} (Cód: ${p.cod || '-'}, Metros: ${p.metros || '-'})`).join('; ')}${rncForm.descricaoNaoConformidade ? '\nDescrição: ' + rncForm.descricaoNaoConformidade : ''}`;
-    if (isAmostras) return `[Amostras] Produto: ${amostrasForm.produto}, Referência: ${amostrasForm.referencia}, Cor: ${amostrasForm.cor}, Quantidade: ${amostrasForm.quantidade}, Tamanho: ${amostrasForm.tamanho}, Destino: ${amostrasForm.destino}${amostrasForm.observacoes ? '\nObservações: ' + amostrasForm.observacoes : ''}`;
+    if (isAmostras) {
+      const tipo = amostrasForm.amostraTipo === 'cartela' ? 'Cartela' : amostrasForm.amostraTipo === 'metragem' ? 'Metragem' : amostrasForm.amostraTipo === 'a4' ? 'A4' : '-';
+      const prodCount = Object.keys(amostrasForm.selectedProducts).length;
+      return `[Amostras] Tipo: ${tipo}, Qtd: ${amostrasForm.amostraQuantidade}, Produtos selecionados: ${prodCount}${amostrasForm.finalidade ? '\nFinalidade: ' + amostrasForm.finalidade : ''}`;
+    }
     if (isBook) return `[Book] Tipo: ${bookForm.tipoBook}, Quantidade: ${bookForm.quantidade}, Destino: ${bookForm.destino}${bookForm.observacoes ? '\nObservações: ' + bookForm.observacoes : ''}`;
     return '';
   };
