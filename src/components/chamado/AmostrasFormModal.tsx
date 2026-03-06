@@ -328,16 +328,14 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[92vh] p-0 gap-0">
-        <DialogHeader className="px-6 pt-5 pb-3">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
           <div className="flex justify-center mb-2">
             <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
           </div>
-          <DialogTitle className="text-center text-lg">Solicitação de Amostras</DialogTitle>
+          <DialogTitle className="text-center">Solicitação de Amostras</DialogTitle>
         </DialogHeader>
-
-        <ScrollArea className="px-6 max-h-[calc(92vh-160px)]">
-          <div className="space-y-5 pb-4">
+        <div className="space-y-4">
 
             {/* ── Dados Gerais ── */}
             <div className="rounded-lg border p-4 space-y-3">
