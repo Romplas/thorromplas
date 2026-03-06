@@ -495,9 +495,8 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
             </div>
 
           </div>
-        </ScrollArea>
-
-        <DialogFooter className="px-6 py-3 border-t flex-col sm:flex-row gap-2">
+        </div>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={generateAndUploadPdf} disabled={saving}>
             <FileText className="h-4 w-4 mr-1.5" />{saving ? 'Gerando...' : 'Confirmar e Anexar PDF'}
