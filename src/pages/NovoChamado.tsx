@@ -479,6 +479,12 @@ export default function NovoChamado() {
       }
     }
 
+    // Anexos obrigatórios para motivos especiais
+    if (hasSpecialForm && anexos.length === 0) {
+      toast.error('Anexos são obrigatórios para este tipo de solicitação.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const clienteObj = clientes.find(c => c.id === selectedCliente);
@@ -1045,7 +1051,7 @@ export default function NovoChamado() {
                 )}
               </div>
               <div>
-                <Label className="text-xs font-semibold">Anexos</Label>
+                <Label className="text-xs font-semibold">Anexos {hasSpecialForm && <span className="text-destructive">*</span>}</Label>
                 <input
                   ref={fileInputRef}
                   type="file"
