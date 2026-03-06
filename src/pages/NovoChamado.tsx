@@ -786,7 +786,7 @@ export default function NovoChamado() {
               </div>
               <div>
                 <Label className="text-xs font-semibold text-destructive">* Motivo Principal da Solicitação</Label>
-                <Select onValueChange={v => { setSelectedMotivo(v); setSelectedSubmotivo(''); setSpecialFormFilled(false); setSdForm({ ...defaultSdForm }); setRncForm({ ...defaultRncForm }); setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' }); setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' }); setDescricaoTexto(''); }} value={selectedMotivo}>
+                <Select onValueChange={v => { setSelectedMotivo(v); setSelectedSubmotivo(''); setSpecialFormFilled(false); setSdForm({ ...defaultSdForm }); setRncForm({ ...defaultRncForm }); setAmostrasForm({ ...defaultAmostrasFullForm }); setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' }); setDescricaoTexto(''); }} value={selectedMotivo}>
                   <SelectTrigger className="mt-1 border-destructive/50"><SelectValue placeholder="Selecione o Motivo" /></SelectTrigger>
                   <SelectContent>
                     {motivos.map(m => (
