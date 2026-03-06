@@ -493,8 +493,6 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
               />
               <p className="text-[10px] text-muted-foreground italic">"Tempo máximo de retorno das amostras rolo - 30 dias após o faturamento"</p>
             </div>
-
-          </div>
         </div>
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
