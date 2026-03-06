@@ -154,7 +154,7 @@ export default function NovoChamado() {
     dataFinanceiro: '', assinaturaFinanceiro: '',
   };
   const [rncForm, setRncForm] = useState<RNCFormData>({ ...defaultRncForm });
-  const [amostrasForm, setAmostrasForm] = useState<AmostrasFormData>({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
+  const [amostrasForm, setAmostrasForm] = useState<AmostrasFullFormData>({ ...defaultAmostrasFullForm });
   const [bookForm, setBookForm] = useState<BookFormData>({ tipoBook: '', quantidade: '', destino: '', observacoes: '' });
   const [specialFormFilled, setSpecialFormFilled] = useState(false);
 
