@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import jsPDF from 'jspdf';
 import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2, Eye, Pencil, Plus, Trash2 } from 'lucide-react';
+import AmostrasCreationForm, { type AmostrasFullFormData, defaultAmostrasFullForm } from '@/components/chamado/AmostrasCreationForm';
 import romplasLogo from '@/assets/romplas-logo.png';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
@@ -136,7 +137,7 @@ export default function NovoChamado() {
     dataQualidade: string; assinaturaQualidade: string;
     dataFinanceiro: string; assinaturaFinanceiro: string;
   }
-  interface AmostrasFormData { produto: string; referencia: string; cor: string; quantidade: string; tamanho: string; destino: string; observacoes: string }
+  interface BookFormData { tipoBook: string; quantidade: string; destino: string; observacoes: string }
   interface BookFormData { tipoBook: string; quantidade: string; destino: string; observacoes: string }
 
   const defaultSdForm: SDFormData = { cliente: '', representante: '', segmentoMercado: '', aplicacaoProduto: '', estimativaConsumo: '', precoAlvo: '', necessitaAmostra: 'nao', amostraTipo: '', desenvolvimento: '', amostraReferenciaAnexa: 'nao', qualFabricante: '', gramaturaTotal: '', espessura: '', substrato: '', gravacao: '', aditivos: 'nao', quaisAditivos: '', corPantone: 'nao', qualPantone: '', observacoesComplementares: '', statusAprovacao: '', motivoReprovacao: '' };
@@ -153,7 +154,7 @@ export default function NovoChamado() {
     dataFinanceiro: '', assinaturaFinanceiro: '',
   };
   const [rncForm, setRncForm] = useState<RNCFormData>({ ...defaultRncForm });
-  const [amostrasForm, setAmostrasForm] = useState<AmostrasFormData>({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
+  const [amostrasForm, setAmostrasForm] = useState<AmostrasFullFormData>({ ...defaultAmostrasFullForm });
   const [bookForm, setBookForm] = useState<BookFormData>({ tipoBook: '', quantidade: '', destino: '', observacoes: '' });
   const [specialFormFilled, setSpecialFormFilled] = useState(false);
 
@@ -180,7 +181,11 @@ export default function NovoChamado() {
       return lines.join('\n');
     }
     if (isRNC) return `[RNC] NF Venda: ${rncForm.nfVenda}, Produtos: ${rncForm.produtos.filter(p => p.produto).map((p, i) => `${p.produto} (Cód: ${p.cod || '-'}, Metros: ${p.metros || '-'})`).join('; ')}${rncForm.descricaoNaoConformidade ? '\nDescrição: ' + rncForm.descricaoNaoConformidade : ''}`;
-    if (isAmostras) return `[Amostras] Produto: ${amostrasForm.produto}, Referência: ${amostrasForm.referencia}, Cor: ${amostrasForm.cor}, Quantidade: ${amostrasForm.quantidade}, Tamanho: ${amostrasForm.tamanho}, Destino: ${amostrasForm.destino}${amostrasForm.observacoes ? '\nObservações: ' + amostrasForm.observacoes : ''}`;
+    if (isAmostras) {
+      const tipo = amostrasForm.amostraTipo === 'cartela' ? 'Cartela' : amostrasForm.amostraTipo === 'metragem' ? 'Metragem' : amostrasForm.amostraTipo === 'a4' ? 'A4' : '-';
+      const prodCount = Object.keys(amostrasForm.selectedProducts).length;
+      return `[Amostras] Tipo: ${tipo}, Qtd: ${amostrasForm.amostraQuantidade}, Produtos selecionados: ${prodCount}${amostrasForm.finalidade ? '\nFinalidade: ' + amostrasForm.finalidade : ''}`;
+    }
     if (isBook) return `[Book] Tipo: ${bookForm.tipoBook}, Quantidade: ${bookForm.quantidade}, Destino: ${bookForm.destino}${bookForm.observacoes ? '\nObservações: ' + bookForm.observacoes : ''}`;
     return '';
   };
@@ -617,7 +622,7 @@ export default function NovoChamado() {
       setDescricaoTexto('');
       setSdForm({ ...defaultSdForm });
       setRncForm({ ...defaultRncForm });
-      setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
+      setAmostrasForm({ ...defaultAmostrasFullForm });
       setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' });
       setSpecialFormFilled(false);
       setAnexos([]);
@@ -652,7 +657,7 @@ export default function NovoChamado() {
     setDescricaoTexto('');
     setSdForm({ ...defaultSdForm });
     setRncForm({ ...defaultRncForm });
-    setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
+    setAmostrasForm({ ...defaultAmostrasFullForm });
     setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' });
     setSpecialFormFilled(false);
     setAnexos([]);
@@ -781,7 +786,7 @@ export default function NovoChamado() {
               </div>
               <div>
                 <Label className="text-xs font-semibold text-destructive">* Motivo Principal da Solicitação</Label>
-                <Select onValueChange={v => { setSelectedMotivo(v); setSelectedSubmotivo(''); setSpecialFormFilled(false); setSdForm({ ...defaultSdForm }); setRncForm({ ...defaultRncForm }); setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' }); setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' }); setDescricaoTexto(''); }} value={selectedMotivo}>
+                <Select onValueChange={v => { setSelectedMotivo(v); setSelectedSubmotivo(''); setSpecialFormFilled(false); setSdForm({ ...defaultSdForm }); setRncForm({ ...defaultRncForm }); setAmostrasForm({ ...defaultAmostrasFullForm }); setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' }); setDescricaoTexto(''); }} value={selectedMotivo}>
                   <SelectTrigger className="mt-1 border-destructive/50"><SelectValue placeholder="Selecione o Motivo" /></SelectTrigger>
                   <SelectContent>
                     {motivos.map(m => (
@@ -1849,83 +1854,24 @@ export default function NovoChamado() {
       </Dialog>
 
       {/* Amostras Form Dialog */}
-      <Dialog open={showAmostrasForm} onOpenChange={setShowAmostrasForm}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex justify-center mb-2">
-              <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
-            </div>
-            <DialogTitle className="text-center">Solicitação de Amostras</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Produto *</Label><Input className="mt-1" value={amostrasForm.produto} onChange={e => setAmostrasForm(p => ({ ...p, produto: e.target.value }))} /></div>
-              <div><Label className="text-xs">Referência *</Label><Input className="mt-1" value={amostrasForm.referencia} onChange={e => setAmostrasForm(p => ({ ...p, referencia: e.target.value }))} /></div>
-              <div><Label className="text-xs">Cor *</Label><Input className="mt-1" value={amostrasForm.cor} onChange={e => setAmostrasForm(p => ({ ...p, cor: e.target.value }))} /></div>
-              <div><Label className="text-xs">Quantidade *</Label><Input className="mt-1" value={amostrasForm.quantidade} onChange={e => setAmostrasForm(p => ({ ...p, quantidade: e.target.value }))} /></div>
-              <div><Label className="text-xs">Tamanho *</Label><Input className="mt-1" value={amostrasForm.tamanho} onChange={e => setAmostrasForm(p => ({ ...p, tamanho: e.target.value }))} /></div>
-              <div><Label className="text-xs">Destino *</Label><Input className="mt-1" value={amostrasForm.destino} onChange={e => setAmostrasForm(p => ({ ...p, destino: e.target.value }))} /></div>
-            </div>
-            <div><Label className="text-xs">Observações</Label><Textarea className="mt-1" value={amostrasForm.observacoes} onChange={e => setAmostrasForm(p => ({ ...p, observacoes: e.target.value }))} /></div>
-          </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setShowAmostrasForm(false)}>Cancelar</Button>
-            <Button variant="secondary" onClick={async () => {
-              if (!amostrasForm.produto || !amostrasForm.referencia || !amostrasForm.cor || !amostrasForm.quantidade || !amostrasForm.tamanho || !amostrasForm.destino) { toast.error('Preencha todos os campos obrigatórios.'); return; }
-              const doc = new jsPDF();
-              const pageW = doc.internal.pageSize.getWidth();
-              const margin = 15;
-              const contentW = pageW - margin * 2;
-              let y = 12;
-              const checkPage = (needed: number) => { if (y + needed > 280) { doc.addPage(); y = 15; } };
-              try {
-                const logoImg = new window.Image(); logoImg.crossOrigin = 'anonymous';
-                await new Promise<void>((resolve, reject) => { logoImg.onload = () => resolve(); logoImg.onerror = () => reject(); logoImg.src = '/images/romplas-logo-pdf.png'; });
-                const logoH = 12; const logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
-                doc.addImage(logoImg, 'PNG', (pageW - logoW) / 2, y, logoW, logoH); y += logoH + 4;
-              } catch { /* fallback */ }
-              doc.setFontSize(13); doc.setFont('helvetica', 'bold');
-              doc.text('Solicitação de Amostras', pageW / 2, y, { align: 'center' }); y += 8;
-              doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 8;
-
-              const addFieldRow = (l1: string, v1: string, l2: string, v2: string) => { checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(l1, margin, y); doc.setFont('helvetica', 'normal'); doc.text(v1 || '-', margin + doc.getTextWidth(l1) + 3, y); const col2X = pageW / 2 + 5; doc.setFont('helvetica', 'bold'); doc.text(l2, col2X, y); doc.setFont('helvetica', 'normal'); doc.text(v2 || '-', col2X + doc.getTextWidth(l2) + 3, y); y += 7; };
-              const addField = (label: string, value: string) => { checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(label, margin, y); doc.setFont('helvetica', 'normal'); doc.text(value || '-', margin + doc.getTextWidth(label) + 3, y); y += 7; };
-              const addSectionBox = (title: string, contentFn: () => void) => { checkPage(25); const startY = y; y += 2; doc.setFont('helvetica', 'bold'); doc.setFontSize(9); if (title) doc.text(title, margin + 3, y + 4); y += title ? 9 : 4; doc.setFont('helvetica', 'normal'); contentFn(); y += 2; doc.setDrawColor(200); doc.roundedRect(margin, startY, contentW, y - startY, 2, 2, 'S'); y += 6; };
-
-              const clienteNome = clientes.find(c => c.id === selectedCliente)?.nome || '';
-              const repNome = representantes.find(r => r.id === selectedRepresentante)?.nome || '';
-              addFieldRow('Cliente:', clienteNome, 'Representante:', repNome); y += 2;
-
-              addSectionBox('Dados da Amostra', () => {
-                addFieldRow('Produto:', amostrasForm.produto, 'Referência:', amostrasForm.referencia);
-                addFieldRow('Cor:', amostrasForm.cor, 'Quantidade:', amostrasForm.quantidade);
-                addFieldRow('Tamanho:', amostrasForm.tamanho, 'Destino:', amostrasForm.destino);
-              });
-
-              if (amostrasForm.observacoes) {
-                addSectionBox('Observações', () => {
-                  doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-                  const obsLines = doc.splitTextToSize(amostrasForm.observacoes, contentW - 6);
-                  doc.text(obsLines, margin + 3, y); y += obsLines.length * 5;
-                });
-              }
-
-              const pdfBlob = doc.output('blob');
-              const cleanName = (clienteNome || 'amostras').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
-              const pdfFile = new globalThis.File([pdfBlob], `Amostras_${cleanName}.pdf`, { type: 'application/pdf' });
-              setAnexos(prev => [...prev, pdfFile]);
-              setSpecialFormFilled(true); setShowAmostrasForm(false);
-              toast.success('Formulário Amostras salvo e PDF anexado!');
-            }}>
-              <FileText className="h-4 w-4 mr-1.5" /> Confirmar e Anexar PDF
-            </Button>
-            <Button onClick={() => {
-              if (!amostrasForm.produto || !amostrasForm.referencia || !amostrasForm.cor || !amostrasForm.quantidade || !amostrasForm.tamanho || !amostrasForm.destino) { toast.error('Preencha todos os campos obrigatórios.'); return; }
-              setSpecialFormFilled(true); setShowAmostrasForm(false);
-            }}>Confirmar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AmostrasCreationForm
+        open={showAmostrasForm}
+        onOpenChange={setShowAmostrasForm}
+        clienteNome={clientes.find(c => c.id === selectedCliente)?.nome || ''}
+        representanteNome={representantes.find(r => r.id === selectedRepresentante)?.nome || ''}
+        codigoCliente={clientes.find(c => c.id === selectedCliente)?.codigo?.toString() || ''}
+        formData={amostrasForm}
+        onFormDataChange={setAmostrasForm}
+        onConfirm={(data, pdfFile) => {
+          setAmostrasForm(data);
+          if (pdfFile) {
+            setAnexos(prev => [...prev, pdfFile]);
+            toast.success('Formulário Amostras salvo e PDF anexado!');
+          }
+          setSpecialFormFilled(true);
+          setShowAmostrasForm(false);
+        }}
+      />
 
       {/* Book Form Dialog */}
       <Dialog open={showBookForm} onOpenChange={setShowBookForm}>
