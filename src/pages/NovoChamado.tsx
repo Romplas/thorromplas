@@ -657,7 +657,7 @@ export default function NovoChamado() {
     setDescricaoTexto('');
     setSdForm({ ...defaultSdForm });
     setRncForm({ ...defaultRncForm });
-    setAmostrasForm({ produto: '', referencia: '', cor: '', quantidade: '', tamanho: '', destino: '', observacoes: '' });
+    setAmostrasForm({ ...defaultAmostrasFullForm });
     setBookForm({ tipoBook: '', quantidade: '', destino: '', observacoes: '' });
     setSpecialFormFilled(false);
     setAnexos([]);
