@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import jsPDF from 'jspdf';
 import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2, Eye, Pencil, Plus, Trash2 } from 'lucide-react';
+import AmostrasCreationForm, { type AmostrasFullFormData, defaultAmostrasFullForm } from '@/components/chamado/AmostrasCreationForm';
 import romplasLogo from '@/assets/romplas-logo.png';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
