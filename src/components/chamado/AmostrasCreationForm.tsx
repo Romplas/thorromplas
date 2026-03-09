@@ -74,6 +74,17 @@ const QUANTIDADES_AUTORIZACAO = ['100', '150', '200'];
 
 // ──── Form Data Interface ────
 export interface AmostrasFullFormData {
+  // Dados Gerais extras
+  razaoSocial: string;
+  endereco: string;
+  cidade: string;
+  uf: string;
+  cep: string;
+  contato: string;
+  inscEstadual: string;
+  fone: string;
+  cnpj: string;
+  email: string;
   // Transporte
   transportadora: boolean;
   transportadoraNome: string;
@@ -81,9 +92,9 @@ export interface AmostrasFullFormData {
   // Tipo de amostra
   amostraTipo: 'cartela' | 'metragem' | 'a4' | '';
   amostraQuantidade: string;
-  // Produtos selecionados: key = "LINHA|TIPO|NOME", value = nº lam solicitadas
+  // Produtos selecionados
   selectedProducts: Record<string, string>;
-  // Metragem amostras (max 5 rows)
+  // Metragem amostras
   metragems: Array<{ codigo: string; cor: string }>;
   // Comments
   finalidade: string;
@@ -92,6 +103,16 @@ export interface AmostrasFullFormData {
 }
 
 export const defaultAmostrasFullForm: AmostrasFullFormData = {
+  razaoSocial: '',
+  endereco: '',
+  cidade: '',
+  uf: '',
+  cep: '',
+  contato: '',
+  inscEstadual: '',
+  fone: '',
+  cnpj: '',
+  email: '',
   transportadora: false,
   transportadoraNome: '',
   correio: false,
