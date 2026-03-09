@@ -462,15 +462,26 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
               <h3 className="text-sm font-bold">Amostra Metragem <span className="text-xs font-normal text-muted-foreground">(Quantidade Máximo - 1 rolo)</span></h3>
               <div className="space-y-2">
                 {form.metragems.map((m, i) => (
-                  <div key={i} className="grid grid-cols-2 gap-3">
-                    <div>
+                  <div key={i} className="flex items-end gap-2">
+                    <div className="flex-1">
                       <Label className="text-xs">Código</Label>
                       <Input className="mt-1 h-8 text-xs" value={m.codigo} onChange={e => updateMetragem(i, 'codigo', e.target.value)} />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <Label className="text-xs">Cor</Label>
                       <Input className="mt-1 h-8 text-xs" value={m.cor} onChange={e => updateMetragem(i, 'cor', e.target.value)} />
                     </div>
+                    {i === form.metragems.length - 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 shrink-0"
+                        onClick={() => setForm(p => ({ ...p, metragems: [...p.metragems, { codigo: '', cor: '' }] }))}
+                      >
+                        <span className="text-lg leading-none">+</span>
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
