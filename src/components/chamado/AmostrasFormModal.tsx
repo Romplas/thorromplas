@@ -82,7 +82,7 @@ const defaultForm: AmostrasFullFormData = {
   transportadora: false, transportadoraNome: '', correio: false,
   amostraTipo: '', amostraQuantidade: '',
   selectedProducts: {},
-  metragems: [{ codigo: '', cor: '' }, { codigo: '', cor: '' }, { codigo: '', cor: '' }, { codigo: '', cor: '' }, { codigo: '', cor: '' }],
+  metragems: [{ codigo: '', cor: '' }],
   finalidade: '', utilizacao: '', observacoes: '',
 };
 
