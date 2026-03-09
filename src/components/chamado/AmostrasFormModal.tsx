@@ -66,6 +66,16 @@ const QUANTIDADES_AUTORIZACAO = ['100', '150', '200'];
 
 // ──── Form Data Interface ────
 interface AmostrasFullFormData {
+  razaoSocial: string;
+  endereco: string;
+  cidade: string;
+  uf: string;
+  cep: string;
+  contato: string;
+  inscEstadual: string;
+  fone: string;
+  cnpj: string;
+  email: string;
   transportadora: boolean;
   transportadoraNome: string;
   correio: boolean;
@@ -79,6 +89,8 @@ interface AmostrasFullFormData {
 }
 
 const defaultForm: AmostrasFullFormData = {
+  razaoSocial: '', endereco: '', cidade: '', uf: '', cep: '',
+  contato: '', inscEstadual: '', fone: '', cnpj: '', email: '',
   transportadora: false, transportadoraNome: '', correio: false,
   amostraTipo: '', amostraQuantidade: '',
   selectedProducts: {},
