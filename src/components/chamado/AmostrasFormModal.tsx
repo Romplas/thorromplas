@@ -66,6 +66,16 @@ const QUANTIDADES_AUTORIZACAO = ['100', '150', '200'];
 
 // ──── Form Data Interface ────
 interface AmostrasFullFormData {
+  razaoSocial: string;
+  endereco: string;
+  cidade: string;
+  uf: string;
+  cep: string;
+  contato: string;
+  inscEstadual: string;
+  fone: string;
+  cnpj: string;
+  email: string;
   transportadora: boolean;
   transportadoraNome: string;
   correio: boolean;
@@ -79,6 +89,8 @@ interface AmostrasFullFormData {
 }
 
 const defaultForm: AmostrasFullFormData = {
+  razaoSocial: '', endereco: '', cidade: '', uf: '', cep: '',
+  contato: '', inscEstadual: '', fone: '', cnpj: '', email: '',
   transportadora: false, transportadoraNome: '', correio: false,
   amostraTipo: '', amostraQuantidade: '',
   selectedProducts: {},
@@ -347,6 +359,48 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
                 <div>
                   <Label className="text-xs text-muted-foreground">Cliente</Label>
                   <p className="font-medium text-sm truncate">{clienteNome || '-'}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs">Razão Social</Label>
+                  <Input className="h-8 text-xs" value={form.razaoSocial} onChange={e => setForm(p => ({ ...p, razaoSocial: e.target.value }))} />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-xs">Endereço</Label>
+                  <Input className="h-8 text-xs" value={form.endereco} onChange={e => setForm(p => ({ ...p, endereco: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Cidade</Label>
+                  <Input className="h-8 text-xs" value={form.cidade} onChange={e => setForm(p => ({ ...p, cidade: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">UF</Label>
+                  <Input className="h-8 text-xs" maxLength={2} value={form.uf} onChange={e => setForm(p => ({ ...p, uf: e.target.value.toUpperCase() }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">CEP</Label>
+                  <Input className="h-8 text-xs" value={form.cep} onChange={e => setForm(p => ({ ...p, cep: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Contato</Label>
+                  <Input className="h-8 text-xs" value={form.contato} onChange={e => setForm(p => ({ ...p, contato: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Insc. Estadual</Label>
+                  <Input className="h-8 text-xs" value={form.inscEstadual} onChange={e => setForm(p => ({ ...p, inscEstadual: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Fone</Label>
+                  <Input className="h-8 text-xs" value={form.fone} onChange={e => setForm(p => ({ ...p, fone: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">CNPJ</Label>
+                  <Input className="h-8 text-xs" value={form.cnpj} onChange={e => setForm(p => ({ ...p, cnpj: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">E-mail</Label>
+                  <Input className="h-8 text-xs" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
