@@ -148,7 +148,7 @@ export default function NovoChamado() {
     amostraAnexa: 'nao', imagensVideo: false, imagensFotos: false,
     nfVenda: '', descricaoNaoConformidade: '',
     objetivoAlertarEmpresa: false, objetivoDevParcial: false, objetivoDevTotal: false, objetivoNegociacao: false,
-    parecerFabrica: '', motivo: '', fechamentoRnc: '',
+    parecerFabrica: '', autorizadoResposta: '', motivo: '', fechamentoRnc: '',
     dataComercial: '', assinaturaComercial: '',
     dataQualidade: '', assinaturaQualidade: '',
     dataFinanceiro: '', assinaturaFinanceiro: '',
