@@ -326,7 +326,7 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
     if (!form.amostraTipo) { toast.error('Selecione o tipo de amostra.'); return; }
     if (!form.amostraQuantidade) { toast.error('Selecione a quantidade.'); return; }
 
-    const pdfBlob = generatePdf();
+    const pdfBlob = await generatePdf();
     const cleanName = (clienteNome || 'amostras').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
     const pdfFile = new globalThis.File([pdfBlob], `Amostras_${cleanName}.pdf`, { type: 'application/pdf' });
     onConfirm(form, pdfFile);
