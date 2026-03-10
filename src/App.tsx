@@ -16,6 +16,7 @@ import Usuarios from "./pages/Usuarios";
 import Kanban from "./pages/Kanban";
 import ImportClientes from "./pages/ImportClientes";
 import Configuracoes from "./pages/Configuracoes";
+import MeuPerfil from "./pages/MeuPerfil";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/kanban" element={<ProtectedRoute allowedRoles={['admin', 'gestor', 'supervisor']}><Kanban /></ProtectedRoute>} />
             <Route path="/import-clientes" element={<ProtectedRoute allowedRoles={['admin', 'gestor']}><ImportClientes /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute allowedRoles={['admin', 'gestor']}><Configuracoes /></ProtectedRoute>} />
+            <Route path="/meu-perfil" element={<ProtectedRoute><MeuPerfil /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

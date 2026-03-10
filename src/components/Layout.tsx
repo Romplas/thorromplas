@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, PlusCircle, Clock, Users, LogOut, User, Columns3, Upload, Settings, RefreshCw } from 'lucide-react';
 import logoThor from '@/assets/logo-thor.png';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 
 const allNavItems = [
@@ -81,6 +81,7 @@ export default function Layout({ children }: LayoutProps) {
             className="flex items-center gap-3 cursor-pointer hover:opacity-90 transition-opacity"
           >
             <Avatar className="h-7 w-7 bg-white/20">
+              <AvatarImage src={profile?.avatar_url || undefined} alt={userName} />
               <AvatarFallback className="bg-white/20 text-primary-foreground text-xs">{userInitial}</AvatarFallback>
             </Avatar>
             <span className="text-sm font-medium">{userName}</span>
@@ -93,8 +94,8 @@ export default function Layout({ children }: LayoutProps) {
                 {roleLabel && <span className={`status-badge ${roleClass} text-xs`}>{roleLabel}</span>}
               </div>
               <button
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+                onClick={() => { setMenuOpen(false); navigate('/meu-perfil'); }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors text-left"
               >
                 <User className="h-4 w-4" />
                 Meu Perfil
