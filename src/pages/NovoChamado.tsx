@@ -130,7 +130,7 @@ export default function NovoChamado() {
     nfVenda: string;
     descricaoNaoConformidade: string;
     objetivoAlertarEmpresa: boolean; objetivoDevParcial: boolean; objetivoDevTotal: boolean; objetivoNegociacao: boolean;
-    parecerFabrica: string; // 'procede' | 'nao_procede'
+    parecerFabrica: string; autorizadoResposta: string; // 'sim' | 'nao' | ''
     motivo: string;
     fechamentoRnc: string;
     dataComercial: string; assinaturaComercial: string;
@@ -148,7 +148,7 @@ export default function NovoChamado() {
     amostraAnexa: 'nao', imagensVideo: false, imagensFotos: false,
     nfVenda: '', descricaoNaoConformidade: '',
     objetivoAlertarEmpresa: false, objetivoDevParcial: false, objetivoDevTotal: false, objetivoNegociacao: false,
-    parecerFabrica: '', motivo: '', fechamentoRnc: '',
+    parecerFabrica: '', autorizadoResposta: '', motivo: '', fechamentoRnc: '',
     dataComercial: '', assinaturaComercial: '',
     dataQualidade: '', assinaturaQualidade: '',
     dataFinanceiro: '', assinaturaFinanceiro: '',
@@ -1705,12 +1705,16 @@ export default function NovoChamado() {
             <div className="border rounded-lg p-3 space-y-2">
               <Label className="text-xs font-semibold text-center block">PARECER DA FÁBRICA (ROMPLAS)</Label>
               <div className="flex items-center gap-4 flex-wrap">
-                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={rncForm.parecerFabrica === 'procede'} onChange={() => setRncForm(p => ({ ...p, parecerFabrica: 'procede' }))} /> PROCEDE</label>
-                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={rncForm.parecerFabrica === 'nao_procede'} onChange={() => setRncForm(p => ({ ...p, parecerFabrica: 'nao_procede' }))} /> NÃO PROCEDE, POR QUE?</label>
+                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={rncForm.parecerFabrica === 'procede'} onChange={() => setRncForm(p => ({ ...p, parecerFabrica: 'procede', autorizadoResposta: '' }))} /> PROCEDE</label>
+                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={rncForm.parecerFabrica === 'nao_procede'} onChange={() => setRncForm(p => ({ ...p, parecerFabrica: 'nao_procede', autorizadoResposta: '' }))} /> NÃO PROCEDE, POR QUE?</label>
                 <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={rncForm.parecerFabrica === 'autorizado'} onChange={() => setRncForm(p => ({ ...p, parecerFabrica: 'autorizado' }))} /> AUTORIZADO</label>
-                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={rncForm.parecerFabrica === 'sim'} onChange={() => setRncForm(p => ({ ...p, parecerFabrica: 'sim' }))} /> SIM</label>
-                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={rncForm.parecerFabrica === 'nao'} onChange={() => setRncForm(p => ({ ...p, parecerFabrica: 'nao' }))} /> NÃO</label>
               </div>
+              {rncForm.parecerFabrica === 'autorizado' && (
+                <div className="flex items-center gap-4 ml-6 pt-1">
+                  <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-autorizado-resp" checked={rncForm.autorizadoResposta === 'sim'} onChange={() => setRncForm(p => ({ ...p, autorizadoResposta: 'sim' }))} /> SIM</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-autorizado-resp" checked={rncForm.autorizadoResposta === 'nao'} onChange={() => setRncForm(p => ({ ...p, autorizadoResposta: 'nao' }))} /> NÃO</label>
+                </div>
+              )}
             </div>
 
             {/* Motivo */}
@@ -1815,7 +1819,10 @@ export default function NovoChamado() {
               // Parecer
               addSectionBox('Parecer da Fábrica (Romplas)', () => {
                 doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-                doc.text(`(${rncForm.parecerFabrica === 'procede' ? 'X' : ' '}) PROCEDE    (${rncForm.parecerFabrica === 'nao_procede' ? 'X' : ' '}) NÃO PROCEDE, POR QUE?`, margin + 3, y); y += 5;
+                doc.text(`(${rncForm.parecerFabrica === 'procede' ? 'X' : ' '}) PROCEDE    (${rncForm.parecerFabrica === 'nao_procede' ? 'X' : ' '}) NÃO PROCEDE, POR QUE?    (${rncForm.parecerFabrica === 'autorizado' ? 'X' : ' '}) AUTORIZADO`, margin + 3, y); y += 6;
+                if (rncForm.parecerFabrica === 'autorizado') {
+                  doc.text(`    (${rncForm.autorizadoResposta === 'sim' ? 'X' : ' '}) SIM    (${rncForm.autorizadoResposta === 'nao' ? 'X' : ' '}) NÃO`, margin + 3, y); y += 5;
+                }
               });
 
               // Motivo
