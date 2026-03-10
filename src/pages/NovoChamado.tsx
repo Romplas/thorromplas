@@ -130,7 +130,7 @@ export default function NovoChamado() {
     nfVenda: string;
     descricaoNaoConformidade: string;
     objetivoAlertarEmpresa: boolean; objetivoDevParcial: boolean; objetivoDevTotal: boolean; objetivoNegociacao: boolean;
-    parecerFabrica: string; // 'procede' | 'nao_procede'
+    parecerFabrica: string; autorizadoResposta: string; // 'sim' | 'nao' | ''
     motivo: string;
     fechamentoRnc: string;
     dataComercial: string; assinaturaComercial: string;
