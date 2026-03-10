@@ -205,112 +205,100 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
 
       doc.setFontSize(13); doc.setFont('helvetica', 'bold');
       doc.text('SOLICITAÇÃO DE AMOSTRAS', pageW / 2, y, { align: 'center' }); y += 8;
-      doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 6;
+      doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 8;
 
-      const addRow = (label: string, value: string) => {
-        checkPage(7);
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
-        doc.text(label, margin, y);
-        doc.setFont('helvetica', 'normal');
-        doc.text(value || '-', margin + doc.getTextWidth(label) + 2, y);
-        y += 5;
-      };
-      const addRow2 = (l1: string, v1: string, l2: string, v2: string) => {
-        checkPage(7);
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
-        doc.text(l1, margin, y);
-        doc.setFont('helvetica', 'normal');
-        doc.text(v1 || '-', margin + doc.getTextWidth(l1) + 2, y);
-        const col2 = pageW / 2 + 5;
-        doc.setFont('helvetica', 'bold');
-        doc.text(l2, col2, y);
-        doc.setFont('helvetica', 'normal');
-        doc.text(v2 || '-', col2 + doc.getTextWidth(l2) + 2, y);
-        y += 5;
-      };
+      const addField = (label: string, value: string) => { checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(label, margin, y); doc.setFont('helvetica', 'normal'); doc.text(value || '-', margin + doc.getTextWidth(label) + 3, y); y += 7; };
+      const addFieldRow = (l1: string, v1: string, l2: string, v2: string) => { checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(l1, margin, y); doc.setFont('helvetica', 'normal'); doc.text(v1 || '-', margin + doc.getTextWidth(l1) + 3, y); const col2X = pageW / 2 + 5; doc.setFont('helvetica', 'bold'); doc.text(l2, col2X, y); doc.setFont('helvetica', 'normal'); doc.text(v2 || '-', col2X + doc.getTextWidth(l2) + 3, y); y += 7; };
+      const addSectionBox = (title: string, contentFn: () => void) => { checkPage(25); const startY = y; y += 2; doc.setFont('helvetica', 'bold'); doc.setFontSize(9); if (title) doc.text(title, margin + 3, y + 4); y += title ? 9 : 4; doc.setFont('helvetica', 'normal'); contentFn(); y += 2; doc.setDrawColor(200); doc.roundedRect(margin, startY, contentW, y - startY, 2, 2, 'S'); y += 6; };
 
-      addRow2('REPRESENTANTE:', representanteNome, 'DATA:', new Date().toLocaleDateString('pt-BR'));
-      addRow2('CLIENTE:', clienteNome, 'CÓDIGO:', '');
-      if (form.transportadora) addRow('TRANSPORTADORA:', form.transportadoraNome);
-      if (form.correio) addRow('ENVIO:', 'CORREIO');
-      y += 3;
+      addFieldRow('Representante:', representanteNome, 'Data:', new Date().toLocaleDateString('pt-BR'));
+      addFieldRow('Cliente:', clienteNome, 'Código:', '');
+      y += 2;
 
-      doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 5;
+      // Dados Gerais
+      addSectionBox('Dados Gerais', () => {
+        addFieldRow('Razão Social:', form.razaoSocial, 'Insc. Estadual:', form.inscEstadual);
+        addFieldRow('Endereço:', form.endereco, 'Cidade:', form.cidade);
+        addFieldRow('UF:', form.uf, 'CEP:', form.cep);
+        addFieldRow('Contato:', form.contato, 'Fone:', form.fone);
+        addFieldRow('CNPJ:', form.cnpj, 'E-mail:', form.email);
+      });
+
+      // Transporte
+      addSectionBox('Transporte', () => {
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+        doc.text(`(${form.transportadora ? 'X' : ' '}) Transportadora${form.transportadora && form.transportadoraNome ? ': ' + form.transportadoraNome : ''}    (${form.correio ? 'X' : ' '}) Correio`, margin + 3, y); y += 5;
+      });
+
+      // Tipo de Amostra
       const tipoLabel = form.amostraTipo === 'cartela' ? 'CARTELA' : form.amostraTipo === 'metragem' ? 'METRAGEM' : form.amostraTipo === 'a4' ? 'A4' : '-';
-      addRow2('TIPO DE AMOSTRA:', tipoLabel, 'QUANTIDADE:', form.amostraQuantidade || '-');
-      y += 3;
+      addSectionBox('Tipo de Amostra e Quantidade', () => {
+        addFieldRow('Tipo:', tipoLabel, 'Quantidade:', form.amostraQuantidade || '-');
+      });
 
+      // Cartelas selecionadas
       const selectedKeys = Object.keys(form.selectedProducts);
       if (selectedKeys.length > 0) {
-        checkPage(10);
-        doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 5;
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-        doc.text('ARTIGOS PADRÃO ROMPLAS - CARTELAS SELECIONADAS', pageW / 2, y, { align: 'center' }); y += 6;
-        doc.setFontSize(8);
-        selectedKeys.forEach(key => {
-          checkPage(6);
-          const parts = key.split('|');
-          const line = parts.slice(0, -1).join('|');
-          const name = parts[parts.length - 1];
-          const lam = form.selectedProducts[key];
-          doc.setFont('helvetica', 'normal');
-          doc.text(`${name} (${line})${lam ? ' - Nº Lam: ' + lam : ''}`, margin + 3, y);
-          y += 4.5;
+        addSectionBox('Artigos Padrão Romplas - Cartelas Selecionadas', () => {
+          doc.setFontSize(9);
+          selectedKeys.forEach(key => {
+            checkPage(6);
+            const parts = key.split('|');
+            const line = parts.slice(0, -1).join('|');
+            const name = parts[parts.length - 1];
+            const lam = form.selectedProducts[key];
+            doc.setFont('helvetica', 'normal');
+            doc.text(`${name} (${line})${lam ? ' - Nº Lam: ' + lam : ''}`, margin + 3, y);
+            y += 5;
+          });
         });
-        y += 3;
       }
 
+      // Metragem
       const metWithData = (form.metragems || []).filter(m => m.codigo || m.cor);
       if (metWithData.length > 0) {
-        checkPage(10);
-        doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 5;
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-        doc.text('AMOSTRA METRAGEM (Quantidade Máximo - 1 rolo)', pageW / 2, y, { align: 'center' }); y += 6;
-        doc.setFontSize(8);
-        metWithData.forEach(m => {
-          checkPage(6);
-          doc.setFont('helvetica', 'bold');
-          doc.text('CÓDIGO:', margin + 3, y);
-          doc.setFont('helvetica', 'normal');
-          doc.text(m.codigo || '-', margin + 22, y);
-          doc.setFont('helvetica', 'bold');
-          doc.text('COR:', pageW / 2 + 5, y);
-          doc.setFont('helvetica', 'normal');
-          doc.text(m.cor || '-', pageW / 2 + 18, y);
-          y += 5;
+        addSectionBox('Amostra Metragem (Quantidade Máximo - 1 rolo)', () => {
+          doc.setFontSize(9);
+          metWithData.forEach(m => {
+            checkPage(6);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Código:', margin + 3, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text(m.codigo || '-', margin + 22, y);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Cor:', pageW / 2 + 5, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text(m.cor || '-', pageW / 2 + 18, y);
+            y += 6;
+          });
         });
-        y += 3;
       }
 
+      // Finalidade
       if (form.finalidade) {
-        checkPage(15);
-        doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 5;
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-        doc.text('FINALIDADE DAS AMOSTRAS / COMENTÁRIOS DO REPRESENTANTE', margin, y); y += 5;
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
-        const lines = doc.splitTextToSize(form.finalidade, contentW - 6);
-        doc.text(lines, margin + 3, y); y += lines.length * 4.5;
-        y += 3;
+        addSectionBox('Finalidade das Amostras / Comentários do Representante', () => {
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+          const lines = doc.splitTextToSize(form.finalidade, contentW - 6);
+          doc.text(lines, margin + 3, y); y += lines.length * 5;
+        });
       }
 
+      // Utilização
       if (form.utilizacao) {
-        checkPage(10);
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-        doc.text('UTILIZAÇÃO:', margin, y); y += 5;
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
-        const lines = doc.splitTextToSize(form.utilizacao, contentW - 6);
-        doc.text(lines, margin + 3, y); y += lines.length * 4.5;
-        y += 3;
+        addSectionBox('Utilização', () => {
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+          const lines = doc.splitTextToSize(form.utilizacao, contentW - 6);
+          doc.text(lines, margin + 3, y); y += lines.length * 5;
+        });
       }
 
+      // Observações
       if (form.observacoes) {
-        checkPage(15);
-        doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 5;
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-        doc.text('OBSERVAÇÃO', pageW / 2, y, { align: 'center' }); y += 5;
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
-        const lines = doc.splitTextToSize(form.observacoes, contentW - 6);
-        doc.text(lines, margin + 3, y); y += lines.length * 4.5;
+        addSectionBox('Observação', () => {
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+          const lines = doc.splitTextToSize(form.observacoes, contentW - 6);
+          doc.text(lines, margin + 3, y); y += lines.length * 5;
+        });
       }
 
       checkPage(10); y += 5;
