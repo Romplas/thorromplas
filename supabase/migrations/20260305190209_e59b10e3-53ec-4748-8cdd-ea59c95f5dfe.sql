@@ -1,0 +1,1 @@
+ALTER TABLE public.chamados ADD COLUMN sdp_data jsonb DEFAULT NULL;

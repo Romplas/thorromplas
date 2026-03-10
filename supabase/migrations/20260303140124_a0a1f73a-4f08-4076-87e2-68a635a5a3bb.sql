@@ -1,0 +1,1 @@
+ALTER TABLE supervisores ADD COLUMN status text NOT NULL DEFAULT 'ativo';

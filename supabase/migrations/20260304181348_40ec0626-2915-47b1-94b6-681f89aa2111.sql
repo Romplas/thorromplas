@@ -1,0 +1,1 @@
+ALTER TABLE public.chamado_historico ADD COLUMN IF NOT EXISTS descricao_ticket TEXT;
