@@ -242,12 +242,16 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
           <div className="border rounded-lg p-3 space-y-2">
             <Label className="text-xs font-semibold">Parecer da Fábrica (Romplas):</Label>
             <div className="flex items-center gap-4 flex-wrap">
-              <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={form.parecerFabrica === 'procede'} onChange={() => setForm(p => ({ ...p, parecerFabrica: 'procede' }))} /> PROCEDE</label>
-              <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={form.parecerFabrica === 'nao_procede'} onChange={() => setForm(p => ({ ...p, parecerFabrica: 'nao_procede' }))} /> NÃO PROCEDE, POR QUE?</label>
+              <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={form.parecerFabrica === 'procede'} onChange={() => setForm(p => ({ ...p, parecerFabrica: 'procede', autorizadoResposta: '' }))} /> PROCEDE</label>
+              <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={form.parecerFabrica === 'nao_procede'} onChange={() => setForm(p => ({ ...p, parecerFabrica: 'nao_procede', autorizadoResposta: '' }))} /> NÃO PROCEDE, POR QUE?</label>
               <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={form.parecerFabrica === 'autorizado'} onChange={() => setForm(p => ({ ...p, parecerFabrica: 'autorizado' }))} /> AUTORIZADO</label>
-              <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={form.parecerFabrica === 'sim'} onChange={() => setForm(p => ({ ...p, parecerFabrica: 'sim' }))} /> SIM</label>
-              <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={form.parecerFabrica === 'nao'} onChange={() => setForm(p => ({ ...p, parecerFabrica: 'nao' }))} /> NÃO</label>
             </div>
+            {form.parecerFabrica === 'autorizado' && (
+              <div className="flex items-center gap-4 ml-6 pt-1">
+                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-autorizado-resp" checked={form.autorizadoResposta === 'sim'} onChange={() => setForm(p => ({ ...p, autorizadoResposta: 'sim' }))} /> SIM</label>
+                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-autorizado-resp" checked={form.autorizadoResposta === 'nao'} onChange={() => setForm(p => ({ ...p, autorizadoResposta: 'nao' }))} /> NÃO</label>
+              </div>
+            )}
           </div>
 
           <div><Label className="text-xs font-semibold text-center block">MOTIVO</Label><Textarea className="mt-1" placeholder="R:" value={form.motivo} onChange={e => setForm(p => ({ ...p, motivo: e.target.value }))} /></div>

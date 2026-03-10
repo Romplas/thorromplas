@@ -1819,7 +1819,10 @@ export default function NovoChamado() {
               // Parecer
               addSectionBox('Parecer da Fábrica (Romplas)', () => {
                 doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-                doc.text(`(${rncForm.parecerFabrica === 'procede' ? 'X' : ' '}) PROCEDE    (${rncForm.parecerFabrica === 'nao_procede' ? 'X' : ' '}) NÃO PROCEDE, POR QUE?`, margin + 3, y); y += 5;
+                doc.text(`(${rncForm.parecerFabrica === 'procede' ? 'X' : ' '}) PROCEDE    (${rncForm.parecerFabrica === 'nao_procede' ? 'X' : ' '}) NÃO PROCEDE, POR QUE?    (${rncForm.parecerFabrica === 'autorizado' ? 'X' : ' '}) AUTORIZADO`, margin + 3, y); y += 6;
+                if (rncForm.parecerFabrica === 'autorizado') {
+                  doc.text(`    (${rncForm.autorizadoResposta === 'sim' ? 'X' : ' '}) SIM    (${rncForm.autorizadoResposta === 'nao' ? 'X' : ' '}) NÃO`, margin + 3, y); y += 5;
+                }
               });
 
               // Motivo
