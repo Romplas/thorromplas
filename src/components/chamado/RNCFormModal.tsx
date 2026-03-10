@@ -135,7 +135,10 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
 
       addSectionBox('Parecer da Fábrica (Romplas)', () => {
         doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-        doc.text(`(${form.parecerFabrica === 'procede' ? 'X' : ' '}) PROCEDE    (${form.parecerFabrica === 'nao_procede' ? 'X' : ' '}) NÃO PROCEDE, POR QUE?`, margin + 3, y); y += 5;
+        doc.text(`(${form.parecerFabrica === 'procede' ? 'X' : ' '}) PROCEDE    (${form.parecerFabrica === 'nao_procede' ? 'X' : ' '}) NÃO PROCEDE, POR QUE?    (${form.parecerFabrica === 'autorizado' ? 'X' : ' '}) AUTORIZADO`, margin + 3, y); y += 6;
+        if (form.parecerFabrica === 'autorizado') {
+          doc.text(`    (${form.autorizadoResposta === 'sim' ? 'X' : ' '}) SIM    (${form.autorizadoResposta === 'nao' ? 'X' : ' '}) NÃO`, margin + 3, y); y += 5;
+        }
       });
 
       addSectionBox('Motivo', () => {
