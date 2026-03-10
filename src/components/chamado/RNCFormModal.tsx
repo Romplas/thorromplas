@@ -19,7 +19,7 @@ interface RNCFormData {
   amostraAnexa: string; imagensVideo: boolean; imagensFotos: boolean;
   nfVenda: string; descricaoNaoConformidade: string;
   objetivoAlertarEmpresa: boolean; objetivoDevParcial: boolean; objetivoDevTotal: boolean; objetivoNegociacao: boolean;
-  parecerFabrica: string; motivo: string; fechamentoRnc: string;
+  parecerFabrica: string; autorizadoResposta: string; motivo: string; fechamentoRnc: string;
   dataComercial: string; assinaturaComercial: string;
   dataQualidade: string; assinaturaQualidade: string;
   dataFinanceiro: string; assinaturaFinanceiro: string;
