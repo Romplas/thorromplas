@@ -238,9 +238,12 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
           {/* Parecer */}
           <div className="border rounded-lg p-3 space-y-2">
             <Label className="text-xs font-semibold">Parecer da Fábrica (Romplas):</Label>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={form.parecerFabrica === 'procede'} onChange={() => setForm(p => ({ ...p, parecerFabrica: 'procede' }))} /> PROCEDE</label>
               <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={form.parecerFabrica === 'nao_procede'} onChange={() => setForm(p => ({ ...p, parecerFabrica: 'nao_procede' }))} /> NÃO PROCEDE, POR QUE?</label>
+              <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={form.parecerFabrica === 'autorizado'} onChange={() => setForm(p => ({ ...p, parecerFabrica: 'autorizado' }))} /> AUTORIZADO</label>
+              <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={form.parecerFabrica === 'sim'} onChange={() => setForm(p => ({ ...p, parecerFabrica: 'sim' }))} /> SIM</label>
+              <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="rnc-parecer" checked={form.parecerFabrica === 'nao'} onChange={() => setForm(p => ({ ...p, parecerFabrica: 'nao' }))} /> NÃO</label>
             </div>
           </div>
 
