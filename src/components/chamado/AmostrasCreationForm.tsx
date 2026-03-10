@@ -199,7 +199,7 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
     </div>
   );
 
-  const generatePdf = (): Blob => {
+  const generatePdf = async (): Promise<Blob> => {
     const doc = new jsPDF();
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 15;
