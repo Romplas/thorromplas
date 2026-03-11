@@ -156,6 +156,7 @@ export default function NovoChamado() {
   const [rncForm, setRncForm] = useState<RNCFormData>({ ...defaultRncForm });
   const [amostrasForm, setAmostrasForm] = useState<AmostrasFullFormData>({ ...defaultAmostrasFullForm });
   const [bookForm, setBookForm] = useState<BookFullFormData>({ ...defaultBookFullForm });
+  const [bookFotoModal, setBookFotoModal] = useState<{ open: boolean; img: string; label: string }>({ open: false, img: '', label: '' });
   const [specialFormFilled, setSpecialFormFilled] = useState(false);
 
   const buildSpecialDescricao = () => {
@@ -1929,11 +1930,11 @@ export default function NovoChamado() {
                 <Label className="text-xs font-semibold">Modelo Book</Label>
                 <div className="grid grid-cols-5 gap-3">
                   {[
-                    { key: 'A', label: 'A (20,5×11,5×5)', laminas: '60/70', img: '/images/book-model-a.jpg' },
-                    { key: 'B', label: 'B (21,5×14×5,5)', laminas: '70/80', img: '/images/book-model-b.jpg' },
-                    { key: 'C', label: 'C (24,5×17,5×4,5)', laminas: '60/70', img: '/images/book-model-c.jpg' },
-                    { key: 'D', label: 'D (22×28×5)', laminas: '90/100', img: '/images/book-model-d.jpg' },
-                    { key: 'E', label: 'E (40×21×6)', laminas: '150/165', img: '/images/book-model-e.jpg' },
+                    { key: 'A', label: 'A (20,5×11,5×5)', laminas: '60/70', img: '/images/book-model-a.png' },
+                    { key: 'B', label: 'B (21,5×14×5,5)', laminas: '70/80', img: '/images/book-model-b.png' },
+                    { key: 'C', label: 'C (24,5×17,5×4,5)', laminas: '60/70', img: '/images/book-model-c.png' },
+                    { key: 'D', label: 'D (22×28×5)', laminas: '90/100', img: '/images/book-model-d.png' },
+                    { key: 'E', label: 'E (40×21×6)', laminas: '150/165', img: '/images/book-model-e.png' },
                   ].map(m => (
                     <div key={m.key} className="flex flex-col items-start gap-1">
                       <label className="flex items-center gap-1.5 text-xs whitespace-nowrap">
@@ -1941,13 +1942,25 @@ export default function NovoChamado() {
                         <span className="font-medium">{m.label}</span>
                       </label>
                       <span className="text-muted-foreground text-[10px] ml-5">Lâminas {m.laminas}</span>
-                      <button type="button" className="ml-5 flex items-center gap-1 text-[10px] text-primary hover:underline" onClick={() => window.open(m.img, '_blank')}>
+                      <button type="button" className="ml-5 flex items-center gap-1 text-[10px] text-primary hover:underline" onClick={() => setBookFotoModal({ open: true, img: m.img, label: `Book ${m.key}` })}>
                         <Eye className="h-3 w-3" /> Ver foto
                       </button>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* Modal de foto do Book */}
+              <Dialog open={bookFotoModal.open} onOpenChange={(v) => setBookFotoModal(p => ({ ...p, open: v }))}>
+                <DialogContent className="max-w-lg p-4">
+                  <DialogHeader>
+                    <DialogTitle className="text-center">{bookFotoModal.label}</DialogTitle>
+                  </DialogHeader>
+                  <div className="flex justify-center">
+                    <img src={bookFotoModal.img} alt={bookFotoModal.label} className="max-h-[70vh] w-auto rounded-lg object-contain" />
+                  </div>
+                </DialogContent>
+              </Dialog>
 
               {/* Dados do Book */}
               <div className="grid grid-cols-3 gap-3">

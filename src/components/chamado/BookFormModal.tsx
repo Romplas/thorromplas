@@ -60,11 +60,11 @@ export const defaultBookFullForm: BookFullFormData = {
 };
 
 const MODELOS = [
-  { key: 'A', label: 'A (20,5×11,5×5)', laminas: '60/70', img: '/images/book-model-a.jpg' },
-  { key: 'B', label: 'B (21,5×14×5,5)', laminas: '70/80', img: '/images/book-model-b.jpg' },
-  { key: 'C', label: 'C (24,5×17,5×4,5)', laminas: '60/70', img: '/images/book-model-c.jpg' },
-  { key: 'D', label: 'D (22×28×5)', laminas: '90/100', img: '/images/book-model-d.jpg' },
-  { key: 'E', label: 'E (40×21×6)', laminas: '150/165', img: '/images/book-model-e.jpg' },
+  { key: 'A', label: 'A (20,5×11,5×5)', laminas: '60/70', img: '/images/book-model-a.png' },
+  { key: 'B', label: 'B (21,5×14×5,5)', laminas: '70/80', img: '/images/book-model-b.png' },
+  { key: 'C', label: 'C (24,5×17,5×4,5)', laminas: '60/70', img: '/images/book-model-c.png' },
+  { key: 'D', label: 'D (22×28×5)', laminas: '90/100', img: '/images/book-model-d.png' },
+  { key: 'E', label: 'E (40×21×6)', laminas: '150/165', img: '/images/book-model-e.png' },
 ];
 
 export function generateBookPdf(form: BookFullFormData, clienteNome: string, representanteNome: string): Blob {
@@ -193,7 +193,7 @@ interface Props {
 export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNome, representanteNome, onPdfUploaded }: Props) {
   const [form, setForm] = useState<BookFullFormData>({ ...defaultBookFullForm });
   const [saving, setSaving] = useState(false);
-
+  const [fotoModal, setFotoModal] = useState<{ open: boolean; img: string; label: string }>({ open: false, img: '', label: '' });
   useEffect(() => {
     if (!open) return;
     const load = async () => {
@@ -317,13 +317,25 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                       <span className="font-medium">{m.label}</span>
                     </label>
                     <span className="text-muted-foreground text-[10px] ml-5">Lâminas {m.laminas}</span>
-                    <button type="button" className="ml-5 flex items-center gap-1 text-[10px] text-primary hover:underline" onClick={() => window.open(m.img, '_blank')}>
+                    <button type="button" className="ml-5 flex items-center gap-1 text-[10px] text-primary hover:underline" onClick={() => setFotoModal({ open: true, img: m.img, label: `Book ${m.key}` })}>
                       <Eye className="h-3 w-3" /> Ver foto
                     </button>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* Modal de foto do Book */}
+            <Dialog open={fotoModal.open} onOpenChange={(v) => setFotoModal(p => ({ ...p, open: v }))}>
+              <DialogContent className="max-w-lg p-4">
+                <DialogHeader>
+                  <DialogTitle className="text-center">{fotoModal.label}</DialogTitle>
+                </DialogHeader>
+                <div className="flex justify-center">
+                  <img src={fotoModal.img} alt={fotoModal.label} className="max-h-[70vh] w-auto rounded-lg object-contain" />
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Dados do Book */}
             <div className="grid grid-cols-3 gap-3">
