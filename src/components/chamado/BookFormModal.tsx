@@ -724,96 +724,89 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
             </div>
 
             {/* Orçamento */}
-            <div className="border rounded-lg p-3 space-y-2">
-              <Label className="text-xs font-semibold text-center block">ORÇAMENTO</Label>
-              <div className="text-xs space-y-1">
-                <div className="flex items-center gap-3 flex-wrap">
-                <span className="font-medium">BOOK ESCOLHIDO:</span>
-                {['A', 'B', 'C', 'D', 'E'].map(k => (
-                  <label key={k} className="inline-flex items-center gap-1 cursor-pointer">
-                    <input type="checkbox" className="accent-primary h-3 w-3" checked={form.bookEscolhido.includes(k)} onChange={() => toggleBookEscolhido(k)} />
-                    {k}
-                  </label>
-                ))}
-              </div>
-                <p className="font-medium">QUANTIDADE:</p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs border-collapse border">
-                  <thead>
-                    <tr className="border-b bg-muted/30">
-                      <th className="text-left py-1 px-2 font-semibold border-r w-1/2"></th>
-                      <th className="text-center py-1 px-2 font-semibold border-r">QUANTIDADE</th>
-                      <th className="text-center py-1 px-2 font-semibold border-r">VALORES UNITÁRIO</th>
-                      <th className="text-center py-1 px-2 font-semibold">VALOR TOTAL</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      'CAPA (unidade)',
-                      'MAO DE OBRA',
-                      'MP P/ LAMINA (Unidade)',
-                      'LAMINAS - Nome cliente (Unidade)',
-                      'CODIGOS - Codigo cliente (Unidade)',
-                      'ARTE CAPA (Pago 1x)',
-                      'SILK CAPA - 1 COR (Unidade)',
-                      'SILK CAPA - COLORIDO (Unidade)',
-                      'DIVISÓRIAS (Unidade)',
-                      'PLACA METALIZADA (6x4) (Unidade)',
-                      'ADESIVOS (Unidade)',
-                      'ACRILICO - 3Modl. (Unidade)',
-                    ].map((label, i) => (
-                      <tr key={i} className="border-b last:border-b-0">
-                        <td className="py-1 px-2 font-medium border-r">{label}</td>
-                        <td className="py-1 px-2 border-r"><Input className="h-6 text-xs" /></td>
-                        <td className="py-1 px-2 border-r"><Input className="h-6 text-xs" /></td>
-                        <td className="py-1 px-2"><Input className="h-6 text-xs" /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="flex flex-col items-end gap-1 text-xs pt-2">
-                <div className="flex items-center gap-2"><span className="font-semibold">TOTAL R$:</span><Input className="h-6 text-xs w-32" /></div>
-                <div className="flex items-center gap-2"><span className="font-semibold">VALOR UNITÁRIO R$:</span><Input className="h-6 text-xs w-32" /></div>
-                <div className="flex items-center gap-2"><span className="font-semibold">DESCONTO:</span><Input className="h-6 text-xs w-32" /></div>
-              </div>
-              <div className="border-t pt-2 mt-2 space-y-1 text-xs">
-                <div className="flex items-center gap-2"><span className="font-semibold">PRAZO NEGOCIADO:</span><Input className="h-6 text-xs flex-1" /></div>
-                <div className="flex items-center gap-2">
-                <span className="font-semibold">DATA:</span>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className={cn(
-                        "flex h-8 flex-1 items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-left text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                        !form.dataOrcamento && "text-muted-foreground"
-                      )}
-                    >
-                      <span>
-                        {form.dataOrcamento ? (() => {
-                          const d = parse(form.dataOrcamento, 'yyyy-MM-dd', new Date());
-                          return isValid(d) ? format(d, 'dd/MM/yyyy', { locale: ptBR }) : form.dataOrcamento;
-                        })() : 'Selecione a data'}
-                      </span>
-                      <CalendarIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={form.dataOrcamento ? (() => { const d = parse(form.dataOrcamento, 'yyyy-MM-dd', new Date()); return isValid(d) ? d : undefined; })() : undefined}
-                      onSelect={(d) => d && setFormWithSync(p => ({ ...p, dataOrcamento: format(d, 'yyyy-MM-dd') }))}
-                      locale={ptBR}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-                <div className="flex items-center gap-2"><span className="font-semibold">ASSINATURA:</span><Input className="h-6 text-xs flex-1" /></div>
-              </div>
-            </div>
+            {(() => {
+              const orc = calcOrcamento(form);
+              const fmtNum = (n: number) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              return (
+                <div className="border rounded-lg p-3 space-y-2">
+                  <Label className="text-xs font-semibold text-center block">ORÇAMENTO</Label>
+                  <div className="text-xs space-y-1">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="font-medium">BOOK ESCOLHIDO:</span>
+                      {['A', 'B', 'C', 'D', 'E'].map(k => (
+                        <label key={k} className="inline-flex items-center gap-1 cursor-pointer">
+                          <input type="checkbox" className="accent-primary h-3 w-3" checked={form.bookEscolhido.includes(k)} onChange={() => toggleBookEscolhido(k)} />
+                          {k}
+                        </label>
+                      ))}
+                    </div>
+                    <p className="font-medium">QUANTIDADE: {form.quantidadeBook || '-'}</p>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs border-collapse border">
+                      <thead>
+                        <tr className="border-b bg-muted/30">
+                          <th className="text-left py-1 px-2 font-semibold border-r w-2/5"></th>
+                          <th className="text-center py-1 px-2 font-semibold border-r">QUANTIDADE</th>
+                          <th className="text-center py-1 px-2 font-semibold border-r">VALORES UNITÁRIO</th>
+                          <th className="text-center py-1 px-2 font-semibold">VALOR TOTAL</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {orc.rows.map((row, i) => (
+                          <tr key={i} className="border-b last:border-b-0">
+                            <td className="py-1 px-2 font-medium border-r">{ORCAMENTO_LABELS[i]}</td>
+                            <td className="py-1 px-2 border-r text-center">{row.qty > 0 ? fmtNum(row.qty) : '-'}</td>
+                            <td className="py-1 px-2 border-r text-center">{row.unitPrice > 0 ? `R$ ${fmtNum(row.unitPrice)}` : '-'}</td>
+                            <td className="py-1 px-2 text-center font-medium">{row.total > 0 ? `R$ ${fmtNum(row.total)}` : '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 text-xs pt-2">
+                    <div className="flex items-center gap-2"><span className="font-semibold">TOTAL R$:</span><span className="font-bold text-sm">{orc.totalGeral > 0 ? `R$ ${fmtNum(orc.totalGeral)}` : '-'}</span></div>
+                    <div className="flex items-center gap-2"><span className="font-semibold">VALOR UNITÁRIO R$:</span><span className="font-bold text-sm">{orc.valorUnitario > 0 ? `R$ ${fmtNum(orc.valorUnitario)}` : '-'}</span></div>
+                    <div className="flex items-center gap-2"><span className="font-semibold">DESCONTO:</span><Input className="h-6 text-xs w-32" /></div>
+                  </div>
+                  <div className="border-t pt-2 mt-2 space-y-1 text-xs">
+                    <div className="flex items-center gap-2"><span className="font-semibold">PRAZO NEGOCIADO:</span><Input className="h-6 text-xs flex-1" /></div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">DATA:</span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={cn(
+                              "flex h-8 flex-1 items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-left text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                              !form.dataOrcamento && "text-muted-foreground"
+                            )}
+                          >
+                            <span>
+                              {form.dataOrcamento ? (() => {
+                                const d = parse(form.dataOrcamento, 'yyyy-MM-dd', new Date());
+                                return isValid(d) ? format(d, 'dd/MM/yyyy', { locale: ptBR }) : form.dataOrcamento;
+                              })() : 'Selecione a data'}
+                            </span>
+                            <CalendarIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={form.dataOrcamento ? (() => { const d = parse(form.dataOrcamento, 'yyyy-MM-dd', new Date()); return isValid(d) ? d : undefined; })() : undefined}
+                            onSelect={(d) => d && setFormWithSync(p => ({ ...p, dataOrcamento: format(d, 'yyyy-MM-dd') }))}
+                            locale={ptBR}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="flex items-center gap-2"><span className="font-semibold">ASSINATURA:</span><Input className="h-6 text-xs flex-1" /></div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
         <DialogFooter className="px-6 pb-6 pt-2 flex-col sm:flex-row gap-2">
