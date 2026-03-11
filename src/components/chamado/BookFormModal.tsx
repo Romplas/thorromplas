@@ -74,6 +74,60 @@ const MODELOS = [
   { key: 'E', label: 'E (40×21×6)', laminas: '150/165', img: '/images/book-model-e.png' },
 ];
 
+// Custos indexed by book model key
+const CUSTOS_PRICES: Record<string, Record<string, number>> = {
+  A: { CAPA: 13.90, MAO_DE_OBRA: 0.40, MP_LAMINAS: 0.25, LAMINAS_NOME: 0.05, CODIGOS: 0.05, ARTE_CAPA: 75.00, SILK_1COR: 4.20, SILK_COLORIDO: 8.50, DIVISORIAS: 2.50, PLACA: 5.90, ADESIVOS: 3.90, ACRILICO: 7.50 },
+  B: { CAPA: 19.90, MAO_DE_OBRA: 0.40, MP_LAMINAS: 0.30, LAMINAS_NOME: 0.05, CODIGOS: 0.05, ARTE_CAPA: 75.00, SILK_1COR: 4.20, SILK_COLORIDO: 8.50, DIVISORIAS: 2.50, PLACA: 5.90, ADESIVOS: 3.90, ACRILICO: 7.50 },
+  C: { CAPA: 25.70, MAO_DE_OBRA: 0.40, MP_LAMINAS: 0.50, LAMINAS_NOME: 0.05, CODIGOS: 0.05, ARTE_CAPA: 75.00, SILK_1COR: 4.20, SILK_COLORIDO: 8.50, DIVISORIAS: 2.50, PLACA: 5.90, ADESIVOS: 3.90, ACRILICO: 7.50 },
+  D: { CAPA: 37.70, MAO_DE_OBRA: 0.40, MP_LAMINAS: 0.35, LAMINAS_NOME: 0.05, CODIGOS: 0.05, ARTE_CAPA: 75.00, SILK_1COR: 4.20, SILK_COLORIDO: 8.50, DIVISORIAS: 2.50, PLACA: 5.90, ADESIVOS: 3.90, ACRILICO: 7.50 },
+  E: { CAPA: 47.90, MAO_DE_OBRA: 0.40, MP_LAMINAS: 0.35, LAMINAS_NOME: 0.05, CODIGOS: 0.05, ARTE_CAPA: 75.00, SILK_1COR: 4.20, SILK_COLORIDO: 8.50, DIVISORIAS: 2.50, PLACA: 5.90, ADESIVOS: 3.90, ACRILICO: 7.50 },
+};
+
+const ORCAMENTO_KEYS = [
+  'CAPA', 'MAO_DE_OBRA', 'MP_LAMINAS', 'LAMINAS_NOME', 'CODIGOS',
+  'ARTE_CAPA', 'SILK_1COR', 'SILK_COLORIDO', 'DIVISORIAS', 'PLACA', 'ADESIVOS', 'ACRILICO',
+] as const;
+
+const ORCAMENTO_LABELS = [
+  'CAPA (unidade)', 'MAO DE OBRA', 'MP P/ LAMINA (Unidade)',
+  'LAMINAS - Nome cliente (Unidade)', 'CODIGOS - Codigo cliente (Unidade)',
+  'ARTE CAPA (Pago 1x)', 'SILK CAPA - 1 COR (Unidade)',
+  'SILK CAPA - COLORIDO (Unidade)', 'DIVISÓRIAS (Unidade)',
+  'PLACA METALIZADA (6x4) (Unidade)', 'ADESIVOS (Unidade)',
+  'ACRILICO - 3Modl. (Unidade)',
+];
+
+function calcOrcamento(form: BookFullFormData) {
+  const selectedBook = form.bookEscolhido.length > 0 ? form.bookEscolhido[0] : null;
+  const prices = selectedBook ? CUSTOS_PRICES[selectedBook] : null;
+  const qtdBook = parseFloat(form.quantidadeBook) || 0;
+  const nLaminas = parseFloat(form.nLaminas) || 0;
+
+  const rows = ORCAMENTO_KEYS.map((key) => {
+    const unitPrice = prices ? prices[key] : 0;
+    let qty = 0;
+
+    if (key === 'MP_LAMINAS' || key === 'LAMINAS_NOME' || key === 'CODIGOS') {
+      // Quantidade = quantidadeBook × nLaminas
+      qty = qtdBook * nLaminas;
+    } else if (key === 'ARTE_CAPA') {
+      // Pago 1x
+      qty = qtdBook > 0 ? 1 : 0;
+    } else {
+      // Capa, Mão de obra, e demais: quantidade = quantidadeBook
+      qty = qtdBook;
+    }
+
+    const total = qty * unitPrice;
+    return { qty, unitPrice, total };
+  });
+
+  const totalGeral = rows.reduce((sum, r) => sum + r.total, 0);
+  const valorUnitario = qtdBook > 0 ? totalGeral / qtdBook : 0;
+
+  return { rows, totalGeral, valorUnitario };
+}
+
 const formatDatePdf = (d: string) => {
   if (!d) return '-';
   try {
@@ -238,16 +292,17 @@ export async function generateBookPdf(form: BookFullFormData, clienteNome: strin
     });
   });
 
-  // Orçamento (tabela completa)
+  // Orçamento (tabela com valores calculados)
+  const orc = calcOrcamento(form);
+  const fmtNum = (n: number) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   checkPage(100);
   addSectionBox('Orçamento', () => {
     doc.setFontSize(7);
     const sel = MODELOS.map(m => `(${form.bookEscolhido.includes(m.key) ? 'X' : ' '})${m.key}`).join('  ');
     doc.setFont('helvetica', 'bold');
     doc.text('BOOK ESCOLHIDO: ' + sel, margin + 3, y); y += 6;
-    doc.text('QUANTIDADE:', margin + 3, y); y += 6;
+    doc.text(`QUANTIDADE: ${form.quantidadeBook || '-'}`, margin + 3, y); y += 6;
 
-    // Table header
     const colOrcX = { item: margin + 3, qtd: margin + 85, unitario: margin + 115, total: margin + 145 };
     doc.setFontSize(7);
     doc.text('ITEM', colOrcX.item, y);
@@ -258,27 +313,20 @@ export async function generateBookPdf(form: BookFullFormData, clienteNome: strin
     doc.setDrawColor(200); doc.line(margin + 3, y, pageW - margin - 3, y); y += 4;
 
     doc.setFont('helvetica', 'normal');
-    const orcItems = [
-      'CAPA (unidade)', 'MAO DE OBRA', 'MP P/ LAMINA (Unidade)',
-      'LAMINAS - Nome cliente (Unidade)', 'CODIGOS - Codigo cliente (Unidade)',
-      'ARTE CAPA (Pago 1x)', 'SILK CAPA - 1 COR (Unidade)',
-      'SILK CAPA - COLORIDO (Unidade)', 'DIVISÓRIAS (Unidade)',
-      'PLACA METALIZADA (6x4) (Unidade)', 'ADESIVOS (Unidade)',
-      'ACRILICO - 3Modl. (Unidade)',
-    ];
-    orcItems.forEach(item => {
+    ORCAMENTO_LABELS.forEach((label, i) => {
       checkPage(8);
-      doc.text(item, colOrcX.item, y);
-      doc.text('_______', colOrcX.qtd, y);
-      doc.text('_______', colOrcX.unitario, y);
-      doc.text('_______', colOrcX.total, y);
+      const row = orc.rows[i];
+      doc.text(label, colOrcX.item, y);
+      doc.text(row.qty > 0 ? fmtNum(row.qty) : '-', colOrcX.qtd, y);
+      doc.text(row.unitPrice > 0 ? `R$ ${fmtNum(row.unitPrice)}` : '-', colOrcX.unitario, y);
+      doc.text(row.total > 0 ? `R$ ${fmtNum(row.total)}` : '-', colOrcX.total, y);
       y += 5;
     });
 
     y += 3;
     doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
-    doc.text('TOTAL R$: _______________', pageW - margin - 60, y); y += 6;
-    doc.text('VALOR UNITÁRIO R$: _______________', pageW - margin - 75, y); y += 6;
+    doc.text(`TOTAL R$: ${orc.totalGeral > 0 ? `R$ ${fmtNum(orc.totalGeral)}` : '-'}`, pageW - margin - 60, y); y += 6;
+    doc.text(`VALOR UNITÁRIO R$: ${orc.valorUnitario > 0 ? `R$ ${fmtNum(orc.valorUnitario)}` : '-'}`, pageW - margin - 75, y); y += 6;
     doc.text('DESCONTO: _______________', pageW - margin - 55, y); y += 8;
 
     doc.setDrawColor(180); doc.line(margin + 3, y, pageW - margin - 3, y); y += 5;
@@ -670,96 +718,89 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
             </div>
 
             {/* Orçamento */}
-            <div className="border rounded-lg p-3 space-y-2">
-              <Label className="text-xs font-semibold text-center block">ORÇAMENTO</Label>
-              <div className="text-xs space-y-1">
-                <div className="flex items-center gap-3 flex-wrap">
-                <span className="font-medium">BOOK ESCOLHIDO:</span>
-                {['A', 'B', 'C', 'D', 'E'].map(k => (
-                  <label key={k} className="inline-flex items-center gap-1 cursor-pointer">
-                    <input type="checkbox" className="accent-primary h-3 w-3" checked={form.bookEscolhido.includes(k)} onChange={() => toggleBookEscolhido(k)} />
-                    {k}
-                  </label>
-                ))}
-              </div>
-                <p className="font-medium">QUANTIDADE:</p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs border-collapse border">
-                  <thead>
-                    <tr className="border-b bg-muted/30">
-                      <th className="text-left py-1 px-2 font-semibold border-r w-1/2"></th>
-                      <th className="text-center py-1 px-2 font-semibold border-r">QUANTIDADE</th>
-                      <th className="text-center py-1 px-2 font-semibold border-r">VALORES UNITÁRIO</th>
-                      <th className="text-center py-1 px-2 font-semibold">VALOR TOTAL</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      'CAPA (unidade)',
-                      'MAO DE OBRA',
-                      'MP P/ LAMINA (Unidade)',
-                      'LAMINAS - Nome cliente (Unidade)',
-                      'CODIGOS - Codigo cliente (Unidade)',
-                      'ARTE CAPA (Pago 1x)',
-                      'SILK CAPA - 1 COR (Unidade)',
-                      'SILK CAPA - COLORIDO (Unidade)',
-                      'DIVISÓRIAS (Unidade)',
-                      'PLACA METALIZADA (6x4) (Unidade)',
-                      'ADESIVOS (Unidade)',
-                      'ACRILICO - 3Modl. (Unidade)',
-                    ].map((label, i) => (
-                      <tr key={i} className="border-b last:border-b-0">
-                        <td className="py-1 px-2 font-medium border-r">{label}</td>
-                        <td className="py-1 px-2 border-r"><Input className="h-6 text-xs" /></td>
-                        <td className="py-1 px-2 border-r"><Input className="h-6 text-xs" /></td>
-                        <td className="py-1 px-2"><Input className="h-6 text-xs" /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="flex flex-col items-end gap-1 text-xs pt-2">
-                <div className="flex items-center gap-2"><span className="font-semibold">TOTAL R$:</span><Input className="h-6 text-xs w-32" /></div>
-                <div className="flex items-center gap-2"><span className="font-semibold">VALOR UNITÁRIO R$:</span><Input className="h-6 text-xs w-32" /></div>
-                <div className="flex items-center gap-2"><span className="font-semibold">DESCONTO:</span><Input className="h-6 text-xs w-32" /></div>
-              </div>
-              <div className="border-t pt-2 mt-2 space-y-1 text-xs">
-                <div className="flex items-center gap-2"><span className="font-semibold">PRAZO NEGOCIADO:</span><Input className="h-6 text-xs flex-1" /></div>
-                <div className="flex items-center gap-2">
-                <span className="font-semibold">DATA:</span>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className={cn(
-                        "flex h-8 flex-1 items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-left text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                        !form.dataOrcamento && "text-muted-foreground"
-                      )}
-                    >
-                      <span>
-                        {form.dataOrcamento ? (() => {
-                          const d = parse(form.dataOrcamento, 'yyyy-MM-dd', new Date());
-                          return isValid(d) ? format(d, 'dd/MM/yyyy', { locale: ptBR }) : form.dataOrcamento;
-                        })() : 'Selecione a data'}
-                      </span>
-                      <CalendarIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={form.dataOrcamento ? (() => { const d = parse(form.dataOrcamento, 'yyyy-MM-dd', new Date()); return isValid(d) ? d : undefined; })() : undefined}
-                      onSelect={(d) => d && setFormWithSync(p => ({ ...p, dataOrcamento: format(d, 'yyyy-MM-dd') }))}
-                      locale={ptBR}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-                <div className="flex items-center gap-2"><span className="font-semibold">ASSINATURA:</span><Input className="h-6 text-xs flex-1" /></div>
-              </div>
-            </div>
+            {(() => {
+              const orc = calcOrcamento(form);
+              const fmtNum = (n: number) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              return (
+                <div className="border rounded-lg p-3 space-y-2">
+                  <Label className="text-xs font-semibold text-center block">ORÇAMENTO</Label>
+                  <div className="text-xs space-y-1">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="font-medium">BOOK ESCOLHIDO:</span>
+                      {['A', 'B', 'C', 'D', 'E'].map(k => (
+                        <label key={k} className="inline-flex items-center gap-1 cursor-pointer">
+                          <input type="checkbox" className="accent-primary h-3 w-3" checked={form.bookEscolhido.includes(k)} onChange={() => toggleBookEscolhido(k)} />
+                          {k}
+                        </label>
+                      ))}
+                    </div>
+                    <p className="font-medium">QUANTIDADE: {form.quantidadeBook || '-'}</p>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs border-collapse border">
+                      <thead>
+                        <tr className="border-b bg-muted/30">
+                          <th className="text-left py-1 px-2 font-semibold border-r w-2/5"></th>
+                          <th className="text-center py-1 px-2 font-semibold border-r">QUANTIDADE</th>
+                          <th className="text-center py-1 px-2 font-semibold border-r">VALORES UNITÁRIO</th>
+                          <th className="text-center py-1 px-2 font-semibold">VALOR TOTAL</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {orc.rows.map((row, i) => (
+                          <tr key={i} className="border-b last:border-b-0">
+                            <td className="py-1 px-2 font-medium border-r">{ORCAMENTO_LABELS[i]}</td>
+                            <td className="py-1 px-2 border-r text-center">{row.qty > 0 ? fmtNum(row.qty) : '-'}</td>
+                            <td className="py-1 px-2 border-r text-center">{row.unitPrice > 0 ? `R$ ${fmtNum(row.unitPrice)}` : '-'}</td>
+                            <td className="py-1 px-2 text-center font-medium">{row.total > 0 ? `R$ ${fmtNum(row.total)}` : '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 text-xs pt-2">
+                    <div className="flex items-center gap-2"><span className="font-semibold">TOTAL R$:</span><span className="font-bold text-sm">{orc.totalGeral > 0 ? `R$ ${fmtNum(orc.totalGeral)}` : '-'}</span></div>
+                    <div className="flex items-center gap-2"><span className="font-semibold">VALOR UNITÁRIO R$:</span><span className="font-bold text-sm">{orc.valorUnitario > 0 ? `R$ ${fmtNum(orc.valorUnitario)}` : '-'}</span></div>
+                    <div className="flex items-center gap-2"><span className="font-semibold">DESCONTO:</span><Input className="h-6 text-xs w-32" /></div>
+                  </div>
+                  <div className="border-t pt-2 mt-2 space-y-1 text-xs">
+                    <div className="flex items-center gap-2"><span className="font-semibold">PRAZO NEGOCIADO:</span><Input className="h-6 text-xs flex-1" /></div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">DATA:</span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={cn(
+                              "flex h-8 flex-1 items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-left text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                              !form.dataOrcamento && "text-muted-foreground"
+                            )}
+                          >
+                            <span>
+                              {form.dataOrcamento ? (() => {
+                                const d = parse(form.dataOrcamento, 'yyyy-MM-dd', new Date());
+                                return isValid(d) ? format(d, 'dd/MM/yyyy', { locale: ptBR }) : form.dataOrcamento;
+                              })() : 'Selecione a data'}
+                            </span>
+                            <CalendarIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={form.dataOrcamento ? (() => { const d = parse(form.dataOrcamento, 'yyyy-MM-dd', new Date()); return isValid(d) ? d : undefined; })() : undefined}
+                            onSelect={(d) => d && setFormWithSync(p => ({ ...p, dataOrcamento: format(d, 'yyyy-MM-dd') }))}
+                            locale={ptBR}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="flex items-center gap-2"><span className="font-semibold">ASSINATURA:</span><Input className="h-6 text-xs flex-1" /></div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
         <DialogFooter className="px-6 pb-6 pt-2 flex-col sm:flex-row gap-2">
