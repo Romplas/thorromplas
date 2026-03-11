@@ -2117,7 +2117,6 @@ export default function NovoChamado() {
                               </label>
                             </td>
                           ))}
-                          ))}
                         </tr>
                       ))}
                     </tbody>

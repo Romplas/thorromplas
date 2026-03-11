@@ -480,7 +480,6 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                             </label>
                           </td>
                         ))}
-                        ))}
                       </tr>
                     ))}
                   </tbody>
