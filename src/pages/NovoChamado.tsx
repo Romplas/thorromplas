@@ -107,6 +107,7 @@ export default function NovoChamado() {
   const isRNC = selectedMotivoNome.toLowerCase() === 'rnc';
   const isAmostras = selectedMotivoNome.toLowerCase() === 'amostras';
   const isBook = selectedMotivoNome.toLowerCase() === 'book';
+  const isAtualizarTabela = selectedMotivoNome.toLowerCase() === 'atualizar tabela';
   const hasSpecialForm = isSD || isRNC || isAmostras || isBook;
 
   // Modal states for special forms
