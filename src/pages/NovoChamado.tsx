@@ -138,8 +138,7 @@ export default function NovoChamado() {
     dataQualidade: string; assinaturaQualidade: string;
     dataFinanceiro: string; assinaturaFinanceiro: string;
   }
-  interface BookFormData { tipoBook: string; quantidade: string; destino: string; observacoes: string }
-  interface BookFormData { tipoBook: string; quantidade: string; destino: string; observacoes: string }
+  // BookFormData is imported from BookFormModal
 
   const defaultSdForm: SDFormData = { cliente: '', representante: '', segmentoMercado: '', aplicacaoProduto: '', estimativaConsumo: '', precoAlvo: '', necessitaAmostra: 'nao', amostraTipo: '', desenvolvimento: '', amostraReferenciaAnexa: 'nao', qualFabricante: '', gramaturaTotal: '', espessura: '', substrato: '', gravacao: '', aditivos: 'nao', quaisAditivos: '', corPantone: 'nao', qualPantone: '', observacoesComplementares: '', statusAprovacao: '', motivoReprovacao: '' };
   const [sdForm, setSdForm] = useState<SDFormData>({ ...defaultSdForm });
