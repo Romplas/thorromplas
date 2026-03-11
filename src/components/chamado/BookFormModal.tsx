@@ -45,6 +45,7 @@ export interface BookFullFormData {
   adesivoPers: string; // 'sim' | 'nao'
   contraCapaFrente: boolean; contraCapaFundo: boolean;
   dataOrcamento: string;
+  custosChecked: string[]; // ORCAMENTO_KEYS that are checked
 }
 
 export const defaultBookFullForm: BookFullFormData = {
@@ -64,6 +65,7 @@ export const defaultBookFullForm: BookFullFormData = {
   laminasNomeCliente: false, codigosCliente: false,
   silkCapa: [], adesivoPers: '', contraCapaFrente: false, contraCapaFundo: false,
   dataOrcamento: '',
+  custosChecked: [],
 };
 
 const MODELOS = [
@@ -102,24 +104,27 @@ function calcOrcamento(form: BookFullFormData) {
   const prices = selectedBook ? CUSTOS_PRICES[selectedBook] : null;
   const qtdBook = parseFloat(form.quantidadeBook) || 0;
   const nLaminas = parseFloat(form.nLaminas) || 0;
+  const checked = form.custosChecked || [];
 
   const rows = ORCAMENTO_KEYS.map((key) => {
+    // Only calculate if the item is checked in Custos
+    if (!checked.includes(key)) {
+      return { qty: 0, unitPrice: 0, total: 0, checked: false };
+    }
+
     const unitPrice = prices ? prices[key] : 0;
     let qty = 0;
 
     if (key === 'MP_LAMINAS' || key === 'LAMINAS_NOME' || key === 'CODIGOS') {
-      // Quantidade = quantidadeBook × nLaminas
       qty = qtdBook * nLaminas;
     } else if (key === 'ARTE_CAPA') {
-      // Pago 1x
       qty = qtdBook > 0 ? 1 : 0;
     } else {
-      // Capa, Mão de obra, e demais: quantidade = quantidadeBook
       qty = qtdBook;
     }
 
     const total = qty * unitPrice;
-    return { qty, unitPrice, total };
+    return { qty, unitPrice, total, checked: true };
   });
 
   const totalGeral = rows.reduce((sum, r) => sum + r.total, 0);
@@ -398,6 +403,10 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
 
   const toggleBookEscolhido = (key: string) => setFormWithSync(p => ({
     ...p, bookEscolhido: p.bookEscolhido.includes(key) ? p.bookEscolhido.filter(k => k !== key) : [...p.bookEscolhido, key]
+  }));
+
+  const toggleCustoCheck = (orcKey: string) => setFormWithSync(p => ({
+    ...p, custosChecked: (p.custosChecked || []).includes(orcKey) ? p.custosChecked.filter(k => k !== orcKey) : [...(p.custosChecked || []), orcKey]
   }));
 
   const updateSeqRow = (col: 'colunaA' | 'colunaB' | 'colunaC', idx: number, field: 'linhas' | 'quantidade', value: string) => {
@@ -687,31 +696,44 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                   </thead>
                   <tbody>
                     {[
-                      { label: 'CAPA', values: ['R$ 13,90', 'R$ 19,90', 'R$ 25,70', 'R$ 37,70', 'R$ 47,90'] },
-                      { label: 'MAO DE OBRA', values: ['R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40'] },
-                      { label: 'MP P/ LAMINAS', values: ['R$ 0,25', 'R$ 0,30', 'R$ 0,50', 'R$ 0,35', 'R$ 0,35'] },
-                      { label: 'LAMINAS (Nome cliente)', values: ['R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05'] },
-                      { label: 'CODIGOS (Codigo cliente)', values: ['R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05'] },
-                      { label: 'ARTE CAPA', values: ['R$ 75,00', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00'] },
-                      { label: 'SILK CAPA - 1 COR', values: ['R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20'] },
-                      { label: 'SILK CAPA - COLORIDO', values: ['R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50'] },
-                      { label: 'DIVISÓRIAS', values: ['R$ 2,50', 'R$ 2,50', 'R$ 2,50', 'R$ 2,50', 'R$ 2,50'] },
-                      { label: 'PLACA METALIZADA (6x4)', values: ['R$ 5,90', 'R$ 5,90', 'R$ 5,90', 'R$ 5,90', 'R$ 5,90'] },
-                      { label: 'ADESIVOS', values: ['R$ 3,90', 'R$ 3,90', 'R$ 3,90', 'R$ 3,90', 'R$ 3,90'] },
-                      { label: 'ACRILICO - 3 Modelos (Unid.)', values: ['R$ 7,50', 'R$ 7,50', 'R$ 7,50', 'R$ 7,50', 'R$ 7,50'] },
-                    ].map((row, i) => (
-                      <tr key={i} className="border-b last:border-b-0">
-                        <td className="py-1 px-2 font-medium">{row.label}</td>
-                        {row.values.map((v, j) => (
-                          <td key={j} className="text-center py-1 px-1">
-                            <label className="inline-flex items-center gap-1 cursor-pointer whitespace-nowrap">
-                              <input type="checkbox" className="accent-primary h-3 w-3 flex-shrink-0" />
-                              <span className="whitespace-nowrap">{v}</span>
-                            </label>
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
+                      { label: 'CAPA', key: 'CAPA', values: ['R$ 13,90', 'R$ 19,90', 'R$ 25,70', 'R$ 37,70', 'R$ 47,90'] },
+                      { label: 'MAO DE OBRA', key: 'MAO_DE_OBRA', values: ['R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40'] },
+                      { label: 'MP P/ LAMINAS', key: 'MP_LAMINAS', values: ['R$ 0,25', 'R$ 0,30', 'R$ 0,50', 'R$ 0,35', 'R$ 0,35'] },
+                      { label: 'LAMINAS (Nome cliente)', key: 'LAMINAS_NOME', values: ['R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05'] },
+                      { label: 'CODIGOS (Codigo cliente)', key: 'CODIGOS', values: ['R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05'] },
+                      { label: 'ARTE CAPA', key: 'ARTE_CAPA', values: ['R$ 75,00', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00'] },
+                      { label: 'SILK CAPA - 1 COR', key: 'SILK_1COR', values: ['R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20'] },
+                      { label: 'SILK CAPA - COLORIDO', key: 'SILK_COLORIDO', values: ['R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50'] },
+                      { label: 'DIVISÓRIAS', key: 'DIVISORIAS', values: ['R$ 2,50', 'R$ 2,50', 'R$ 2,50', 'R$ 2,50', 'R$ 2,50'] },
+                      { label: 'PLACA METALIZADA (6x4)', key: 'PLACA', values: ['R$ 5,90', 'R$ 5,90', 'R$ 5,90', 'R$ 5,90', 'R$ 5,90'] },
+                      { label: 'ADESIVOS', key: 'ADESIVOS', values: ['R$ 3,90', 'R$ 3,90', 'R$ 3,90', 'R$ 3,90', 'R$ 3,90'] },
+                      { label: 'ACRILICO - 3 Modelos (Unid.)', key: 'ACRILICO', values: ['R$ 7,50', 'R$ 7,50', 'R$ 7,50', 'R$ 7,50', 'R$ 7,50'] },
+                    ].map((row, i) => {
+                      const bookKeys = ['A', 'B', 'C', 'D', 'E'];
+                      const isChecked = (form.custosChecked || []).includes(row.key);
+                      return (
+                        <tr key={i} className="border-b last:border-b-0">
+                          <td className="py-1 px-2 font-medium">{row.label}</td>
+                          {row.values.map((v, j) => {
+                            const isSelectedBook = form.bookEscolhido.includes(bookKeys[j]);
+                            return (
+                              <td key={j} className="text-center py-1 px-1">
+                                <label className="inline-flex items-center gap-1 cursor-pointer whitespace-nowrap">
+                                  <input
+                                    type="checkbox"
+                                    className="accent-primary h-3 w-3 flex-shrink-0"
+                                    checked={isSelectedBook && isChecked}
+                                    onChange={() => { if (isSelectedBook) toggleCustoCheck(row.key); }}
+                                    disabled={!isSelectedBook}
+                                  />
+                                  <span className={cn("whitespace-nowrap", !isSelectedBook && "text-muted-foreground/50")}>{v}</span>
+                                </label>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -750,9 +772,9 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                         {orc.rows.map((row, i) => (
                           <tr key={i} className="border-b last:border-b-0">
                             <td className="py-1 px-2 font-medium border-r">{ORCAMENTO_LABELS[i]}</td>
-                            <td className="py-1 px-2 border-r text-center">{row.qty > 0 ? fmtNum(row.qty) : '-'}</td>
-                            <td className="py-1 px-2 border-r text-center">{row.unitPrice > 0 ? `R$ ${fmtNum(row.unitPrice)}` : '-'}</td>
-                            <td className="py-1 px-2 text-center font-medium">{row.total > 0 ? `R$ ${fmtNum(row.total)}` : '-'}</td>
+                            <td className="py-1 px-2 border-r text-center">{row.checked && row.qty > 0 ? fmtNum(row.qty) : ''}</td>
+                            <td className="py-1 px-2 border-r text-center">{row.checked ? `R$ ${fmtNum(row.unitPrice)}` : ''}</td>
+                            <td className="py-1 px-2 text-center font-medium">{row.checked && row.total > 0 ? `R$ ${fmtNum(row.total)}` : ''}</td>
                           </tr>
                         ))}
                       </tbody>
