@@ -2110,10 +2110,10 @@ export default function NovoChamado() {
                         <tr key={i} className="border-b last:border-b-0">
                           <td className="py-1 px-2 font-medium">{row.label}</td>
                           {row.values.map((v, j) => (
-                            <td key={j} className="text-center py-1 px-2">
-                              <label className="inline-flex items-center gap-1 cursor-pointer">
-                                <input type="checkbox" className="accent-primary h-3 w-3" />
-                                <span>{v}</span>
+                            <td key={j} className="text-center py-1 px-1">
+                              <label className="inline-flex items-center gap-1 cursor-pointer whitespace-nowrap">
+                                <input type="checkbox" className="accent-primary h-3 w-3 flex-shrink-0" />
+                                <span className="whitespace-nowrap">{v}</span>
                               </label>
                             </td>
                           ))}
