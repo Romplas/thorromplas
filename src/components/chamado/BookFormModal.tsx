@@ -430,6 +430,7 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                   <span className="text-[10px] text-muted-foreground mt-1">Referência Book Personalizado</span>
                 </div>
               </div>
+            </div>
 
             {/* Custos */}
             <div className="border rounded-lg p-3 space-y-2">
