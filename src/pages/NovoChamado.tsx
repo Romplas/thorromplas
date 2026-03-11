@@ -2101,6 +2101,11 @@ export default function NovoChamado() {
                         { label: 'CODIGOS (Codigo cliente)', values: ['R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05'] },
                         { label: 'ARTE CAPA', values: ['R$ 75,00', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00'] },
                         { label: 'SILK CAPA - 1 COR', values: ['R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20'] },
+                        { label: 'SILK CAPA - COLORIDO', values: ['R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50'] },
+                        { label: 'DIVISÓRIAS', values: ['R$ 2,50', 'R$ 2,50', 'R$ 2,50', 'R$ 2,50', 'R$ 2,50'] },
+                        { label: 'PLACA METALIZADA (6x4)', values: ['R$ 5,90', 'R$ 5,90', 'R$ 5,90', 'R$ 5,90', 'R$ 5,90'] },
+                        { label: 'ADESIVOS', values: ['R$ 3,90', 'R$ 3,90', 'R$ 3,90', 'R$ 3,90', 'R$ 3,90'] },
+                        { label: 'ACRILICO - 3 Modelos (Unid.)', values: ['R$ 7,50', 'R$ 7,50', 'R$ 7,50', 'R$ 7,50', 'R$ 7,50'] },
                       ].map((row, i) => (
                         <tr key={i} className="border-b last:border-b-0">
                           <td className="py-1 px-2 font-medium">{row.label}</td>
@@ -2111,6 +2116,60 @@ export default function NovoChamado() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+
+              {/* Orçamento */}
+              <div className="border rounded-lg p-3 space-y-2">
+                <Label className="text-xs font-semibold text-center block">ORÇAMENTO</Label>
+                <div className="text-xs space-y-1">
+                  <p className="font-medium">BOOK ESCOLHIDO: ( )A  ( )B  ( )C  ( )D  ( )E</p>
+                  <p className="font-medium">QUANTIDADE:</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs border-collapse border">
+                    <thead>
+                      <tr className="border-b bg-muted/30">
+                        <th className="text-left py-1 px-2 font-semibold border-r w-1/2"></th>
+                        <th className="text-center py-1 px-2 font-semibold border-r">QUANTIDADE</th>
+                        <th className="text-center py-1 px-2 font-semibold border-r">VALORES UNITÁRIO</th>
+                        <th className="text-center py-1 px-2 font-semibold">VALOR TOTAL</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        'CAPA (unidade)',
+                        'MAO DE OBRA',
+                        'MP P/ LAMINA (Unidade)',
+                        'LAMINAS - Nome cliente (Unidade)',
+                        'CODIGOS - Codigo cliente (Unidade)',
+                        'ARTE CAPA (Pago 1x)',
+                        'SILK CAPA - 1 COR (Unidade)',
+                        'SILK CAPA - COLORIDO (Unidade)',
+                        'DIVISÓRIAS (Unidade)',
+                        'PLACA METALIZADA (6x4) (Unidade)',
+                        'ADESIVOS (Unidade)',
+                        'ACRILICO - 3Modl. (Unidade)',
+                      ].map((label, i) => (
+                        <tr key={i} className="border-b last:border-b-0">
+                          <td className="py-1 px-2 font-medium border-r">{label}</td>
+                          <td className="py-1 px-2 border-r"><Input className="h-6 text-xs" /></td>
+                          <td className="py-1 px-2 border-r"><Input className="h-6 text-xs" /></td>
+                          <td className="py-1 px-2"><Input className="h-6 text-xs" /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex flex-col items-end gap-1 text-xs pt-2">
+                  <div className="flex items-center gap-2"><span className="font-semibold">TOTAL R$:</span><Input className="h-6 text-xs w-32" /></div>
+                  <div className="flex items-center gap-2"><span className="font-semibold">VALOR UNITÁRIO R$:</span><Input className="h-6 text-xs w-32" /></div>
+                  <div className="flex items-center gap-2"><span className="font-semibold">DESCONTO:</span><Input className="h-6 text-xs w-32" /></div>
+                </div>
+                <div className="border-t pt-2 mt-2 space-y-1 text-xs">
+                  <div className="flex items-center gap-2"><span className="font-semibold">PRAZO NEGOCIADO:</span><Input className="h-6 text-xs flex-1" /></div>
+                  <div className="flex items-center gap-2"><span className="font-semibold">DATA:</span><Input className="h-6 text-xs flex-1" /></div>
+                  <div className="flex items-center gap-2"><span className="font-semibold">ASSINATURA:</span><Input className="h-6 text-xs flex-1" /></div>
                 </div>
               </div>
             </div>
