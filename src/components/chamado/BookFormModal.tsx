@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
-import { FileText, Plus, Trash2 } from 'lucide-react';
+import { FileText, Plus, Trash2, Eye } from 'lucide-react';
 import romplasLogo from '@/assets/romplas-logo.png';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
