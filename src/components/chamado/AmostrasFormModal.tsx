@@ -319,14 +319,14 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="p-6 pb-2 shrink-0">
           <div className="flex justify-center mb-2">
             <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
           </div>
           <DialogTitle className="text-center">Solicitação de Amostras</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 pt-2 space-y-6">
 
             {/* ── Dados Gerais ── */}
             <div className="rounded-lg border p-4 space-y-3">
@@ -538,7 +538,7 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
               <p className="text-[10px] text-muted-foreground italic">"Tempo máximo de retorno das amostras rolo - 30 dias após o faturamento"</p>
             </div>
         </div>
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <DialogFooter className="flex-col sm:flex-row gap-2 p-6 pt-2 shrink-0 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={generateAndUploadPdf} disabled={saving}>
             <FileText className="h-4 w-4 mr-1.5" />{saving ? 'Gerando...' : 'Confirmar e Anexar PDF'}

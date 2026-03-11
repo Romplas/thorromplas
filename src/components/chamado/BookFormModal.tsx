@@ -428,11 +428,11 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
             {/* Dados Gerais */}
             <div className="border rounded-lg p-3 space-y-3">
               <Label className="text-xs font-semibold">Dados Gerais</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><Label className="text-xs text-muted-foreground">Razão Social *</Label><Input className="mt-1 h-9 text-sm" value={form.razaoSocial} onChange={e => setFormWithSync(p => ({ ...p, razaoSocial: e.target.value }))} /></div>
                 <div><Label className="text-xs text-muted-foreground">Código</Label><Input className="mt-1 h-9 text-sm" value={form.codigo} onChange={e => setFormWithSync(p => ({ ...p, codigo: e.target.value }))} /></div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><Label className="text-xs text-muted-foreground">Representante</Label><Input className="mt-1 h-9 text-sm" value={form.representante} disabled /></div>
               <div>
                 <Label className="text-xs text-muted-foreground">Data Entrega Negociada</Label>
@@ -481,7 +481,7 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
             {/* Modelo Book */}
             <div className="border rounded-lg p-3 space-y-2">
               <Label className="text-xs font-semibold">Modelo Book</Label>
-              <div className="grid grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 {MODELOS.map(m => (
                   <div key={m.key} className="flex flex-col items-start gap-1">
                     <label className="flex items-center gap-1.5 text-xs whitespace-nowrap">
@@ -512,12 +512,12 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
             {/* Dados do Book */}
             <div className="border rounded-lg p-3 space-y-3">
               <Label className="text-xs font-semibold">Dados do Book</Label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div><Label className="text-xs">Quantidade Book</Label><Input className="mt-1" value={form.quantidadeBook} onChange={e => setFormWithSync(p => ({ ...p, quantidadeBook: e.target.value }))} /></div>
               <div><Label className="text-xs">Qtd de Linhas</Label><Input className="mt-1" value={form.quantidadeLinhas} onChange={e => setFormWithSync(p => ({ ...p, quantidadeLinhas: e.target.value }))} /></div>
               <div><Label className="text-xs">Nº Laminas</Label><Input className="mt-1" value={form.nLaminas} onChange={e => setFormWithSync(p => ({ ...p, nLaminas: e.target.value }))} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><Label className="text-xs">Material/Cor Capa</Label><Input className="mt-1" value={form.materialCorCapa} onChange={e => setFormWithSync(p => ({ ...p, materialCorCapa: e.target.value }))} /></div>
               <div><Label className="text-xs">Código Capa</Label><Input className="mt-1" value={form.codigoCapa} onChange={e => setFormWithSync(p => ({ ...p, codigoCapa: e.target.value }))} /></div>
             </div>
@@ -551,7 +551,7 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                   </label>
                 ))}
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <SeqTable col="colunaA" label="Coluna A (Todos os book's)" />
                 <SeqTable col="colunaB" label="Coluna B (Somente book D/E)" />
                 <SeqTable col="colunaC" label="Coluna C (Somente book E)" />
@@ -569,7 +569,7 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
             {/* Personalização */}
             <div className="border rounded-lg p-3 space-y-2">
               <Label className="text-xs font-semibold text-center block">PERSONALIZAÇÃO</Label>
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 {/* Coluna esquerda - checkboxes e radios */}
                 <div className="flex-1 space-y-1">
                   <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.arteCapa} onChange={e => setFormWithSync(p => ({ ...p, arteCapa: e.target.checked }))} /> ARTE CAPA</label>

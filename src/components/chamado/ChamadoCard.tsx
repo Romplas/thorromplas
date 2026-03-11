@@ -525,7 +525,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
                 <div key={i} className="flex items-start justify-between gap-2 p-3 bg-muted rounded-md overflow-hidden">
                   <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
                     <Paperclip className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span className="text-sm break-words">{anexo.nome}</span>
+                    <span className="text-sm break-all">{anexo.nome}</span>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleView(anexo)} title="Visualizar">

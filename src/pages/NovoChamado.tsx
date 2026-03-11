@@ -1184,7 +1184,7 @@ export default function NovoChamado() {
         </div>
 
         {/* Bottom bar */}
-        <div className="sticky bottom-0 bg-card border-t px-6 py-3 flex items-center justify-between">
+        <div className="sticky bottom-0 bg-card border-t px-4 sm:px-6 py-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 z-10">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => navigate('/')}>
               <Home className="h-4 w-4 mr-1.5" />

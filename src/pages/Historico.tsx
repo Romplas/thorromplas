@@ -977,7 +977,7 @@ export default function Historico() {
                   <div key={i} className="flex items-start justify-between gap-2 p-3 bg-muted/30 border rounded-lg overflow-hidden">
                     <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
                       <Paperclip className="h-4 w-4 text-primary flex-shrink-0" />
-                      <span className="text-sm break-words">{anexo.nome}</span>
+                      <span className="text-sm break-all">{anexo.nome}</span>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleAnexoView(anexo)} title="Visualizar">

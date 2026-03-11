@@ -156,14 +156,14 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-xl">
             Olá, <span className="text-primary font-semibold">{profile?.nome || 'Usuário'}</span>
           </h1>
           <p className="text-sm text-muted-foreground">Painel de Chamados THOR</p>
         </div>
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className={cn("gap-1.5 text-xs font-normal", !startDate && "text-muted-foreground")}>
