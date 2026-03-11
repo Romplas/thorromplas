@@ -156,6 +156,7 @@ export default function NovoChamado() {
   const [rncForm, setRncForm] = useState<RNCFormData>({ ...defaultRncForm });
   const [amostrasForm, setAmostrasForm] = useState<AmostrasFullFormData>({ ...defaultAmostrasFullForm });
   const [bookForm, setBookForm] = useState<BookFullFormData>({ ...defaultBookFullForm });
+  const [bookFotoModal, setBookFotoModal] = useState<{ open: boolean; img: string; label: string }>({ open: false, img: '', label: '' });
   const [specialFormFilled, setSpecialFormFilled] = useState(false);
 
   const buildSpecialDescricao = () => {
