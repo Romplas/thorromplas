@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, Clock, Users, LogOut, User, Columns3, Upload, Settings, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Clock, Users, LogOut, User, Columns3, Upload, Settings, RefreshCw, Menu } from 'lucide-react';
 import logoThor from '@/assets/logo-thor.png';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const allNavItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'gestor', 'supervisor', 'representante'] },
@@ -22,7 +24,9 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const { profile, role, signOut } = useAuth();
+  const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const userName = profile?.nome || 'Usuário';
@@ -48,32 +52,59 @@ export default function Layout({ children }: LayoutProps) {
     navigate('/login');
   };
 
+  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+    `flex items-center gap-1.5 rounded text-sm font-medium transition-colors ${
+      isActive
+        ? 'bg-white/20 text-primary-foreground'
+        : 'text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground'
+    }`;
+
   return (
     <div className="min-h-screen bg-background">
-      <header className="nav-header h-12 flex items-center justify-between px-6 shadow-md">
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-2 font-bold text-lg cursor-pointer" onClick={() => navigate('/')}>
+      <header className="nav-header h-12 flex items-center justify-between px-4 sm:px-6 shadow-md">
+        <div className="flex items-center gap-4 sm:gap-8">
+          <div className="flex items-center gap-2 font-bold text-lg cursor-pointer shrink-0" onClick={() => navigate('/')}>
             <img src={logoThor} alt="THOR" className="h-7 w-7 rounded" />
             THOR
           </div>
-          <nav className="flex items-center gap-1">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-white/20 text-primary-foreground'
-                      : 'text-primary-foreground/80 hover:bg-white/10 hover:text-primary-foreground'
-                  }`
-                }
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+          {isMobile ? (
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+              <SheetTrigger asChild>
+                <button
+                  className="flex items-center justify-center min-h-[44px] min-w-[44px] -m-2 rounded text-primary-foreground hover:bg-white/10 transition-colors"
+                  aria-label="Abrir menu"
+                >
+                  <Menu className="h-6 w-6" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-full max-w-[280px] p-0 nav-header border-0 bg-primary">
+                <nav className="flex flex-col pt-14 px-4 pb-4">
+                  {navItems.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setSheetOpen(false)}
+                      className={({ isActive }) =>
+                        `${navLinkClass({ isActive })} py-3 px-4 -mx-4 rounded-md`
+                      }
+                    >
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </nav>
+              </SheetContent>
+            </Sheet>
+          ) : (
+            <nav className="flex items-center gap-1">
+              {navItems.map((item) => (
+                <NavLink key={item.to} to={item.to} className={navLinkClass}>
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+          )}
         </div>
         <div className="relative" ref={menuRef}>
           <button
@@ -118,7 +149,7 @@ export default function Layout({ children }: LayoutProps) {
           )}
         </div>
       </header>
-      <main className="p-6">{children}</main>
+      <main className="p-4 sm:p-6">{children}</main>
     </div>
   );
 }

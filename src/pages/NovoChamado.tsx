@@ -1209,7 +1209,7 @@ export default function NovoChamado() {
 
       {/* Dialog Cadastrar Novo Cliente */}
       <Dialog open={showNewClientDialog} onOpenChange={setShowNewClientDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
           </DialogHeader>
@@ -1303,7 +1303,7 @@ export default function NovoChamado() {
 
       {/* SD Form Dialog */}
       <Dialog open={showSDForm} onOpenChange={setShowSDForm}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex justify-center mb-2">
               <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
@@ -1646,7 +1646,7 @@ export default function NovoChamado() {
 
       {/* RNC Form Dialog */}
       <Dialog open={showRNCForm} onOpenChange={setShowRNCForm}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex justify-center mb-2">
               <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />

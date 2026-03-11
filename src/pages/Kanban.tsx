@@ -405,7 +405,7 @@ export default function Kanban() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Supervisor</span>
             <Select value={filterSupervisor} onValueChange={handleSupervisorChange} disabled={isRestricted}>
@@ -468,7 +468,7 @@ export default function Kanban() {
           </div>
           <button
             onClick={handleClearFilters}
-            className="h-8 w-8 flex items-center justify-center rounded-md border border-border bg-muted/50 hover:bg-destructive/10 hover:text-destructive transition-colors"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md border border-border bg-muted/50 hover:bg-destructive/10 hover:text-destructive transition-colors"
             title="Limpar filtros"
           >
             <FilterX className="h-4 w-4" />
@@ -526,27 +526,30 @@ export default function Kanban() {
                               Atualizado : {formatDate(ticket.updated_at)}
                             </p>
                           </div>
-                          <div className="bg-gray-900 flex items-center justify-center gap-5 py-2.5">
+                          <div className="bg-gray-900 flex items-center justify-center gap-1 sm:gap-2 py-2">
                             <button
-                              className="text-white hover:text-gray-300 transition-colors"
+                              type="button"
+                              className="min-h-[44px] min-w-[44px] flex items-center justify-center text-white hover:text-gray-300 transition-colors -m-1"
                               title="Editar"
                               onClick={() => { setEditTicket(ticket); setEditOpen(true); }}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Pencil className="h-5 w-5" />
                             </button>
                             <button
-                              className="text-white hover:text-gray-300 transition-colors"
+                              type="button"
+                              className="min-h-[44px] min-w-[44px] flex items-center justify-center text-white hover:text-gray-300 transition-colors -m-1"
                               title="Histórico"
                               onClick={() => navigate(`/historico?ticketId=${ticket.id}`)}
                             >
-                              <Clock className="h-4 w-4" />
+                              <Clock className="h-5 w-5" />
                             </button>
                             <button
-                              className="text-white hover:text-red-400 transition-colors"
+                              type="button"
+                              className="min-h-[44px] min-w-[44px] flex items-center justify-center text-white hover:text-red-400 transition-colors -m-1"
                               title="Excluir"
                               onClick={() => { setDeleteTicketId(ticket.id); setDeleteOpen(true); }}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-5 w-5" />
                             </button>
                           </div>
                         </div>

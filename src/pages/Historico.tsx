@@ -546,7 +546,7 @@ export default function Historico() {
         <h1 className="text-xl font-bold text-center mb-4">Histórico de Atendimento</h1>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Supervisor</span>
             <Select value={filterSupervisor} onValueChange={(v) => { setFilterSupervisor(v); setFilterRepresentante('todos'); }} disabled={isSupervisorLocked}>
@@ -674,9 +674,9 @@ export default function Historico() {
                   >
                     {/* Card with two-section layout */}
                     <div className={`${bgColor} text-white`}>
-                      <div className="flex">
+                      <div className="flex flex-col md:flex-row">
                         {/* Left section - ticket info */}
-                        <div className="w-[35%] px-3 py-2.5 space-y-0.5 border-r border-white/20 text-[11px]">
+                        <div className="w-full md:w-[35%] px-3 py-2.5 space-y-0.5 border-b md:border-b-0 md:border-r border-white/20 text-[11px]">
                           <p className="font-bold text-sm">TicketID : {entry.chamado_id}</p>
                           <p><span className="font-semibold">Cliente : </span>{chamado?.cliente_nome || '—'}</p>
                           <p className="font-semibold">Etapa Ticket : {etapaLabel}</p>
@@ -686,7 +686,7 @@ export default function Historico() {
                         </div>
 
                         {/* Right section - description + status row */}
-                        <div className="w-[65%] flex flex-col">
+                        <div className="w-full md:w-[65%] flex flex-col">
                           {/* Description box */}
                           <div className="bg-white/15 text-white px-3 py-2 mx-2 mt-2 rounded text-[11px] min-h-[60px]">
                             <p className="font-semibold">Descrição : {entry.descricao_ticket ?? chamado?.descricao ?? '—'}</p>
@@ -708,9 +708,9 @@ export default function Historico() {
                               })()}</p>
                               <p className="text-yellow-200 font-semibold">TicketID Criado em: {chamado ? formatDateTime(chamado.created_at) : '—'}</p>
                             </div>
-                            <div className="flex items-center gap-1.5 ml-2">
-                              <Pencil className="h-4 w-4 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedEntryId(entry.id); setSelectedTicketId(String(entry.chamado_id)); setEditModalOpen(true); }} />
-                              <Trash2 className="h-4 w-4 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => handleDeleteRequest(entry.chamado_id, e)} />
+                            <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                              <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedEntryId(entry.id); setSelectedTicketId(String(entry.chamado_id)); setEditModalOpen(true); }} aria-label="Editar"><Pencil className="h-5 w-5" /></button>
+                              <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => handleDeleteRequest(entry.chamado_id, e)} aria-label="Excluir"><Trash2 className="h-5 w-5" /></button>
                             </div>
                           </div>
                         </div>
@@ -726,26 +726,26 @@ export default function Historico() {
           <div className="bg-card border rounded-lg p-5 max-h-[calc(100vh-240px)] overflow-y-auto">
             {selectedChamado && selectedEntry ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <ReadOnlyField label="TicketID" value={String(selectedChamado.id)} />
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <ReadOnlyField label="Clientes" value={selectedChamado.cliente_nome} />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <ReadOnlyField label="Representante" value={representanteNome} />
                   <ReadOnlyField label="Data Retorno" value={formatDate(selectedChamado.data_retorno)} />
                   <ReadOnlyField label="Data Contato" value={formatDate(selectedChamado.data_contato)} />
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <ReadOnlyField label="Motivo" value={selectedChamado.motivo} />
                   <ReadOnlyField label="SubMotivos" value={selectedChamado.submotivo || '—'} />
                   <ReadOnlyField label="Supervisor" value={supervisorNome} />
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <ReadOnlyField label="EtapaTicket" value={etapaLabelsMap[selectedChamado.etapa || 'thor'] || selectedChamado.etapa || 'THOR'} />
                   <ReadOnlyField label="Gestor" value={selectedEntry ? (entryGestorNameMap.get(selectedEntry.id) || '') : gestorNome} />
                   <ReadOnlyField label="StatusTicket" value={statusLabels[selectedChamado.status] || selectedChamado.status} />
@@ -963,7 +963,7 @@ export default function Historico() {
 
         {/* Anexos Dialog */}
         <Dialog open={anexosDialogOpen} onOpenChange={setAnexosDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto overflow-x-hidden">
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[80vh] overflow-y-auto overflow-x-hidden">
             <DialogHeader>
               <DialogTitle>Anexos - Ticket {selectedChamado?.id}</DialogTitle>
             </DialogHeader>
@@ -996,7 +996,7 @@ export default function Historico() {
 
         {/* Preview Dialog */}
         <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[90vh]">
             <DialogHeader>
               <DialogTitle>{previewName}</DialogTitle>
             </DialogHeader>

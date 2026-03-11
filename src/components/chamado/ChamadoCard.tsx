@@ -491,7 +491,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
 
       {/* Anexos Dialog - with upload support */}
       <Dialog open={showAnexos} onOpenChange={setShowAnexos}>
-        <DialogContent className="max-w-2xl overflow-x-hidden">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl overflow-x-hidden">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle>Anexos do Chamado #{chamado.id}</DialogTitle>
@@ -555,7 +555,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
 
       {/* Preview Dialog */}
       <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>{previewName}</DialogTitle>
           </DialogHeader>

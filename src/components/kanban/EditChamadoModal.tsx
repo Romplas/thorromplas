@@ -385,7 +385,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-0">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-5xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-0">
           {/* Header */}
           <div className="sticky top-0 z-10 bg-card border-b px-6 py-4">
             <DialogHeader>
@@ -664,7 +664,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
       {/* Preview Dialog */}
       <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>{previewName}</DialogTitle>
           </DialogHeader>

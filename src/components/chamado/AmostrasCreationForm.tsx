@@ -332,7 +332,7 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[92vh] p-0 gap-0">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-5xl max-h-[92vh] p-0 gap-0">
         <DialogHeader className="px-6 pt-5 pb-3">
           <div className="flex justify-center mb-2">
             <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />

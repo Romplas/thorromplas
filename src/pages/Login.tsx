@@ -120,8 +120,8 @@ export default function Login() {
       </div>
 
       {/* Right side - login form */}
-      <div className="flex-1 flex items-center justify-center bg-muted/30 p-8">
-        <div className="w-full max-w-md bg-card rounded-lg shadow-lg p-8">
+      <div className="flex-1 flex items-center justify-center bg-muted/30 p-4 sm:p-8">
+        <div className="w-full max-w-md bg-card rounded-lg shadow-lg p-4 sm:p-8 mx-4 sm:mx-0">
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-foreground">Bem-vindo</h2>
             <p className="text-sm text-muted-foreground">Entre ou crie sua conta para continuar</p>

@@ -319,7 +319,7 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex justify-center mb-2">
             <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />

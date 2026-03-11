@@ -123,7 +123,7 @@ export default function MeuPerfil() {
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} title="Voltar">
+            <Button variant="ghost" size="icon" className="touch-target shrink-0" onClick={() => navigate(-1)} title="Voltar">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <User className="h-8 w-8 text-primary" />
@@ -134,7 +134,7 @@ export default function MeuPerfil() {
           </div>
         </div>
 
-        <div className="bg-card border rounded-lg p-6 space-y-6">
+        <div className="bg-card border rounded-lg p-4 sm:p-6 space-y-6">
           {/* Foto do perfil */}
           <div className="flex flex-col items-center gap-4">
             <div className="relative group">

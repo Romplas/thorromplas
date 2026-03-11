@@ -416,7 +416,7 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-3xl max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-2 flex-shrink-0">
           <div className="flex justify-center mb-2">
             <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
@@ -499,7 +499,7 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
 
             {/* Modal de foto do Book */}
             <Dialog open={fotoModal.open} onOpenChange={(v) => setFotoModal(p => ({ ...p, open: v }))}>
-              <DialogContent className="max-w-lg p-4">
+              <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg p-4">
                 <DialogHeader>
                   <DialogTitle className="text-center">{fotoModal.label}</DialogTitle>
                 </DialogHeader>

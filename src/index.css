@@ -181,6 +181,11 @@
   .ticket-card-green {
     @apply border-l-4 border-l-green-500 bg-green-500/10;
   }
+
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
 #lovable-badge{display: none !important;
