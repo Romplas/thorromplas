@@ -203,8 +203,14 @@ export default function NovoChamado() {
   // Helper to build description from structured fields
   const buildDescricao = (negociacao: boolean) => {
     if (hasSpecialForm && specialFormFilled) {
-      // Não inclui dados do formulário especial na descrição - ficam apenas no PDF
       return descricaoTexto || '';
+    }
+    if (isAtualizarTabela) {
+      const prodLines = tabelaProdutos.map((p, i) =>
+        `Produto ${i + 1}: Cód: ${p.codProduto}, Produto: ${p.produto}, Preço: ${p.preco}`
+      ).join('\n');
+      const structured = `Qual Tabela: ${qualTabela}\n${prodLines}`;
+      return descricaoTexto ? `${structured}\n\nObservações: ${descricaoTexto}` : structured;
     }
     if (!negociacao) return descricaoTexto;
     const prodLines = produtos.map((p, i) => 
