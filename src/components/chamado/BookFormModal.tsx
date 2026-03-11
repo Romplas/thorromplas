@@ -65,6 +65,7 @@ export const defaultBookFullForm: BookFullFormData = {
   laminasNomeCliente: false, codigosCliente: false,
   silkCapa: [], adesivoPers: '', contraCapaFrente: false, contraCapaFundo: false,
   dataOrcamento: '',
+  custosChecked: [],
 };
 
 const MODELOS = [
