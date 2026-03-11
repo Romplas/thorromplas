@@ -637,6 +637,8 @@ export default function NovoChamado() {
       setPrazo('');
       setTipoEntrega('');
       setDescricaoTexto('');
+      setQualTabela('');
+      setTabelaProdutos([{ codProduto: '', produto: '', preco: '' }]);
       setSdForm({ ...defaultSdForm });
       setRncForm({ ...defaultRncForm });
       setAmostrasForm({ ...defaultAmostrasFullForm });
