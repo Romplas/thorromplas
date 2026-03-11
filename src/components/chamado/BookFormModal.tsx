@@ -772,9 +772,9 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                         {orc.rows.map((row, i) => (
                           <tr key={i} className="border-b last:border-b-0">
                             <td className="py-1 px-2 font-medium border-r">{ORCAMENTO_LABELS[i]}</td>
-                            <td className="py-1 px-2 border-r text-center">{row.qty > 0 ? fmtNum(row.qty) : '-'}</td>
-                            <td className="py-1 px-2 border-r text-center">{row.unitPrice > 0 ? `R$ ${fmtNum(row.unitPrice)}` : '-'}</td>
-                            <td className="py-1 px-2 text-center font-medium">{row.total > 0 ? `R$ ${fmtNum(row.total)}` : '-'}</td>
+                            <td className="py-1 px-2 border-r text-center">{row.checked && row.qty > 0 ? fmtNum(row.qty) : ''}</td>
+                            <td className="py-1 px-2 border-r text-center">{row.checked ? `R$ ${fmtNum(row.unitPrice)}` : ''}</td>
+                            <td className="py-1 px-2 text-center font-medium">{row.checked && row.total > 0 ? `R$ ${fmtNum(row.total)}` : ''}</td>
                           </tr>
                         ))}
                       </tbody>
