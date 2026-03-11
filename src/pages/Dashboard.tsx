@@ -28,6 +28,48 @@ export default function Dashboard() {
   const [representanteId, setRepresentanteId] = useState<string | null>(null);
   const isRepresentante = role === 'representante';
 
+  // Filter data (for non-representante)
+  const [supervisores, setSupervisores] = useState<{ id: string; nome: string }[]>([]);
+  const [representantes, setRepresentantes] = useState<{ id: string; nome: string }[]>([]);
+  const [gestores, setGestores] = useState<{ id: string; nome: string }[]>([]);
+  const [srLinks, setSrLinks] = useState<{ supervisor_id: string; representante_id: string }[]>([]);
+  const [filterSupervisor, setFilterSupervisor] = useState<string>('todos');
+  const [filterRepresentante, setFilterRepresentante] = useState<string>('todos');
+  const [filterGestor, setFilterGestor] = useState<string>('todos');
+
+  // Fetch filter options (supervisores, representantes, gestores)
+  useEffect(() => {
+    if (isRepresentante) return;
+    const fetchFilterData = async () => {
+      const [supRes, repRes, srRes, profilesRes, gestorRolesRes] = await Promise.all([
+        supabase.from('supervisores').select('id, nome').eq('status', 'ativo').order('nome'),
+        supabase.from('representantes').select('id, nome').order('nome'),
+        supabase.from('supervisor_representante').select('supervisor_id, representante_id'),
+        supabase.from('profiles').select('id, nome, user_id, status').eq('status', 'ativo'),
+        supabase.from('user_roles').select('user_id, role').eq('role', 'gestor'),
+      ]);
+      if (supRes.data) setSupervisores(supRes.data);
+      if (repRes.data) setRepresentantes(repRes.data);
+      if (srRes.data) setSrLinks(srRes.data);
+      if (profilesRes.data && gestorRolesRes.data) {
+        const gestorUserIds = new Set((gestorRolesRes.data || []).map((r: any) => r.user_id));
+        const gestorProfiles = (profilesRes.data || []).filter((p: any) => gestorUserIds.has(p.user_id));
+        setGestores(gestorProfiles);
+      }
+    };
+    fetchFilterData();
+  }, [isRepresentante]);
+
+  const filteredRepresentantes = filterSupervisor !== 'todos'
+    ? representantes.filter(r => srLinks.some(sr => sr.supervisor_id === filterSupervisor && sr.representante_id === r.id))
+    : representantes;
+
+  // Reset representante when supervisor changes
+  const handleSupervisorChange = (v: string) => {
+    setFilterSupervisor(v);
+    setFilterRepresentante('todos');
+  };
+
   // Fetch representante ID for the logged-in user
   useEffect(() => {
     if (!profile || !isRepresentante) return;
@@ -42,7 +84,7 @@ export default function Dashboard() {
     fetchRepId();
   }, [profile, isRepresentante]);
 
-  // Fetch chamados
+  // Fetch chamados (with filters for non-representante)
   useEffect(() => {
     const fetchChamados = async () => {
       let query = supabase.from('chamados').select('*').order('created_at', { ascending: false });
@@ -52,13 +94,51 @@ export default function Dashboard() {
       }
 
       const { data } = await query;
-      if (data) setChamados(data);
+      if (!data) return;
+
+      let filtered = data;
+
+      // Apply date filter (inclusive range)
+      if (startDate || endDate) {
+        filtered = filtered.filter((c: any) => {
+          const created = new Date(c.created_at);
+          if (startDate) {
+            const d = new Date(startDate);
+            d.setHours(0, 0, 0, 0);
+            if (created < d) return false;
+          }
+          if (endDate) {
+            const d = new Date(endDate);
+            d.setHours(23, 59, 59, 999);
+            if (created > d) return false;
+          }
+          return true;
+        });
+      }
+
+      // Apply role filters (for admin/gestor/supervisor)
+      if (!isRepresentante) {
+        if (filterRepresentante !== 'todos') {
+          filtered = filtered.filter((c: any) => c.representante_id === filterRepresentante);
+        }
+        if (filterSupervisor !== 'todos') {
+          const repIdsUnderSup = new Set(
+            srLinks.filter(sr => sr.supervisor_id === filterSupervisor).map(sr => sr.representante_id)
+          );
+          filtered = filtered.filter((c: any) => repIdsUnderSup.has(c.representante_id));
+        }
+        if (filterGestor !== 'todos') {
+          filtered = filtered.filter((c: any) => c.gestor_id === filterGestor);
+        }
+      }
+
+      setChamados(filtered);
     };
 
     if (!isRepresentante || representanteId) {
       fetchChamados();
     }
-  }, [isRepresentante, representanteId]);
+  }, [isRepresentante, representanteId, filterSupervisor, filterRepresentante, filterGestor, startDate, endDate, srLinks]);
 
   // Realtime
   useEffect(() => {
@@ -193,19 +273,48 @@ export default function Dashboard() {
       {/* Filters - hidden for representante */}
       {!isRepresentante && (
         <div className="flex flex-wrap items-center gap-3 mb-6 bg-card rounded-lg p-3 shadow-sm border">
-          {['Supervisor', 'Representante', 'Gestor'].map((filter) => (
-            <div key={filter} className="flex items-center gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{filter}</span>
-              <Select>
-                <SelectTrigger className="h-8 w-28 text-xs">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          ))}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Supervisor</span>
+            <Select value={filterSupervisor} onValueChange={handleSupervisorChange}>
+              <SelectTrigger className="h-8 w-28 text-xs">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {supervisores.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Representante</span>
+            <Select value={filterRepresentante} onValueChange={setFilterRepresentante}>
+              <SelectTrigger className="h-8 w-28 text-xs">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {filteredRepresentantes.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Gestor</span>
+            <Select value={filterGestor} onValueChange={setFilterGestor}>
+              <SelectTrigger className="h-8 w-28 text-xs">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {gestores.map((g) => (
+                  <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       )}
 
