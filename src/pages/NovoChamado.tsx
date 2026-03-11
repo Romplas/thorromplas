@@ -186,7 +186,7 @@ export default function NovoChamado() {
       const prodCount = Object.keys(amostrasForm.selectedProducts).length;
       return `[Amostras] Tipo: ${tipo}, Qtd: ${amostrasForm.amostraQuantidade}, Produtos selecionados: ${prodCount}${amostrasForm.finalidade ? '\nFinalidade: ' + amostrasForm.finalidade : ''}`;
     }
-    if (isBook) return `[Book] Tipo: ${bookForm.tipoBook}, Quantidade: ${bookForm.quantidade}, Destino: ${bookForm.destino}${bookForm.observacoes ? '\nObservações: ' + bookForm.observacoes : ''}`;
+    if (isBook) return `[Book] Modelo: ${bookForm.modeloBook.join(', ') || '-'}, Qtd: ${bookForm.quantidadeBook}, Razão Social: ${bookForm.razaoSocial}${bookForm.observacao ? '\nObservações: ' + bookForm.observacao : ''}`;
     return '';
   };
 
