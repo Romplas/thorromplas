@@ -60,11 +60,11 @@ export const defaultBookFullForm: BookFullFormData = {
 };
 
 const MODELOS = [
-  { key: 'A', label: 'A (20,5×11,5×5)', laminas: '60/70', img: '/images/book-model-a.jpg' },
-  { key: 'B', label: 'B (21,5×14×5,5)', laminas: '70/80', img: '/images/book-model-b.jpg' },
-  { key: 'C', label: 'C (24,5×17,5×4,5)', laminas: '60/70', img: '/images/book-model-c.jpg' },
-  { key: 'D', label: 'D (22×28×5)', laminas: '90/100', img: '/images/book-model-d.jpg' },
-  { key: 'E', label: 'E (40×21×6)', laminas: '150/165', img: '/images/book-model-e.jpg' },
+  { key: 'A', label: 'A (20,5×11,5×5)', laminas: '60/70', img: '/images/book-model-a.png' },
+  { key: 'B', label: 'B (21,5×14×5,5)', laminas: '70/80', img: '/images/book-model-b.png' },
+  { key: 'C', label: 'C (24,5×17,5×4,5)', laminas: '60/70', img: '/images/book-model-c.png' },
+  { key: 'D', label: 'D (22×28×5)', laminas: '90/100', img: '/images/book-model-d.png' },
+  { key: 'E', label: 'E (40×21×6)', laminas: '150/165', img: '/images/book-model-e.png' },
 ];
 
 export function generateBookPdf(form: BookFullFormData, clienteNome: string, representanteNome: string): Blob {
