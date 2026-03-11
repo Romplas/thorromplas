@@ -104,24 +104,27 @@ function calcOrcamento(form: BookFullFormData) {
   const prices = selectedBook ? CUSTOS_PRICES[selectedBook] : null;
   const qtdBook = parseFloat(form.quantidadeBook) || 0;
   const nLaminas = parseFloat(form.nLaminas) || 0;
+  const checked = form.custosChecked || [];
 
   const rows = ORCAMENTO_KEYS.map((key) => {
+    // Only calculate if the item is checked in Custos
+    if (!checked.includes(key)) {
+      return { qty: 0, unitPrice: 0, total: 0, checked: false };
+    }
+
     const unitPrice = prices ? prices[key] : 0;
     let qty = 0;
 
     if (key === 'MP_LAMINAS' || key === 'LAMINAS_NOME' || key === 'CODIGOS') {
-      // Quantidade = quantidadeBook × nLaminas
       qty = qtdBook * nLaminas;
     } else if (key === 'ARTE_CAPA') {
-      // Pago 1x
       qty = qtdBook > 0 ? 1 : 0;
     } else {
-      // Capa, Mão de obra, e demais: quantidade = quantidadeBook
       qty = qtdBook;
     }
 
     const total = qty * unitPrice;
-    return { qty, unitPrice, total };
+    return { qty, unitPrice, total, checked: true };
   });
 
   const totalGeral = rows.reduce((sum, r) => sum + r.total, 0);
