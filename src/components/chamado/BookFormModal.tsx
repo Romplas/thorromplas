@@ -292,16 +292,17 @@ export async function generateBookPdf(form: BookFullFormData, clienteNome: strin
     });
   });
 
-  // Orçamento (tabela completa)
+  // Orçamento (tabela com valores calculados)
+  const orc = calcOrcamento(form);
+  const fmtNum = (n: number) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   checkPage(100);
   addSectionBox('Orçamento', () => {
     doc.setFontSize(7);
     const sel = MODELOS.map(m => `(${form.bookEscolhido.includes(m.key) ? 'X' : ' '})${m.key}`).join('  ');
     doc.setFont('helvetica', 'bold');
     doc.text('BOOK ESCOLHIDO: ' + sel, margin + 3, y); y += 6;
-    doc.text('QUANTIDADE:', margin + 3, y); y += 6;
+    doc.text(`QUANTIDADE: ${form.quantidadeBook || '-'}`, margin + 3, y); y += 6;
 
-    // Table header
     const colOrcX = { item: margin + 3, qtd: margin + 85, unitario: margin + 115, total: margin + 145 };
     doc.setFontSize(7);
     doc.text('ITEM', colOrcX.item, y);
@@ -312,27 +313,20 @@ export async function generateBookPdf(form: BookFullFormData, clienteNome: strin
     doc.setDrawColor(200); doc.line(margin + 3, y, pageW - margin - 3, y); y += 4;
 
     doc.setFont('helvetica', 'normal');
-    const orcItems = [
-      'CAPA (unidade)', 'MAO DE OBRA', 'MP P/ LAMINA (Unidade)',
-      'LAMINAS - Nome cliente (Unidade)', 'CODIGOS - Codigo cliente (Unidade)',
-      'ARTE CAPA (Pago 1x)', 'SILK CAPA - 1 COR (Unidade)',
-      'SILK CAPA - COLORIDO (Unidade)', 'DIVISÓRIAS (Unidade)',
-      'PLACA METALIZADA (6x4) (Unidade)', 'ADESIVOS (Unidade)',
-      'ACRILICO - 3Modl. (Unidade)',
-    ];
-    orcItems.forEach(item => {
+    ORCAMENTO_LABELS.forEach((label, i) => {
       checkPage(8);
-      doc.text(item, colOrcX.item, y);
-      doc.text('_______', colOrcX.qtd, y);
-      doc.text('_______', colOrcX.unitario, y);
-      doc.text('_______', colOrcX.total, y);
+      const row = orc.rows[i];
+      doc.text(label, colOrcX.item, y);
+      doc.text(row.qty > 0 ? fmtNum(row.qty) : '-', colOrcX.qtd, y);
+      doc.text(row.unitPrice > 0 ? `R$ ${fmtNum(row.unitPrice)}` : '-', colOrcX.unitario, y);
+      doc.text(row.total > 0 ? `R$ ${fmtNum(row.total)}` : '-', colOrcX.total, y);
       y += 5;
     });
 
     y += 3;
     doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
-    doc.text('TOTAL R$: _______________', pageW - margin - 60, y); y += 6;
-    doc.text('VALOR UNITÁRIO R$: _______________', pageW - margin - 75, y); y += 6;
+    doc.text(`TOTAL R$: ${orc.totalGeral > 0 ? `R$ ${fmtNum(orc.totalGeral)}` : '-'}`, pageW - margin - 60, y); y += 6;
+    doc.text(`VALOR UNITÁRIO R$: ${orc.valorUnitario > 0 ? `R$ ${fmtNum(orc.valorUnitario)}` : '-'}`, pageW - margin - 75, y); y += 6;
     doc.text('DESCONTO: _______________', pageW - margin - 55, y); y += 8;
 
     doc.setDrawColor(180); doc.line(margin + 3, y, pageW - margin - 3, y); y += 5;
