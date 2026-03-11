@@ -372,7 +372,7 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
     if (!form.razaoSocial && !clienteNome) { toast.error('Informe a Razão Social.'); return; }
     setSaving(true);
     try {
-      const pdfBlob = generateBookPdf(form, clienteNome, representanteNome);
+      const pdfBlob = await generateBookPdf(form, clienteNome, representanteNome);
       const cleanName = (form.razaoSocial || clienteNome || 'book').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
       const fileName = `${Date.now()}_Book_${cleanName}.pdf`;
 
