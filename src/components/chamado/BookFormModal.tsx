@@ -45,6 +45,7 @@ export interface BookFullFormData {
   adesivoPers: string; // 'sim' | 'nao'
   contraCapaFrente: boolean; contraCapaFundo: boolean;
   dataOrcamento: string;
+  custosChecked: string[]; // ORCAMENTO_KEYS that are checked
 }
 
 export const defaultBookFullForm: BookFullFormData = {
