@@ -346,14 +346,14 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-2">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-2 flex-shrink-0">
           <div className="flex justify-center mb-2">
             <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
           </div>
           <DialogTitle className="text-center">Formulário Book's Personalizados</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="flex-1 px-6">
+        <div className="flex-1 overflow-y-auto px-6">
           <div className="space-y-4 pb-4">
             {/* Dados Gerais */}
             <div className="border rounded-lg p-3 space-y-3">
