@@ -99,6 +99,10 @@ export default function NovoChamado() {
   const [prazo, setPrazo] = useState('');
   const [tipoEntrega, setTipoEntrega] = useState('');
   const [descricaoTexto, setDescricaoTexto] = useState('');
+  // Atualizar Tabela fields
+  const [qualTabela, setQualTabela] = useState('');
+  interface TabelaProdutoItem { codProduto: string; produto: string; preco: string }
+  const [tabelaProdutos, setTabelaProdutos] = useState<TabelaProdutoItem[]>([{ codProduto: '', produto: '', preco: '' }]);
 
   // Check if motivo is Negociação
   const selectedMotivoNome = motivos.find(m => m.id === selectedMotivo)?.nome || '';
