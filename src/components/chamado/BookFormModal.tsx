@@ -473,7 +473,12 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                       <tr key={i} className="border-b last:border-b-0">
                         <td className="py-1 px-2 font-medium">{row.label}</td>
                         {row.values.map((v, j) => (
-                          <td key={j} className="text-center py-1 px-2">{v}</td>
+                          <td key={j} className="text-center py-1 px-2">
+                            <label className="inline-flex items-center gap-1 cursor-pointer">
+                              <input type="checkbox" className="accent-primary h-3 w-3" />
+                              <span>{v}</span>
+                            </label>
+                          </td>
                         ))}
                       </tr>
                     ))}
