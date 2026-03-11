@@ -1883,66 +1883,163 @@ export default function NovoChamado() {
         }}
       />
 
-      {/* Book Form Dialog */}
+      {/* Book Form Dialog - using BookCreationForm component pattern like Amostras */}
       <Dialog open={showBookForm} onOpenChange={setShowBookForm}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-2">
             <div className="flex justify-center mb-2">
               <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
             </div>
-            <DialogTitle className="text-center">Solicitação de Books</DialogTitle>
+            <DialogTitle className="text-center">Formulário Book's Personalizados</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Tipo de Book *</Label><Input className="mt-1" value={bookForm.tipoBook} onChange={e => setBookForm(p => ({ ...p, tipoBook: e.target.value }))} /></div>
-              <div><Label className="text-xs">Quantidade *</Label><Input className="mt-1" value={bookForm.quantidade} onChange={e => setBookForm(p => ({ ...p, quantidade: e.target.value }))} /></div>
+          <div className="flex-1 overflow-y-auto px-6">
+            <div className="space-y-4 pb-4">
+              {/* Dados Gerais */}
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Razão Social *</Label><Input className="mt-1" value={bookForm.razaoSocial} onChange={e => setBookForm(p => ({ ...p, razaoSocial: e.target.value }))} /></div>
+                <div><Label className="text-xs">Código</Label><Input className="mt-1" value={bookForm.codigo} onChange={e => setBookForm(p => ({ ...p, codigo: e.target.value }))} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Representante</Label><Input className="mt-1" value={bookForm.representante} disabled /></div>
+                <div><Label className="text-xs">Data Entrega Negociada</Label><Input type="date" className="mt-1" value={bookForm.dataEntregaNegociada} onChange={e => setBookForm(p => ({ ...p, dataEntregaNegociada: e.target.value }))} /></div>
+              </div>
+              <div className="border rounded-lg p-3 space-y-2">
+                <Label className="text-xs font-semibold">Envio</Label>
+                <div className="flex items-center gap-4 flex-wrap">
+                  <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="book-envio-nc" checked={bookForm.envio === 'com_pedido'} onChange={() => setBookForm(p => ({ ...p, envio: 'com_pedido' }))} /> Com Pedido</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="book-envio-nc" checked={bookForm.envio === 'sem_pedido'} onChange={() => setBookForm(p => ({ ...p, envio: 'sem_pedido' }))} /> Sem Pedido</label>
+                  <div className="flex-1 min-w-[150px]">
+                    <Input className="h-7 text-xs" placeholder="Transportadora" value={bookForm.transportadora} onChange={e => setBookForm(p => ({ ...p, transportadora: e.target.value }))} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Modelo Book */}
+              <div className="border rounded-lg p-3 space-y-2">
+                <Label className="text-xs font-semibold">Modelo Book</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { key: 'A', label: 'A (20,5x11,5x5)', laminas: '60/70' },
+                    { key: 'B', label: 'B (21,5x14x5,5)', laminas: '70/80' },
+                    { key: 'C', label: 'C (24,5x17,5x4,5)', laminas: '60/70' },
+                    { key: 'D', label: 'D (22x28x5)', laminas: '90/100' },
+                    { key: 'E', label: 'E (40x21x6)', laminas: '150/165' },
+                  ].map(m => (
+                    <label key={m.key} className="flex items-center gap-1.5 text-xs">
+                      <input type="checkbox" checked={bookForm.modeloBook.includes(m.key)} onChange={() => setBookForm(p => ({ ...p, modeloBook: p.modeloBook.includes(m.key) ? p.modeloBook.filter(k => k !== m.key) : [...p.modeloBook, m.key] }))} />
+                      {m.label}<br /><span className="text-muted-foreground text-[10px]">Laminas {m.laminas}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dados do Book */}
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label className="text-xs">Quantidade Book</Label><Input className="mt-1" value={bookForm.quantidadeBook} onChange={e => setBookForm(p => ({ ...p, quantidadeBook: e.target.value }))} /></div>
+                <div><Label className="text-xs">Qtd de Linhas</Label><Input className="mt-1" value={bookForm.quantidadeLinhas} onChange={e => setBookForm(p => ({ ...p, quantidadeLinhas: e.target.value }))} /></div>
+                <div><Label className="text-xs">Nº Laminas</Label><Input className="mt-1" value={bookForm.nLaminas} onChange={e => setBookForm(p => ({ ...p, nLaminas: e.target.value }))} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Material/Cor Capa</Label><Input className="mt-1" value={bookForm.materialCorCapa} onChange={e => setBookForm(p => ({ ...p, materialCorCapa: e.target.value }))} /></div>
+                <div><Label className="text-xs">Código Capa</Label><Input className="mt-1" value={bookForm.codigoCapa} onChange={e => setBookForm(p => ({ ...p, codigoCapa: e.target.value }))} /></div>
+              </div>
+              <div><Label className="text-xs">Descrição Capa</Label><Input className="mt-1" value={bookForm.descricaoCapa} onChange={e => setBookForm(p => ({ ...p, descricaoCapa: e.target.value }))} /></div>
+
+              {/* Aprovações */}
+              <div className="border rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-6 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs font-semibold">Aprovação Arte:</Label>
+                    <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-aprovArte-nc" checked={bookForm.aprovacaoArte === 'sim'} onChange={() => setBookForm(p => ({ ...p, aprovacaoArte: 'sim' }))} /> SIM</label>
+                    <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-aprovArte-nc" checked={bookForm.aprovacaoArte === 'nao'} onChange={() => setBookForm(p => ({ ...p, aprovacaoArte: 'nao' }))} /> NÃO</label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs font-semibold">Boneco Aprovação:</Label>
+                    <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-boneco-nc" checked={bookForm.bonecoAprovacao === 'sim'} onChange={() => setBookForm(p => ({ ...p, bonecoAprovacao: 'sim' }))} /> SIM</label>
+                    <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-boneco-nc" checked={bookForm.bonecoAprovacao === 'nao'} onChange={() => setBookForm(p => ({ ...p, bonecoAprovacao: 'nao' }))} /> NÃO</label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sequência do Book */}
+              <div className="border rounded-lg p-3 space-y-3">
+                <Label className="text-xs font-semibold text-center block">SEQUÊNCIA DO BOOK</Label>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Label className="text-xs">Book Escolhido:</Label>
+                  {['A', 'B', 'C', 'D', 'E'].map(k => (
+                    <label key={k} className="flex items-center gap-1 text-xs">
+                      <input type="checkbox" checked={bookForm.bookEscolhido.includes(k)} onChange={() => setBookForm(p => ({ ...p, bookEscolhido: p.bookEscolhido.includes(k) ? p.bookEscolhido.filter(x => x !== k) : [...p.bookEscolhido, k] }))} /> {k}
+                    </label>
+                  ))}
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {(['colunaA', 'colunaB', 'colunaC'] as const).map((col, ci) => (
+                    <div key={col} className="space-y-1">
+                      <Label className="text-[10px] font-semibold">{ci === 0 ? 'Coluna A (Todos)' : ci === 1 ? 'Coluna B (Book D/E)' : 'Coluna C (Book E)'}</Label>
+                      {bookForm[col].map((row, i) => (
+                        <div key={i} className="flex gap-1 items-center">
+                          <Input className="h-7 text-xs flex-1" placeholder="Linhas" value={row.linhas} onChange={e => { const rows = [...bookForm[col]]; rows[i] = { ...rows[i], linhas: e.target.value }; setBookForm(p => ({ ...p, [col]: rows })); }} />
+                          <Input className="h-7 text-xs flex-1" placeholder="Qtd" value={row.quantidade} onChange={e => { const rows = [...bookForm[col]]; rows[i] = { ...rows[i], quantidade: e.target.value }; setBookForm(p => ({ ...p, [col]: rows })); }} />
+                          {bookForm[col].length > 1 && <button type="button" onClick={() => setBookForm(p => ({ ...p, [col]: p[col].filter((_: any, idx: number) => idx !== i) }))} className="text-destructive"><X className="h-3 w-3" /></button>}
+                        </div>
+                      ))}
+                      <Button type="button" variant="ghost" size="sm" className="w-full h-6 text-[10px]" onClick={() => setBookForm(p => ({ ...p, [col]: [...p[col], { linhas: '', quantidade: '' }] }))}>
+                        <Plus className="h-3 w-3 mr-1" /> Linha
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Observação */}
+              <div>
+                <Label className="text-xs font-semibold">Observação</Label>
+                <Textarea className="mt-1" value={bookForm.observacao} onChange={e => setBookForm(p => ({ ...p, observacao: e.target.value }))} />
+              </div>
+
+              {/* Personalização */}
+              <div className="border rounded-lg p-3 space-y-2">
+                <Label className="text-xs font-semibold text-center block">PERSONALIZAÇÃO</Label>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={bookForm.arteCapa} onChange={e => setBookForm(p => ({ ...p, arteCapa: e.target.checked }))} /> ARTE CAPA</label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold">SILK CAPA:</span>
+                    <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk-nc" checked={bookForm.silkCapa === 'cor_unica'} onChange={() => setBookForm(p => ({ ...p, silkCapa: 'cor_unica' }))} /> COR ÚNICA</label>
+                    <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk-nc" checked={bookForm.silkCapa === 'colorido'} onChange={() => setBookForm(p => ({ ...p, silkCapa: 'colorido' }))} /> COLORIDO</label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={bookForm.logoCliente === 'sim'} onChange={e => setBookForm(p => ({ ...p, logoCliente: e.target.checked ? 'sim' : 'nao' }))} /> LOGO CLIENTE</label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold">ADESIVO PERS.:</span>
+                    <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-adesivo-nc" checked={bookForm.adesivoPers === 'sim'} onChange={() => setBookForm(p => ({ ...p, adesivoPers: 'sim' }))} /> SIM</label>
+                    <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-adesivo-nc" checked={bookForm.adesivoPers === 'nao'} onChange={() => setBookForm(p => ({ ...p, adesivoPers: 'nao' }))} /> NÃO</label>
+                  </div>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={bookForm.nomeProjeto} onChange={e => setBookForm(p => ({ ...p, nomeProjeto: e.target.checked }))} /> NOME PROJETO</label>
+                  <div />
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={bookForm.acrilico} onChange={e => setBookForm(p => ({ ...p, acrilico: e.target.checked }))} /> ACRÍLICO TRANSP.</label>
+                  <div />
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={bookForm.placaMetalica} onChange={e => setBookForm(p => ({ ...p, placaMetalica: e.target.checked }))} /> PLACA METÁLICA (4X6)</label>
+                  <div />
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={bookForm.divisoria === 'sim'} onChange={e => setBookForm(p => ({ ...p, divisoria: e.target.checked ? 'sim' : 'nao' }))} /> DIVISÓRIA</label>
+                  </div>
+                  <div />
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={bookForm.laminasNomeCliente} onChange={e => setBookForm(p => ({ ...p, laminasNomeCliente: e.target.checked }))} /> LAMINAS (Nome cliente)</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={bookForm.contraCapaFrente} onChange={e => setBookForm(p => ({ ...p, contraCapaFrente: e.target.checked }))} /> CONTRA CAPA FRENTE</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={bookForm.codigosCliente} onChange={e => setBookForm(p => ({ ...p, codigosCliente: e.target.checked }))} /> CODIGOS (Cod cliente)</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={bookForm.contraCapaFundo} onChange={e => setBookForm(p => ({ ...p, contraCapaFundo: e.target.checked }))} /> CONTRA CAPA FUNDO</label>
+                </div>
+              </div>
             </div>
-            <div><Label className="text-xs">Destino *</Label><Input className="mt-1" value={bookForm.destino} onChange={e => setBookForm(p => ({ ...p, destino: e.target.value }))} /></div>
-            <div><Label className="text-xs">Observações</Label><Textarea className="mt-1" value={bookForm.observacoes} onChange={e => setBookForm(p => ({ ...p, observacoes: e.target.value }))} /></div>
           </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
+          <DialogFooter className="px-6 pb-6 pt-2 flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowBookForm(false)}>Cancelar</Button>
             <Button variant="secondary" onClick={async () => {
-              if (!bookForm.tipoBook || !bookForm.quantidade || !bookForm.destino) { toast.error('Preencha todos os campos obrigatórios.'); return; }
-              const doc = new jsPDF();
-              const pageW = doc.internal.pageSize.getWidth();
-              const margin = 15;
-              const contentW = pageW - margin * 2;
-              let y = 12;
-              const checkPage = (needed: number) => { if (y + needed > 280) { doc.addPage(); y = 15; } };
-              try {
-                const logoImg = new window.Image(); logoImg.crossOrigin = 'anonymous';
-                await new Promise<void>((resolve, reject) => { logoImg.onload = () => resolve(); logoImg.onerror = () => reject(); logoImg.src = '/images/romplas-logo-pdf.png'; });
-                const logoH = 12; const logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
-                doc.addImage(logoImg, 'PNG', (pageW - logoW) / 2, y, logoW, logoH); y += logoH + 4;
-              } catch { /* fallback */ }
-              doc.setFontSize(13); doc.setFont('helvetica', 'bold');
-              doc.text('Solicitação de Books', pageW / 2, y, { align: 'center' }); y += 8;
-              doc.setDrawColor(180); doc.line(margin, y, pageW - margin, y); y += 8;
-
-              const addFieldRow = (l1: string, v1: string, l2: string, v2: string) => { checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(l1, margin, y); doc.setFont('helvetica', 'normal'); doc.text(v1 || '-', margin + doc.getTextWidth(l1) + 3, y); const col2X = pageW / 2 + 5; doc.setFont('helvetica', 'bold'); doc.text(l2, col2X, y); doc.setFont('helvetica', 'normal'); doc.text(v2 || '-', col2X + doc.getTextWidth(l2) + 3, y); y += 7; };
-              const addSectionBox = (title: string, contentFn: () => void) => { checkPage(25); const startY = y; y += 2; doc.setFont('helvetica', 'bold'); doc.setFontSize(9); if (title) doc.text(title, margin + 3, y + 4); y += title ? 9 : 4; doc.setFont('helvetica', 'normal'); contentFn(); y += 2; doc.setDrawColor(200); doc.roundedRect(margin, startY, contentW, y - startY, 2, 2, 'S'); y += 6; };
-
               const clienteNome = clientes.find(c => c.id === selectedCliente)?.nome || '';
               const repNome = representantes.find(r => r.id === selectedRepresentante)?.nome || '';
-              addFieldRow('Cliente:', clienteNome, 'Representante:', repNome); y += 2;
-
-              addSectionBox('Dados do Book', () => {
-                addFieldRow('Tipo de Book:', bookForm.tipoBook, 'Quantidade:', bookForm.quantidade);
-                doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-                doc.text('Destino:', margin + 3, y); doc.setFont('helvetica', 'normal'); doc.text(bookForm.destino || '-', margin + 3 + doc.getTextWidth('Destino: ') + 2, y); y += 7;
-              });
-
-              if (bookForm.observacoes) {
-                addSectionBox('Observações', () => {
-                  doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-                  const obsLines = doc.splitTextToSize(bookForm.observacoes, contentW - 6);
-                  doc.text(obsLines, margin + 3, y); y += obsLines.length * 5;
-                });
-              }
-
-              const pdfBlob = doc.output('blob');
-              const cleanName = (clienteNome || 'book').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
+              const pdfBlob = generateBookPdf(bookForm, clienteNome, repNome);
+              const cleanName = (bookForm.razaoSocial || clienteNome || 'book').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
               const pdfFile = new globalThis.File([pdfBlob], `Book_${cleanName}.pdf`, { type: 'application/pdf' });
               setAnexos(prev => [...prev, pdfFile]);
               setSpecialFormFilled(true); setShowBookForm(false);
@@ -1951,7 +2048,6 @@ export default function NovoChamado() {
               <FileText className="h-4 w-4 mr-1.5" /> Confirmar e Anexar PDF
             </Button>
             <Button onClick={() => {
-              if (!bookForm.tipoBook || !bookForm.quantidade || !bookForm.destino) { toast.error('Preencha todos os campos obrigatórios.'); return; }
               setSpecialFormFilled(true); setShowBookForm(false);
             }}>Confirmar</Button>
           </DialogFooter>
