@@ -696,31 +696,44 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                   </thead>
                   <tbody>
                     {[
-                      { label: 'CAPA', values: ['R$ 13,90', 'R$ 19,90', 'R$ 25,70', 'R$ 37,70', 'R$ 47,90'] },
-                      { label: 'MAO DE OBRA', values: ['R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40'] },
-                      { label: 'MP P/ LAMINAS', values: ['R$ 0,25', 'R$ 0,30', 'R$ 0,50', 'R$ 0,35', 'R$ 0,35'] },
-                      { label: 'LAMINAS (Nome cliente)', values: ['R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05'] },
-                      { label: 'CODIGOS (Codigo cliente)', values: ['R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05'] },
-                      { label: 'ARTE CAPA', values: ['R$ 75,00', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00'] },
-                      { label: 'SILK CAPA - 1 COR', values: ['R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20'] },
-                      { label: 'SILK CAPA - COLORIDO', values: ['R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50'] },
-                      { label: 'DIVISÓRIAS', values: ['R$ 2,50', 'R$ 2,50', 'R$ 2,50', 'R$ 2,50', 'R$ 2,50'] },
-                      { label: 'PLACA METALIZADA (6x4)', values: ['R$ 5,90', 'R$ 5,90', 'R$ 5,90', 'R$ 5,90', 'R$ 5,90'] },
-                      { label: 'ADESIVOS', values: ['R$ 3,90', 'R$ 3,90', 'R$ 3,90', 'R$ 3,90', 'R$ 3,90'] },
-                      { label: 'ACRILICO - 3 Modelos (Unid.)', values: ['R$ 7,50', 'R$ 7,50', 'R$ 7,50', 'R$ 7,50', 'R$ 7,50'] },
-                    ].map((row, i) => (
-                      <tr key={i} className="border-b last:border-b-0">
-                        <td className="py-1 px-2 font-medium">{row.label}</td>
-                        {row.values.map((v, j) => (
-                          <td key={j} className="text-center py-1 px-1">
-                            <label className="inline-flex items-center gap-1 cursor-pointer whitespace-nowrap">
-                              <input type="checkbox" className="accent-primary h-3 w-3 flex-shrink-0" />
-                              <span className="whitespace-nowrap">{v}</span>
-                            </label>
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
+                      { label: 'CAPA', key: 'CAPA', values: ['R$ 13,90', 'R$ 19,90', 'R$ 25,70', 'R$ 37,70', 'R$ 47,90'] },
+                      { label: 'MAO DE OBRA', key: 'MAO_DE_OBRA', values: ['R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40'] },
+                      { label: 'MP P/ LAMINAS', key: 'MP_LAMINAS', values: ['R$ 0,25', 'R$ 0,30', 'R$ 0,50', 'R$ 0,35', 'R$ 0,35'] },
+                      { label: 'LAMINAS (Nome cliente)', key: 'LAMINAS_NOME', values: ['R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05'] },
+                      { label: 'CODIGOS (Codigo cliente)', key: 'CODIGOS', values: ['R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05'] },
+                      { label: 'ARTE CAPA', key: 'ARTE_CAPA', values: ['R$ 75,00', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00'] },
+                      { label: 'SILK CAPA - 1 COR', key: 'SILK_1COR', values: ['R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20'] },
+                      { label: 'SILK CAPA - COLORIDO', key: 'SILK_COLORIDO', values: ['R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50'] },
+                      { label: 'DIVISÓRIAS', key: 'DIVISORIAS', values: ['R$ 2,50', 'R$ 2,50', 'R$ 2,50', 'R$ 2,50', 'R$ 2,50'] },
+                      { label: 'PLACA METALIZADA (6x4)', key: 'PLACA', values: ['R$ 5,90', 'R$ 5,90', 'R$ 5,90', 'R$ 5,90', 'R$ 5,90'] },
+                      { label: 'ADESIVOS', key: 'ADESIVOS', values: ['R$ 3,90', 'R$ 3,90', 'R$ 3,90', 'R$ 3,90', 'R$ 3,90'] },
+                      { label: 'ACRILICO - 3 Modelos (Unid.)', key: 'ACRILICO', values: ['R$ 7,50', 'R$ 7,50', 'R$ 7,50', 'R$ 7,50', 'R$ 7,50'] },
+                    ].map((row, i) => {
+                      const bookKeys = ['A', 'B', 'C', 'D', 'E'];
+                      const isChecked = (form.custosChecked || []).includes(row.key);
+                      return (
+                        <tr key={i} className="border-b last:border-b-0">
+                          <td className="py-1 px-2 font-medium">{row.label}</td>
+                          {row.values.map((v, j) => {
+                            const isSelectedBook = form.bookEscolhido.includes(bookKeys[j]);
+                            return (
+                              <td key={j} className="text-center py-1 px-1">
+                                <label className="inline-flex items-center gap-1 cursor-pointer whitespace-nowrap">
+                                  <input
+                                    type="checkbox"
+                                    className="accent-primary h-3 w-3 flex-shrink-0"
+                                    checked={isSelectedBook && isChecked}
+                                    onChange={() => { if (isSelectedBook) toggleCustoCheck(row.key); }}
+                                    disabled={!isSelectedBook}
+                                  />
+                                  <span className={cn("whitespace-nowrap", !isSelectedBook && "text-muted-foreground/50")}>{v}</span>
+                                </label>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
