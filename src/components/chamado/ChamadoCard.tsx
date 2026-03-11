@@ -312,7 +312,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
                 <Button variant="ghost" size="sm" onClick={handleCancel} disabled={saving}>
                   <X className="h-4 w-4 mr-1.5" />Cancelar
                 </Button>
-                <Button size="sm" onClick={handleSave} disabled={saving}>
+                <Button type="button" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSave(); }} disabled={saving}>
                   <Save className="h-4 w-4 mr-1.5" />{saving ? 'Salvando...' : 'Salvar'}
                 </Button>
               </>

@@ -652,9 +652,9 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
           {/* Footer */}
           <div className="sticky bottom-0 bg-card border-t px-6 py-4 flex justify-end gap-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>{isEditable ? 'Cancelar' : 'Fechar'}</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{isEditable ? 'Cancelar' : 'Fechar'}</Button>
             {isEditable && (
-              <Button onClick={handleSave} disabled={saving}>
+              <Button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSave(); }} disabled={saving}>
                 <Save className="h-4 w-4 mr-1.5" />{saving ? 'Salvando...' : 'Salvar'}
               </Button>
             )}
