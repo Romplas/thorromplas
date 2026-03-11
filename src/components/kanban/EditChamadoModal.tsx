@@ -664,13 +664,13 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
       {/* Preview Dialog */}
       <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>{previewName}</DialogTitle>
           </DialogHeader>
-          <div className="flex items-center justify-center overflow-auto max-h-[70vh]">
+          <div className="flex-1 min-h-0 overflow-auto flex items-center justify-center">
             {previewUrl && previewName.toLowerCase().endsWith('.pdf') ? (
-              <iframe src={previewUrl} className="w-full h-[70vh] border-0 rounded" />
+              <iframe src={previewUrl} title={previewName} className="w-full min-h-[70vh] border-0 rounded flex-1" style={{ minHeight: '500px' }} />
             ) : previewUrl ? (
               <img src={previewUrl} alt={previewName} className="max-w-full max-h-[70vh] object-contain rounded" />
             ) : null}

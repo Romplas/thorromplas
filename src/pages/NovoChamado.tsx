@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import jsPDF from 'jspdf';
-import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2, Eye, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2, Eye, Pencil, Plus, Trash2, CalendarIcon } from 'lucide-react';
+import { format, parse, isValid } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import AmostrasCreationForm, { type AmostrasFullFormData, defaultAmostrasFullForm } from '@/components/chamado/AmostrasCreationForm';
 import { type BookFullFormData, defaultBookFullForm, generateBookPdf } from '@/components/chamado/BookFormModal';
 import romplasLogo from '@/assets/romplas-logo.png';
@@ -13,6 +15,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -1912,7 +1917,37 @@ export default function NovoChamado() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label className="text-xs">Representante</Label><Input className="mt-1" value={bookForm.representante} disabled /></div>
-                <div><Label className="text-xs">Data Entrega Negociada</Label><Input type="date" className="mt-1" value={bookForm.dataEntregaNegociada} onChange={e => setBookForm(p => ({ ...p, dataEntregaNegociada: e.target.value }))} /></div>
+                <div>
+                <Label className="text-xs">Data Entrega Negociada</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        "mt-1 flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-left text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                        !bookForm.dataEntregaNegociada && "text-muted-foreground"
+                      )}
+                    >
+                      <span>
+                        {bookForm.dataEntregaNegociada ? (() => {
+                          const d = parse(bookForm.dataEntregaNegociada, 'yyyy-MM-dd', new Date());
+                          return isValid(d) ? format(d, 'dd/MM/yyyy', { locale: ptBR }) : bookForm.dataEntregaNegociada;
+                        })() : 'Selecione a data'}
+                      </span>
+                      <CalendarIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={bookForm.dataEntregaNegociada ? (() => { const d = parse(bookForm.dataEntregaNegociada, 'yyyy-MM-dd', new Date()); return isValid(d) ? d : undefined; })() : undefined}
+                      onSelect={(d) => d && setBookForm(p => ({ ...p, dataEntregaNegociada: format(d, 'yyyy-MM-dd') }))}
+                      locale={ptBR}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
               </div>
               <div className="border rounded-lg p-3 space-y-2">
                 <Label className="text-xs font-semibold">Envio</Label>
@@ -2048,8 +2083,8 @@ export default function NovoChamado() {
                     <div className="pt-1 space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold">SILK CAPA:</span>
-                        <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk-nc" checked={bookForm.silkCapa === 'cor_unica'} onChange={() => setBookForm(p => ({ ...p, silkCapa: 'cor_unica' }))} /> COR ÚNICA</label>
-                        <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk-nc" checked={bookForm.silkCapa === 'colorido'} onChange={() => setBookForm(p => ({ ...p, silkCapa: 'colorido' }))} /> COLORIDO</label>
+                        <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk-nc" checked={bookForm.silkCapa === 'sim'} onChange={() => setBookForm(p => ({ ...p, silkCapa: 'sim' }))} /> SIM</label>
+                        <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk-nc" checked={bookForm.silkCapa === 'nao'} onChange={() => setBookForm(p => ({ ...p, silkCapa: 'nao' }))} /> NÃO</label>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold">ADESIVO PERS.:</span>
@@ -2173,7 +2208,37 @@ export default function NovoChamado() {
                 </div>
                 <div className="border-t pt-2 mt-2 space-y-1 text-xs">
                   <div className="flex items-center gap-2"><span className="font-semibold">PRAZO NEGOCIADO:</span><Input className="h-6 text-xs flex-1" /></div>
-                  <div className="flex items-center gap-2"><span className="font-semibold">DATA:</span><Input className="h-6 text-xs flex-1" /></div>
+                  <div className="flex items-center gap-2">
+                  <span className="font-semibold">DATA:</span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className={cn(
+                          "flex h-8 flex-1 items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-left text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                          !bookForm.dataOrcamento && "text-muted-foreground"
+                        )}
+                      >
+                        <span>
+                          {bookForm.dataOrcamento ? (() => {
+                            const d = parse(bookForm.dataOrcamento, 'yyyy-MM-dd', new Date());
+                            return isValid(d) ? format(d, 'dd/MM/yyyy', { locale: ptBR }) : bookForm.dataOrcamento;
+                          })() : 'Selecione a data'}
+                        </span>
+                        <CalendarIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={bookForm.dataOrcamento ? (() => { const d = parse(bookForm.dataOrcamento, 'yyyy-MM-dd', new Date()); return isValid(d) ? d : undefined; })() : undefined}
+                        onSelect={(d) => d && setBookForm(p => ({ ...p, dataOrcamento: format(d, 'yyyy-MM-dd') }))}
+                        locale={ptBR}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
                   <div className="flex items-center gap-2"><span className="font-semibold">ASSINATURA:</span><Input className="h-6 text-xs flex-1" /></div>
                 </div>
               </div>

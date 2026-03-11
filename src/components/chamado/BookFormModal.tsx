@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
-import { FileText, Plus, Trash2, Eye } from 'lucide-react';
+import { FileText, Plus, Trash2, Eye, CalendarIcon } from 'lucide-react';
 import romplasLogo from '@/assets/romplas-logo.png';
+import { format, parse, isValid } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -36,9 +41,10 @@ export interface BookFullFormData {
   arteCapa: boolean; logoCliente: string; nomeProjeto: boolean;
   acrilico: boolean; placaMetalica: boolean; divisoria: string;
   laminasNomeCliente: boolean; codigosCliente: boolean;
-  silkCapa: string; // 'cor_unica' | 'colorido'
+  silkCapa: string; // 'sim' | 'nao'
   adesivoPers: string; // 'sim' | 'nao'
   contraCapaFrente: boolean; contraCapaFundo: boolean;
+  dataOrcamento: string;
 }
 
 export const defaultBookFullForm: BookFullFormData = {
@@ -57,6 +63,7 @@ export const defaultBookFullForm: BookFullFormData = {
   acrilico: false, placaMetalica: false, divisoria: '',
   laminasNomeCliente: false, codigosCliente: false,
   silkCapa: '', adesivoPers: '', contraCapaFrente: false, contraCapaFundo: false,
+  dataOrcamento: '',
 };
 
 const MODELOS = [
@@ -67,13 +74,21 @@ const MODELOS = [
   { key: 'E', label: 'E (40×21×6)', laminas: '150/165', img: '/images/book-model-e.png' },
 ];
 
+const formatDatePdf = (d: string) => {
+  if (!d) return '-';
+  try {
+    const parsed = parse(d, 'yyyy-MM-dd', new Date());
+    return isValid(parsed) ? format(parsed, 'dd/MM/yyyy', { locale: ptBR }) : d;
+  } catch { return d; }
+};
+
 export function generateBookPdf(form: BookFullFormData, clienteNome: string, representanteNome: string): Blob {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 15;
   const contentW = pageW - margin * 2;
   let y = 12;
-  const checkPage = (needed: number) => { if (y + needed > 280) { doc.addPage(); y = 15; } };
+  const checkPage = (needed: number) => { if (y + needed > 270) { doc.addPage(); y = 15; } };
 
   const addFieldRow = (l1: string, v1: string, l2: string, v2: string) => {
     checkPage(12); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
@@ -107,7 +122,7 @@ export function generateBookPdf(form: BookFullFormData, clienteNome: string, rep
 
   // Dados gerais
   addFieldRow('Razão Social:', form.razaoSocial || clienteNome, 'Cod:', form.codigo);
-  addFieldRow('Representante:', form.representante || representanteNome, 'Data Entrega:', form.dataEntregaNegociada);
+  addFieldRow('Representante:', form.representante || representanteNome, 'Data Entrega:', formatDatePdf(form.dataEntregaNegociada));
   const envioText = form.envio === 'com_pedido' ? 'Com Pedido' : form.envio === 'sem_pedido' ? 'Sem Pedido' : '-';
   addFieldRow('Envio:', envioText, 'Transportadora:', form.transportadora);
   y += 2;
@@ -165,7 +180,7 @@ export function generateBookPdf(form: BookFullFormData, clienteNome: string, rep
   addSectionBox('Personalização', () => {
     doc.setFontSize(8);
     doc.text(`(${form.arteCapa ? 'X' : ' '}) ARTE CAPA`, margin + 3, y);
-    doc.text(`SILK CAPA: (${form.silkCapa === 'cor_unica' ? 'X' : ' '}) COR ÚNICA  (${form.silkCapa === 'colorido' ? 'X' : ' '}) COLORIDO`, margin + 60, y); y += 5;
+    doc.text(`SILK CAPA: (${form.silkCapa === 'sim' ? 'X' : ' '}) SIM  (${form.silkCapa === 'nao' ? 'X' : ' '}) NÃO`, margin + 60, y); y += 5;
     doc.text(`(${form.logoCliente === 'sim' ? 'X' : ' '}) LOGO CLIENTE  SIM(${form.logoCliente === 'sim' ? 'X' : ' '})  NÃO(${form.logoCliente === 'nao' ? 'X' : ' '})`, margin + 3, y); y += 5;
     doc.text(`(${form.nomeProjeto ? 'X' : ' '}) NOME PROJETO`, margin + 3, y); y += 5;
     doc.text(`(${form.acrilico ? 'X' : ' '}) ACRÍLICO TRANSP.`, margin + 3, y);
@@ -176,6 +191,30 @@ export function generateBookPdf(form: BookFullFormData, clienteNome: string, rep
     doc.text(`(${form.contraCapaFrente ? 'X' : ' '}) CONTRA CAPA FRENTE`, margin + 80, y); y += 5;
     doc.text(`(${form.codigosCliente ? 'X' : ' '}) CODIGOS (Cod cliente)`, margin + 3, y);
     doc.text(`(${form.contraCapaFundo ? 'X' : ' '}) CONTRA CAPA FUNDO`, margin + 80, y); y += 3;
+  });
+
+  // Custos (tabela resumida)
+  checkPage(80);
+  addSectionBox('Custos', () => {
+    doc.setFontSize(7);
+    const custosRows = [
+      ['CAPA', 'R$ 13,90', 'R$ 19,90', 'R$ 25,70', 'R$ 37,70', 'R$ 47,90'],
+      ['MAO DE OBRA', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40'],
+      ['SILK CAPA - 1 COR', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20'],
+      ['SILK CAPA - COLORIDO', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50'],
+    ];
+    doc.setFont('helvetica', 'bold'); doc.text('BOOK', margin + 3, y); doc.text('A', margin + 45, y); doc.text('B', margin + 60, y); doc.text('C', margin + 75, y); doc.text('D', margin + 90, y); doc.text('E', margin + 105, y); y += 5;
+    doc.setFont('helvetica', 'normal');
+    custosRows.forEach(r => { doc.text(r[0], margin + 3, y); for (let j = 1; j <= 5; j++) doc.text(r[j], margin + 38 + (j - 1) * 18, y); y += 5; });
+  });
+
+  // Orçamento - Data
+  checkPage(35);
+  addSectionBox('Orçamento', () => {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+    doc.text('PRAZO NEGOCIADO:', margin + 3, y); doc.text('DATA:', margin + 70, y); doc.text('ASSINATURA:', margin + 120, y); y += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.text('-', margin + 3, y); doc.text(formatDatePdf(form.dataOrcamento), margin + 70, y); doc.text('-', margin + 120, y); y += 2;
   });
 
   return doc.output('blob');
@@ -287,13 +326,46 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
         <ScrollArea className="flex-1 px-6">
           <div className="space-y-4 pb-4">
             {/* Dados Gerais */}
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Razão Social *</Label><Input className="mt-1" value={form.razaoSocial} onChange={e => setForm(p => ({ ...p, razaoSocial: e.target.value }))} /></div>
-              <div><Label className="text-xs">Código</Label><Input className="mt-1" value={form.codigo} onChange={e => setForm(p => ({ ...p, codigo: e.target.value }))} /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Representante</Label><Input className="mt-1" value={form.representante} disabled /></div>
-              <div><Label className="text-xs">Data Entrega Negociada</Label><Input type="date" className="mt-1" value={form.dataEntregaNegociada} onChange={e => setForm(p => ({ ...p, dataEntregaNegociada: e.target.value }))} /></div>
+            <div className="border rounded-lg p-3 space-y-3">
+              <Label className="text-xs font-semibold">Dados Gerais</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs text-muted-foreground">Razão Social *</Label><Input className="mt-1 h-9 text-sm" value={form.razaoSocial} onChange={e => setForm(p => ({ ...p, razaoSocial: e.target.value }))} /></div>
+                <div><Label className="text-xs text-muted-foreground">Código</Label><Input className="mt-1 h-9 text-sm" value={form.codigo} onChange={e => setForm(p => ({ ...p, codigo: e.target.value }))} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs text-muted-foreground">Representante</Label><Input className="mt-1 h-9 text-sm" value={form.representante} disabled /></div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Data Entrega Negociada</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        "mt-1 flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-left text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                        !form.dataEntregaNegociada && "text-muted-foreground"
+                      )}
+                    >
+                      <span>
+                        {form.dataEntregaNegociada ? (() => {
+                          const d = parse(form.dataEntregaNegociada, 'yyyy-MM-dd', new Date());
+                          return isValid(d) ? format(d, 'dd/MM/yyyy', { locale: ptBR }) : form.dataEntregaNegociada;
+                        })() : 'Selecione a data'}
+                      </span>
+                      <CalendarIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={form.dataEntregaNegociada ? (() => { const d = parse(form.dataEntregaNegociada, 'yyyy-MM-dd', new Date()); return isValid(d) ? d : undefined; })() : undefined}
+                      onSelect={(d) => d && setForm(p => ({ ...p, dataEntregaNegociada: format(d, 'yyyy-MM-dd') }))}
+                      locale={ptBR}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              </div>
             </div>
             <div className="border rounded-lg p-3 space-y-2">
               <Label className="text-xs font-semibold">Envio</Label>
@@ -338,7 +410,9 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
             </Dialog>
 
             {/* Dados do Book */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="border rounded-lg p-3 space-y-3">
+              <Label className="text-xs font-semibold">Dados do Book</Label>
+              <div className="grid grid-cols-3 gap-3">
               <div><Label className="text-xs">Quantidade Book</Label><Input className="mt-1" value={form.quantidadeBook} onChange={e => setForm(p => ({ ...p, quantidadeBook: e.target.value }))} /></div>
               <div><Label className="text-xs">Qtd de Linhas</Label><Input className="mt-1" value={form.quantidadeLinhas} onChange={e => setForm(p => ({ ...p, quantidadeLinhas: e.target.value }))} /></div>
               <div><Label className="text-xs">Nº Laminas</Label><Input className="mt-1" value={form.nLaminas} onChange={e => setForm(p => ({ ...p, nLaminas: e.target.value }))} /></div>
@@ -348,6 +422,7 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
               <div><Label className="text-xs">Código Capa</Label><Input className="mt-1" value={form.codigoCapa} onChange={e => setForm(p => ({ ...p, codigoCapa: e.target.value }))} /></div>
             </div>
             <div><Label className="text-xs">Descrição Capa</Label><Input className="mt-1" value={form.descricaoCapa} onChange={e => setForm(p => ({ ...p, descricaoCapa: e.target.value }))} /></div>
+            </div>
 
             {/* Aprovações */}
             <div className="border rounded-lg p-3 space-y-2">
@@ -411,8 +486,8 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                   <div className="pt-1 space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold">SILK CAPA:</span>
-                      <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk" checked={form.silkCapa === 'cor_unica'} onChange={() => setForm(p => ({ ...p, silkCapa: 'cor_unica' }))} /> COR ÚNICA</label>
-                      <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk" checked={form.silkCapa === 'colorido'} onChange={() => setForm(p => ({ ...p, silkCapa: 'colorido' }))} /> COLORIDO</label>
+                      <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk" checked={form.silkCapa === 'sim'} onChange={() => setForm(p => ({ ...p, silkCapa: 'sim' }))} /> SIM</label>
+                      <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk" checked={form.silkCapa === 'nao'} onChange={() => setForm(p => ({ ...p, silkCapa: 'nao' }))} /> NÃO</label>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold">ADESIVO PERS.:</span>
@@ -536,7 +611,37 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
               </div>
               <div className="border-t pt-2 mt-2 space-y-1 text-xs">
                 <div className="flex items-center gap-2"><span className="font-semibold">PRAZO NEGOCIADO:</span><Input className="h-6 text-xs flex-1" /></div>
-                <div className="flex items-center gap-2"><span className="font-semibold">DATA:</span><Input className="h-6 text-xs flex-1" /></div>
+                <div className="flex items-center gap-2">
+                <span className="font-semibold">DATA:</span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        "flex h-8 flex-1 items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-left text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                        !form.dataOrcamento && "text-muted-foreground"
+                      )}
+                    >
+                      <span>
+                        {form.dataOrcamento ? (() => {
+                          const d = parse(form.dataOrcamento, 'yyyy-MM-dd', new Date());
+                          return isValid(d) ? format(d, 'dd/MM/yyyy', { locale: ptBR }) : form.dataOrcamento;
+                        })() : 'Selecione a data'}
+                      </span>
+                      <CalendarIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={form.dataOrcamento ? (() => { const d = parse(form.dataOrcamento, 'yyyy-MM-dd', new Date()); return isValid(d) ? d : undefined; })() : undefined}
+                      onSelect={(d) => d && setForm(p => ({ ...p, dataOrcamento: format(d, 'yyyy-MM-dd') }))}
+                      locale={ptBR}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
                 <div className="flex items-center gap-2"><span className="font-semibold">ASSINATURA:</span><Input className="h-6 text-xs flex-1" /></div>
               </div>
             </div>
