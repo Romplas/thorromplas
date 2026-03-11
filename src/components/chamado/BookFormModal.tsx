@@ -691,7 +691,7 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
               </div>
             </div>
           </div>
-        </ScrollArea>
+        </div>
         <DialogFooter className="px-6 pb-6 pt-2 flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           {isCreateMode && onConfirmCreate && (
