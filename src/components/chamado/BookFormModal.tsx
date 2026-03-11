@@ -385,51 +385,50 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
 
             {/* Observação */}
             <div>
-              <Label className="text-xs font-semibold">Observação</Label>
-              <Textarea className="mt-1" value={form.observacao} onChange={e => setForm(p => ({ ...p, observacao: e.target.value }))} />
+              <Label className="text-xs font-semibold text-center block">Observação</Label>
+              <div className="mt-1 rounded-md border border-input bg-muted/50 px-3 py-2 text-xs text-muted-foreground text-center italic">
+                Enviar junto com esse formulário, os códigos selecionados no ANEXO 01 para incluir no Book do cliente
+              </div>
             </div>
 
             {/* Personalização */}
             <div className="border rounded-lg p-3 space-y-2">
               <Label className="text-xs font-semibold text-center block">PERSONALIZAÇÃO</Label>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1">
-                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.arteCapa} onChange={e => setForm(p => ({ ...p, arteCapa: e.target.checked }))} /> ARTE CAPA</label>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold">SILK CAPA:</span>
-                  <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk" checked={form.silkCapa === 'cor_unica'} onChange={() => setForm(p => ({ ...p, silkCapa: 'cor_unica' }))} /> COR ÚNICA</label>
-                  <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk" checked={form.silkCapa === 'colorido'} onChange={() => setForm(p => ({ ...p, silkCapa: 'colorido' }))} /> COLORIDO</label>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.logoCliente === 'sim'} onChange={e => setForm(p => ({ ...p, logoCliente: e.target.checked ? 'sim' : 'nao' }))} /> LOGO CLIENTE</label>
-                  <span className="text-xs text-muted-foreground">{form.logoCliente === 'sim' ? 'SIM' : form.logoCliente === 'nao' ? 'NÃO' : ''}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold">ADESIVO PERS.:</span>
-                  <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-adesivo" checked={form.adesivoPers === 'sim'} onChange={() => setForm(p => ({ ...p, adesivoPers: 'sim' }))} /> SIM</label>
-                  <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-adesivo" checked={form.adesivoPers === 'nao'} onChange={() => setForm(p => ({ ...p, adesivoPers: 'nao' }))} /> NÃO</label>
-                </div>
-
-                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.nomeProjeto} onChange={e => setForm(p => ({ ...p, nomeProjeto: e.target.checked }))} /> NOME PROJETO</label>
-                <div />
-
-                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.acrilico} onChange={e => setForm(p => ({ ...p, acrilico: e.target.checked }))} /> ACRÍLICO TRANSP.</label>
-                <div />
-
-                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.placaMetalica} onChange={e => setForm(p => ({ ...p, placaMetalica: e.target.checked }))} /> PLACA METÁLICA (4X6)</label>
-                <div />
-
-                <div className="flex items-center gap-2">
+              <div className="flex gap-4">
+                {/* Coluna esquerda - checkboxes e radios */}
+                <div className="flex-1 space-y-1">
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.arteCapa} onChange={e => setForm(p => ({ ...p, arteCapa: e.target.checked }))} /> ARTE CAPA</label>
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.logoCliente === 'sim'} onChange={e => setForm(p => ({ ...p, logoCliente: e.target.checked ? 'sim' : 'nao' }))} /> LOGO CLIENTE</label>
+                  </div>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.nomeProjeto} onChange={e => setForm(p => ({ ...p, nomeProjeto: e.target.checked }))} /> NOME PROJETO</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.acrilico} onChange={e => setForm(p => ({ ...p, acrilico: e.target.checked }))} /> ACRÍLICO TRANSP.</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.placaMetalica} onChange={e => setForm(p => ({ ...p, placaMetalica: e.target.checked }))} /> PLACA METÁLICA (4X6)</label>
                   <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.divisoria === 'sim'} onChange={e => setForm(p => ({ ...p, divisoria: e.target.checked ? 'sim' : 'nao' }))} /> DIVISÓRIA</label>
-                  <span className="text-xs text-muted-foreground">{form.divisoria === 'sim' ? 'SIM' : form.divisoria === 'nao' ? 'NÃO' : ''}</span>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.laminasNomeCliente} onChange={e => setForm(p => ({ ...p, laminasNomeCliente: e.target.checked }))} /> LAMINAS (Nome cliente)</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.codigosCliente} onChange={e => setForm(p => ({ ...p, codigosCliente: e.target.checked }))} /> CODIGOS (Cod cliente)</label>
+
+                  <div className="pt-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold">SILK CAPA:</span>
+                      <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk" checked={form.silkCapa === 'cor_unica'} onChange={() => setForm(p => ({ ...p, silkCapa: 'cor_unica' }))} /> COR ÚNICA</label>
+                      <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk" checked={form.silkCapa === 'colorido'} onChange={() => setForm(p => ({ ...p, silkCapa: 'colorido' }))} /> COLORIDO</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold">ADESIVO PERS.:</span>
+                      <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-adesivo" checked={form.adesivoPers === 'sim'} onChange={() => setForm(p => ({ ...p, adesivoPers: 'sim' }))} /> SIM</label>
+                      <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-adesivo" checked={form.adesivoPers === 'nao'} onChange={() => setForm(p => ({ ...p, adesivoPers: 'nao' }))} /> NÃO</label>
+                    </div>
+                    <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.contraCapaFrente} onChange={e => setForm(p => ({ ...p, contraCapaFrente: e.target.checked }))} /> CONTRA CAPA FRENTE</label>
+                    <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.contraCapaFundo} onChange={e => setForm(p => ({ ...p, contraCapaFundo: e.target.checked }))} /> CONTRA CAPA FUNDO</label>
+                  </div>
                 </div>
-                <div />
 
-                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.laminasNomeCliente} onChange={e => setForm(p => ({ ...p, laminasNomeCliente: e.target.checked }))} /> LAMINAS (Nome cliente)</label>
-                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.contraCapaFrente} onChange={e => setForm(p => ({ ...p, contraCapaFrente: e.target.checked }))} /> CONTRA CAPA FRENTE</label>
-
-                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.codigosCliente} onChange={e => setForm(p => ({ ...p, codigosCliente: e.target.checked }))} /> CODIGOS (Cod cliente)</label>
-                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.contraCapaFundo} onChange={e => setForm(p => ({ ...p, contraCapaFundo: e.target.checked }))} /> CONTRA CAPA FUNDO</label>
+                {/* Coluna direita - imagem do book personalizado */}
+                <div className="flex-shrink-0 flex flex-col items-center">
+                  <img src="/images/book-personalizado.png" alt="Book Personalizado" className="w-48 h-auto rounded-lg border object-contain" />
+                  <span className="text-[10px] text-muted-foreground mt-1">Referência Book Personalizado</span>
+                </div>
               </div>
             </div>
           </div>
