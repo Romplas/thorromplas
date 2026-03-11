@@ -115,8 +115,8 @@ export async function generateBookPdf(form: BookFullFormData, clienteNome: strin
   try {
     const logoImg = new window.Image(); logoImg.crossOrigin = 'anonymous';
     await new Promise<void>((resolve, reject) => { logoImg.onload = () => resolve(); logoImg.onerror = () => reject(); logoImg.src = '/images/romplas-logo-pdf.png'; });
-    const logoH = 12; const logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
-    doc.addImage(logoImg, 'PNG', (pageW - logoW) / 2, y, logoW, logoH); y += logoH + 4;
+    const logoH = 16; const logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
+    doc.addImage(logoImg, 'PNG', (pageW - logoW) / 2, y, logoW, logoH); y += logoH + 5;
   } catch { /* fallback sem logo */ }
 
   doc.setFontSize(13); doc.setFont('helvetica', 'bold');
