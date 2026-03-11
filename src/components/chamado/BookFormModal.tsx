@@ -41,7 +41,7 @@ export interface BookFullFormData {
   arteCapa: boolean; logoCliente: string; nomeProjeto: boolean;
   acrilico: boolean; placaMetalica: boolean; divisoria: string;
   laminasNomeCliente: boolean; codigosCliente: boolean;
-  silkCapa: string; // 'sim' | 'nao'
+  silkCapa: string[]; // múltipla seleção: 'sim' | 'nao' | 'cor_unica' | 'colorido'
   adesivoPers: string; // 'sim' | 'nao'
   contraCapaFrente: boolean; contraCapaFundo: boolean;
   dataOrcamento: string;
@@ -62,7 +62,7 @@ export const defaultBookFullForm: BookFullFormData = {
   arteCapa: false, logoCliente: '', nomeProjeto: false,
   acrilico: false, placaMetalica: false, divisoria: '',
   laminasNomeCliente: false, codigosCliente: false,
-  silkCapa: '', adesivoPers: '', contraCapaFrente: false, contraCapaFundo: false,
+  silkCapa: [], adesivoPers: '', contraCapaFrente: false, contraCapaFundo: false,
   dataOrcamento: '',
 };
 
@@ -180,7 +180,8 @@ export function generateBookPdf(form: BookFullFormData, clienteNome: string, rep
   addSectionBox('Personalização', () => {
     doc.setFontSize(8);
     doc.text(`(${form.arteCapa ? 'X' : ' '}) ARTE CAPA`, margin + 3, y);
-    doc.text(`SILK CAPA: (${form.silkCapa === 'sim' ? 'X' : ' '}) SIM  (${form.silkCapa === 'nao' ? 'X' : ' '}) NÃO`, margin + 60, y); y += 5;
+    const sc = form.silkCapa || [];
+    doc.text(`SILK CAPA: (${sc.includes('sim') ? 'X' : ' '}) SIM  (${sc.includes('nao') ? 'X' : ' '}) NÃO  (${sc.includes('cor_unica') ? 'X' : ' '}) COR ÚNICA  (${sc.includes('colorido') ? 'X' : ' '}) COLORIDO`, margin + 3, y); y += 5;
     doc.text(`(${form.logoCliente === 'sim' ? 'X' : ' '}) LOGO CLIENTE  SIM(${form.logoCliente === 'sim' ? 'X' : ' '})  NÃO(${form.logoCliente === 'nao' ? 'X' : ' '})`, margin + 3, y); y += 5;
     doc.text(`(${form.nomeProjeto ? 'X' : ' '}) NOME PROJETO`, margin + 3, y); y += 5;
     doc.text(`(${form.acrilico ? 'X' : ' '}) ACRÍLICO TRANSP.`, margin + 3, y);
@@ -223,41 +224,66 @@ export function generateBookPdf(form: BookFullFormData, clienteNome: string, rep
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  chamadoId: number;
+  chamadoId?: number | null;
   clienteNome: string;
   representanteNome: string;
+  /** Modo criação (NovoChamado): dados iniciais e callback ao confirmar */
+  initialFormData?: BookFullFormData;
+  onFormDataChange?: (form: BookFullFormData) => void;
+  onConfirmCreate?: (form: BookFullFormData, pdfFile?: File) => void;
+  /** Modo edição: callback após upload do PDF */
   onPdfUploaded?: () => void;
 }
 
-export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNome, representanteNome, onPdfUploaded }: Props) {
+export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNome, representanteNome, initialFormData, onFormDataChange, onConfirmCreate, onPdfUploaded }: Props) {
+  const isCreateMode = !chamadoId;
   const [form, setForm] = useState<BookFullFormData>({ ...defaultBookFullForm });
   const [saving, setSaving] = useState(false);
   const [fotoModal, setFotoModal] = useState<{ open: boolean; img: string; label: string }>({ open: false, img: '', label: '' });
+
+  // Modo criação: sincronizar com dados iniciais do pai
   useEffect(() => {
-    if (!open) return;
+    if (open && isCreateMode && initialFormData) {
+      const sc = Array.isArray(initialFormData.silkCapa) ? initialFormData.silkCapa : (initialFormData.silkCapa ? [initialFormData.silkCapa] : []);
+      setForm({ ...defaultBookFullForm, ...initialFormData, silkCapa: sc } as BookFullFormData);
+    }
+  }, [open, isCreateMode, initialFormData]);
+
+  // Modo edição: carregar do banco
+  useEffect(() => {
+    if (!open || isCreateMode || !chamadoId) return;
     const load = async () => {
       const { data } = await supabase.from('chamados').select('sdp_data').eq('id', chamadoId).maybeSingle();
       const raw = data as any;
       if (raw?.sdp_data && typeof raw.sdp_data === 'object' && raw.sdp_data.formType === 'book') {
-        const { formType, ...rest } = raw.sdp_data;
-        setForm({ ...defaultBookFullForm, ...rest });
+        const { formType, silkCapa: scRaw, ...rest } = raw.sdp_data;
+        const silkCapa = Array.isArray(scRaw) ? scRaw : (scRaw ? [scRaw] : []);
+        setForm({ ...defaultBookFullForm, ...rest, silkCapa });
       } else {
         setForm({ ...defaultBookFullForm });
       }
     };
     load();
-  }, [open, chamadoId]);
+  }, [open, chamadoId, isCreateMode]);
 
-  const toggleModel = (key: string) => setForm(p => ({
+  const setFormWithSync = (updater: (prev: BookFullFormData) => BookFullFormData) => {
+    setForm(prev => {
+      const next = updater(prev);
+      if (isCreateMode && onFormDataChange) onFormDataChange(next);
+      return next;
+    });
+  };
+
+  const toggleModel = (key: string) => setFormWithSync(p => ({
     ...p, modeloBook: p.modeloBook.includes(key) ? p.modeloBook.filter(k => k !== key) : [...p.modeloBook, key]
   }));
 
-  const toggleBookEscolhido = (key: string) => setForm(p => ({
+  const toggleBookEscolhido = (key: string) => setFormWithSync(p => ({
     ...p, bookEscolhido: p.bookEscolhido.includes(key) ? p.bookEscolhido.filter(k => k !== key) : [...p.bookEscolhido, key]
   }));
 
   const updateSeqRow = (col: 'colunaA' | 'colunaB' | 'colunaC', idx: number, field: 'linhas' | 'quantidade', value: string) => {
-    setForm(p => {
+    setFormWithSync(p => {
       const rows = [...p[col]];
       rows[idx] = { ...rows[idx], [field]: value };
       return { ...p, [col]: rows };
@@ -265,11 +291,11 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
   };
 
   const addSeqRow = (col: 'colunaA' | 'colunaB' | 'colunaC') => {
-    setForm(p => ({ ...p, [col]: [...p[col], { linhas: '', quantidade: '' }] }));
+    setFormWithSync(p => ({ ...p, [col]: [...p[col], { linhas: '', quantidade: '' }] }));
   };
 
   const removeSeqRow = (col: 'colunaA' | 'colunaB' | 'colunaC', idx: number) => {
-    setForm(p => ({ ...p, [col]: p[col].filter((_, i) => i !== idx) }));
+    setFormWithSync(p => ({ ...p, [col]: p[col].filter((_, i) => i !== idx) }));
   };
 
   const generateAndUploadPdf = async () => {
@@ -279,16 +305,20 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
       const pdfBlob = generateBookPdf(form, clienteNome, representanteNome);
       const cleanName = (form.razaoSocial || clienteNome || 'book').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
       const fileName = `${Date.now()}_Book_${cleanName}.pdf`;
-      const filePath = `${chamadoId}/${fileName}`;
 
-      const { error } = await supabase.storage.from('chamado-anexos').upload(filePath, pdfBlob, { contentType: 'application/pdf', upsert: true });
-      if (error) throw error;
-
-      await supabase.from('chamados').update({ sdp_data: { ...form, formType: 'book' } as any } as any).eq('id', chamadoId);
-
-      toast.success('PDF de Book gerado e anexado ao ticket!');
-      onPdfUploaded?.();
-      onOpenChange(false);
+      if (isCreateMode && onConfirmCreate) {
+        const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+        onConfirmCreate(form, pdfFile);
+        onOpenChange(false);
+      } else if (chamadoId) {
+        const filePath = `${chamadoId}/${fileName}`;
+        const { error } = await supabase.storage.from('chamado-anexos').upload(filePath, pdfBlob, { contentType: 'application/pdf', upsert: true });
+        if (error) throw error;
+        await supabase.from('chamados').update({ sdp_data: { ...form, formType: 'book' } as any } as any).eq('id', chamadoId);
+        toast.success('PDF de Book gerado e anexado ao ticket!');
+        onPdfUploaded?.();
+        onOpenChange(false);
+      }
     } catch (err: any) {
       toast.error('Erro ao gerar PDF: ' + (err.message || 'Erro desconhecido'));
     } finally {
@@ -329,8 +359,8 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
             <div className="border rounded-lg p-3 space-y-3">
               <Label className="text-xs font-semibold">Dados Gerais</Label>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-xs text-muted-foreground">Razão Social *</Label><Input className="mt-1 h-9 text-sm" value={form.razaoSocial} onChange={e => setForm(p => ({ ...p, razaoSocial: e.target.value }))} /></div>
-                <div><Label className="text-xs text-muted-foreground">Código</Label><Input className="mt-1 h-9 text-sm" value={form.codigo} onChange={e => setForm(p => ({ ...p, codigo: e.target.value }))} /></div>
+                <div><Label className="text-xs text-muted-foreground">Razão Social *</Label><Input className="mt-1 h-9 text-sm" value={form.razaoSocial} onChange={e => setFormWithSync(p => ({ ...p, razaoSocial: e.target.value }))} /></div>
+                <div><Label className="text-xs text-muted-foreground">Código</Label><Input className="mt-1 h-9 text-sm" value={form.codigo} onChange={e => setFormWithSync(p => ({ ...p, codigo: e.target.value }))} /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label className="text-xs text-muted-foreground">Representante</Label><Input className="mt-1 h-9 text-sm" value={form.representante} disabled /></div>
@@ -358,7 +388,7 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                     <Calendar
                       mode="single"
                       selected={form.dataEntregaNegociada ? (() => { const d = parse(form.dataEntregaNegociada, 'yyyy-MM-dd', new Date()); return isValid(d) ? d : undefined; })() : undefined}
-                      onSelect={(d) => d && setForm(p => ({ ...p, dataEntregaNegociada: format(d, 'yyyy-MM-dd') }))}
+                      onSelect={(d) => d && setFormWithSync(p => ({ ...p, dataEntregaNegociada: format(d, 'yyyy-MM-dd') }))}
                       locale={ptBR}
                       initialFocus
                     />
@@ -370,10 +400,10 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
             <div className="border rounded-lg p-3 space-y-2">
               <Label className="text-xs font-semibold">Envio</Label>
               <div className="flex items-center gap-4 flex-wrap">
-                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="book-envio" checked={form.envio === 'com_pedido'} onChange={() => setForm(p => ({ ...p, envio: 'com_pedido' }))} /> Com Pedido</label>
-                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="book-envio" checked={form.envio === 'sem_pedido'} onChange={() => setForm(p => ({ ...p, envio: 'sem_pedido' }))} /> Sem Pedido</label>
+                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="book-envio" checked={form.envio === 'com_pedido'} onChange={() => setFormWithSync(p => ({ ...p, envio: 'com_pedido' }))} /> Com Pedido</label>
+                <label className="flex items-center gap-1.5 text-xs"><input type="radio" name="book-envio" checked={form.envio === 'sem_pedido'} onChange={() => setFormWithSync(p => ({ ...p, envio: 'sem_pedido' }))} /> Sem Pedido</label>
                 <div className="flex-1 min-w-[150px]">
-                  <Input className="h-7 text-xs" placeholder="Transportadora" value={form.transportadora} onChange={e => setForm(p => ({ ...p, transportadora: e.target.value }))} />
+                  <Input className="h-7 text-xs" placeholder="Transportadora" value={form.transportadora} onChange={e => setFormWithSync(p => ({ ...p, transportadora: e.target.value }))} />
                 </div>
               </div>
             </div>
@@ -413,15 +443,15 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
             <div className="border rounded-lg p-3 space-y-3">
               <Label className="text-xs font-semibold">Dados do Book</Label>
               <div className="grid grid-cols-3 gap-3">
-              <div><Label className="text-xs">Quantidade Book</Label><Input className="mt-1" value={form.quantidadeBook} onChange={e => setForm(p => ({ ...p, quantidadeBook: e.target.value }))} /></div>
-              <div><Label className="text-xs">Qtd de Linhas</Label><Input className="mt-1" value={form.quantidadeLinhas} onChange={e => setForm(p => ({ ...p, quantidadeLinhas: e.target.value }))} /></div>
-              <div><Label className="text-xs">Nº Laminas</Label><Input className="mt-1" value={form.nLaminas} onChange={e => setForm(p => ({ ...p, nLaminas: e.target.value }))} /></div>
+              <div><Label className="text-xs">Quantidade Book</Label><Input className="mt-1" value={form.quantidadeBook} onChange={e => setFormWithSync(p => ({ ...p, quantidadeBook: e.target.value }))} /></div>
+              <div><Label className="text-xs">Qtd de Linhas</Label><Input className="mt-1" value={form.quantidadeLinhas} onChange={e => setFormWithSync(p => ({ ...p, quantidadeLinhas: e.target.value }))} /></div>
+              <div><Label className="text-xs">Nº Laminas</Label><Input className="mt-1" value={form.nLaminas} onChange={e => setFormWithSync(p => ({ ...p, nLaminas: e.target.value }))} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Material/Cor Capa</Label><Input className="mt-1" value={form.materialCorCapa} onChange={e => setForm(p => ({ ...p, materialCorCapa: e.target.value }))} /></div>
-              <div><Label className="text-xs">Código Capa</Label><Input className="mt-1" value={form.codigoCapa} onChange={e => setForm(p => ({ ...p, codigoCapa: e.target.value }))} /></div>
+              <div><Label className="text-xs">Material/Cor Capa</Label><Input className="mt-1" value={form.materialCorCapa} onChange={e => setFormWithSync(p => ({ ...p, materialCorCapa: e.target.value }))} /></div>
+              <div><Label className="text-xs">Código Capa</Label><Input className="mt-1" value={form.codigoCapa} onChange={e => setFormWithSync(p => ({ ...p, codigoCapa: e.target.value }))} /></div>
             </div>
-            <div><Label className="text-xs">Descrição Capa</Label><Input className="mt-1" value={form.descricaoCapa} onChange={e => setForm(p => ({ ...p, descricaoCapa: e.target.value }))} /></div>
+            <div><Label className="text-xs">Descrição Capa</Label><Input className="mt-1" value={form.descricaoCapa} onChange={e => setFormWithSync(p => ({ ...p, descricaoCapa: e.target.value }))} /></div>
             </div>
 
             {/* Aprovações */}
@@ -429,13 +459,13 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
               <div className="flex items-center gap-6 flex-wrap">
                 <div className="flex items-center gap-2">
                   <Label className="text-xs font-semibold">Aprovação Arte:</Label>
-                  <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-aprovArte" checked={form.aprovacaoArte === 'sim'} onChange={() => setForm(p => ({ ...p, aprovacaoArte: 'sim' }))} /> SIM</label>
-                  <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-aprovArte" checked={form.aprovacaoArte === 'nao'} onChange={() => setForm(p => ({ ...p, aprovacaoArte: 'nao' }))} /> NÃO</label>
+                  <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-aprovArte" checked={form.aprovacaoArte === 'sim'} onChange={() => setFormWithSync(p => ({ ...p, aprovacaoArte: 'sim' }))} /> SIM</label>
+                  <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-aprovArte" checked={form.aprovacaoArte === 'nao'} onChange={() => setFormWithSync(p => ({ ...p, aprovacaoArte: 'nao' }))} /> NÃO</label>
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs font-semibold">Boneco Aprovação:</Label>
-                  <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-boneco" checked={form.bonecoAprovacao === 'sim'} onChange={() => setForm(p => ({ ...p, bonecoAprovacao: 'sim' }))} /> SIM</label>
-                  <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-boneco" checked={form.bonecoAprovacao === 'nao'} onChange={() => setForm(p => ({ ...p, bonecoAprovacao: 'nao' }))} /> NÃO</label>
+                  <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-boneco" checked={form.bonecoAprovacao === 'sim'} onChange={() => setFormWithSync(p => ({ ...p, bonecoAprovacao: 'sim' }))} /> SIM</label>
+                  <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-boneco" checked={form.bonecoAprovacao === 'nao'} onChange={() => setFormWithSync(p => ({ ...p, bonecoAprovacao: 'nao' }))} /> NÃO</label>
                 </div>
               </div>
             </div>
@@ -472,30 +502,34 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
               <div className="flex gap-4">
                 {/* Coluna esquerda - checkboxes e radios */}
                 <div className="flex-1 space-y-1">
-                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.arteCapa} onChange={e => setForm(p => ({ ...p, arteCapa: e.target.checked }))} /> ARTE CAPA</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.arteCapa} onChange={e => setFormWithSync(p => ({ ...p, arteCapa: e.target.checked }))} /> ARTE CAPA</label>
                   <div className="flex items-center gap-2">
-                    <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.logoCliente === 'sim'} onChange={e => setForm(p => ({ ...p, logoCliente: e.target.checked ? 'sim' : 'nao' }))} /> LOGO CLIENTE</label>
+                    <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.logoCliente === 'sim'} onChange={e => setFormWithSync(p => ({ ...p, logoCliente: e.target.checked ? 'sim' : 'nao' }))} /> LOGO CLIENTE</label>
                   </div>
-                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.nomeProjeto} onChange={e => setForm(p => ({ ...p, nomeProjeto: e.target.checked }))} /> NOME PROJETO</label>
-                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.acrilico} onChange={e => setForm(p => ({ ...p, acrilico: e.target.checked }))} /> ACRÍLICO TRANSP.</label>
-                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.placaMetalica} onChange={e => setForm(p => ({ ...p, placaMetalica: e.target.checked }))} /> PLACA METÁLICA (4X6)</label>
-                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.divisoria === 'sim'} onChange={e => setForm(p => ({ ...p, divisoria: e.target.checked ? 'sim' : 'nao' }))} /> DIVISÓRIA</label>
-                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.laminasNomeCliente} onChange={e => setForm(p => ({ ...p, laminasNomeCliente: e.target.checked }))} /> LAMINAS (Nome cliente)</label>
-                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.codigosCliente} onChange={e => setForm(p => ({ ...p, codigosCliente: e.target.checked }))} /> CODIGOS (Cod cliente)</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.nomeProjeto} onChange={e => setFormWithSync(p => ({ ...p, nomeProjeto: e.target.checked }))} /> NOME PROJETO</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.acrilico} onChange={e => setFormWithSync(p => ({ ...p, acrilico: e.target.checked }))} /> ACRÍLICO TRANSP.</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.placaMetalica} onChange={e => setFormWithSync(p => ({ ...p, placaMetalica: e.target.checked }))} /> PLACA METÁLICA (4X6)</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.divisoria === 'sim'} onChange={e => setFormWithSync(p => ({ ...p, divisoria: e.target.checked ? 'sim' : 'nao' }))} /> DIVISÓRIA</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.laminasNomeCliente} onChange={e => setFormWithSync(p => ({ ...p, laminasNomeCliente: e.target.checked }))} /> LAMINAS (Nome cliente)</label>
+                  <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.codigosCliente} onChange={e => setFormWithSync(p => ({ ...p, codigosCliente: e.target.checked }))} /> CODIGOS (Cod cliente)</label>
 
                   <div className="pt-1 space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold">SILK CAPA:</span>
-                      <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk" checked={form.silkCapa === 'sim'} onChange={() => setForm(p => ({ ...p, silkCapa: 'sim' }))} /> SIM</label>
-                      <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-silk" checked={form.silkCapa === 'nao'} onChange={() => setForm(p => ({ ...p, silkCapa: 'nao' }))} /> NÃO</label>
+                      {(['sim', 'nao', 'cor_unica', 'colorido'] as const).map(k => (
+                        <label key={k} className="flex items-center gap-1 text-xs">
+                          <input type="checkbox" checked={(form.silkCapa || []).includes(k)} onChange={() => setFormWithSync(p => ({ ...p, silkCapa: (p.silkCapa || []).includes(k) ? (p.silkCapa || []).filter(x => x !== k) : [...(p.silkCapa || []), k] }))} />
+                          {k === 'sim' ? 'SIM' : k === 'nao' ? 'NÃO' : k === 'cor_unica' ? 'COR ÚNICA' : 'COLORIDO'}
+                        </label>
+                      ))}
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold">ADESIVO PERS.:</span>
-                      <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-adesivo" checked={form.adesivoPers === 'sim'} onChange={() => setForm(p => ({ ...p, adesivoPers: 'sim' }))} /> SIM</label>
-                      <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-adesivo" checked={form.adesivoPers === 'nao'} onChange={() => setForm(p => ({ ...p, adesivoPers: 'nao' }))} /> NÃO</label>
+                      <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-adesivo" checked={form.adesivoPers === 'sim'} onChange={() => setFormWithSync(p => ({ ...p, adesivoPers: 'sim' }))} /> SIM</label>
+                      <label className="flex items-center gap-1 text-xs"><input type="radio" name="book-adesivo" checked={form.adesivoPers === 'nao'} onChange={() => setFormWithSync(p => ({ ...p, adesivoPers: 'nao' }))} /> NÃO</label>
                     </div>
-                    <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.contraCapaFrente} onChange={e => setForm(p => ({ ...p, contraCapaFrente: e.target.checked }))} /> CONTRA CAPA FRENTE</label>
-                    <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.contraCapaFundo} onChange={e => setForm(p => ({ ...p, contraCapaFundo: e.target.checked }))} /> CONTRA CAPA FUNDO</label>
+                    <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.contraCapaFrente} onChange={e => setFormWithSync(p => ({ ...p, contraCapaFrente: e.target.checked }))} /> CONTRA CAPA FRENTE</label>
+                    <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={form.contraCapaFundo} onChange={e => setFormWithSync(p => ({ ...p, contraCapaFundo: e.target.checked }))} /> CONTRA CAPA FUNDO</label>
                   </div>
                 </div>
 
@@ -515,11 +549,14 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-1 px-2 font-semibold">BOOK ESCOLHIDO:</th>
-                      <th className="text-center py-1 px-2 font-semibold">BOOK A ( )</th>
-                      <th className="text-center py-1 px-2 font-semibold">BOOK B ( )</th>
-                      <th className="text-center py-1 px-2 font-semibold">BOOK C ( )</th>
-                      <th className="text-center py-1 px-2 font-semibold">BOOK D ( )</th>
-                      <th className="text-center py-1 px-2 font-semibold">BOOK E ( )</th>
+                      {['A', 'B', 'C', 'D', 'E'].map(k => (
+                        <th key={k} className="text-center py-1 px-2 font-semibold">
+                          <label className="inline-flex items-center justify-center gap-1 cursor-pointer">
+                            <input type="checkbox" className="accent-primary h-3 w-3" checked={form.bookEscolhido.includes(k)} onChange={() => toggleBookEscolhido(k)} />
+                            BOOK {k}
+                          </label>
+                        </th>
+                      ))}
                     </tr>
                     <tr className="border-b">
                       <th className="text-left py-1 px-2"></th>
@@ -566,7 +603,15 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
             <div className="border rounded-lg p-3 space-y-2">
               <Label className="text-xs font-semibold text-center block">ORÇAMENTO</Label>
               <div className="text-xs space-y-1">
-                <p className="font-medium">BOOK ESCOLHIDO: ( )A  ( )B  ( )C  ( )D  ( )E</p>
+                <div className="flex items-center gap-3 flex-wrap">
+                <span className="font-medium">BOOK ESCOLHIDO:</span>
+                {['A', 'B', 'C', 'D', 'E'].map(k => (
+                  <label key={k} className="inline-flex items-center gap-1 cursor-pointer">
+                    <input type="checkbox" className="accent-primary h-3 w-3" checked={form.bookEscolhido.includes(k)} onChange={() => toggleBookEscolhido(k)} />
+                    {k}
+                  </label>
+                ))}
+              </div>
                 <p className="font-medium">QUANTIDADE:</p>
               </div>
               <div className="overflow-x-auto">
@@ -635,7 +680,7 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                     <Calendar
                       mode="single"
                       selected={form.dataOrcamento ? (() => { const d = parse(form.dataOrcamento, 'yyyy-MM-dd', new Date()); return isValid(d) ? d : undefined; })() : undefined}
-                      onSelect={(d) => d && setForm(p => ({ ...p, dataOrcamento: format(d, 'yyyy-MM-dd') }))}
+                      onSelect={(d) => d && setFormWithSync(p => ({ ...p, dataOrcamento: format(d, 'yyyy-MM-dd') }))}
                       locale={ptBR}
                       initialFocus
                     />
@@ -649,8 +694,13 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
         </ScrollArea>
         <DialogFooter className="px-6 pb-6 pt-2 flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          {isCreateMode && onConfirmCreate && (
+            <Button variant="secondary" onClick={() => { onConfirmCreate(form); onOpenChange(false); }}>
+              Confirmar
+            </Button>
+          )}
           <Button onClick={generateAndUploadPdf} disabled={saving}>
-            <FileText className="h-4 w-4 mr-1.5" />{saving ? 'Gerando...' : 'Confirmar e Anexar PDF'}
+            <FileText className="h-4 w-4 mr-1.5" />{saving ? 'Gerando...' : isCreateMode ? 'Confirmar e Anexar PDF' : 'Confirmar e Anexar PDF'}
           </Button>
         </DialogFooter>
       </DialogContent>
