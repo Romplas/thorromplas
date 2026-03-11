@@ -99,6 +99,10 @@ export default function NovoChamado() {
   const [prazo, setPrazo] = useState('');
   const [tipoEntrega, setTipoEntrega] = useState('');
   const [descricaoTexto, setDescricaoTexto] = useState('');
+  // Atualizar Tabela fields
+  const [qualTabela, setQualTabela] = useState('');
+  interface TabelaProdutoItem { codProduto: string; produto: string; preco: string }
+  const [tabelaProdutos, setTabelaProdutos] = useState<TabelaProdutoItem[]>([{ codProduto: '', produto: '', preco: '' }]);
 
   // Check if motivo is Negociação
   const selectedMotivoNome = motivos.find(m => m.id === selectedMotivo)?.nome || '';
@@ -107,6 +111,7 @@ export default function NovoChamado() {
   const isRNC = selectedMotivoNome.toLowerCase() === 'rnc';
   const isAmostras = selectedMotivoNome.toLowerCase() === 'amostras';
   const isBook = selectedMotivoNome.toLowerCase() === 'book';
+  const isAtualizarTabela = selectedMotivoNome.toLowerCase() === 'atualizar tabela';
   const hasSpecialForm = isSD || isRNC || isAmostras || isBook;
 
   // Modal states for special forms
@@ -198,8 +203,14 @@ export default function NovoChamado() {
   // Helper to build description from structured fields
   const buildDescricao = (negociacao: boolean) => {
     if (hasSpecialForm && specialFormFilled) {
-      // Não inclui dados do formulário especial na descrição - ficam apenas no PDF
       return descricaoTexto || '';
+    }
+    if (isAtualizarTabela) {
+      const prodLines = tabelaProdutos.map((p, i) =>
+        `Produto ${i + 1}: Cód: ${p.codProduto}, Produto: ${p.produto}, Preço: ${p.preco}`
+      ).join('\n');
+      const structured = `Qual Tabela: ${qualTabela}\n${prodLines}`;
+      return descricaoTexto ? `${structured}\n\nObservações: ${descricaoTexto}` : structured;
     }
     if (!negociacao) return descricaoTexto;
     const prodLines = produtos.map((p, i) => 
@@ -626,6 +637,8 @@ export default function NovoChamado() {
       setPrazo('');
       setTipoEntrega('');
       setDescricaoTexto('');
+      setQualTabela('');
+      setTabelaProdutos([{ codProduto: '', produto: '', preco: '' }]);
       setSdForm({ ...defaultSdForm });
       setRncForm({ ...defaultRncForm });
       setAmostrasForm({ ...defaultAmostrasFullForm });
@@ -661,6 +674,8 @@ export default function NovoChamado() {
     setPrazo('');
     setTipoEntrega('');
     setDescricaoTexto('');
+    setQualTabela('');
+    setTabelaProdutos([{ codProduto: '', produto: '', preco: '' }]);
     setSdForm({ ...defaultSdForm });
     setRncForm({ ...defaultRncForm });
     setAmostrasForm({ ...defaultAmostrasFullForm });
@@ -879,8 +894,96 @@ export default function NovoChamado() {
             {/* Row 4 - Descrição (campos estruturados) + Anexos */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="text-xs font-semibold">{isNegociacao ? <span className="text-destructive">* </span> : ''}Descrição</Label>
-                {isNegociacao ? (
+                <Label className="text-xs font-semibold">{(isNegociacao || isAtualizarTabela) ? <span className="text-destructive">* </span> : ''}Descrição</Label>
+                {isAtualizarTabela ? (
+                  <div className="mt-1 border border-destructive/50 rounded-lg p-4 space-y-3">
+                    {/* Qual Tabela */}
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Qual Tabela *</Label>
+                      <Input
+                        className="h-8 text-xs border-destructive/50"
+                        placeholder="Informe a tabela"
+                        value={qualTabela}
+                        onChange={e => setQualTabela(e.target.value)}
+                      />
+                    </div>
+                    {/* Produtos */}
+                    {tabelaProdutos.map((prod, i) => (
+                      <div key={i} className="grid grid-cols-2 md:grid-cols-3 gap-2 items-end">
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">Cód Produto *</Label>
+                          <Input
+                            className="h-8 text-xs border-destructive/50"
+                            placeholder="Código"
+                            value={prod.codProduto}
+                            onChange={e => {
+                              const updated = [...tabelaProdutos];
+                              updated[i] = { ...updated[i], codProduto: e.target.value };
+                              setTabelaProdutos(updated);
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">Produto *</Label>
+                          <Input
+                            className="h-8 text-xs border-destructive/50"
+                            placeholder="Produto"
+                            value={prod.produto}
+                            onChange={e => {
+                              const updated = [...tabelaProdutos];
+                              updated[i] = { ...updated[i], produto: e.target.value };
+                              setTabelaProdutos(updated);
+                            }}
+                          />
+                        </div>
+                        <div className="flex gap-1 items-end">
+                          <div className="flex-1">
+                            <Label className="text-[10px] text-muted-foreground">Preço *</Label>
+                            <Input
+                              className="h-8 text-xs border-destructive/50"
+                              placeholder="R$ 0,00"
+                              value={prod.preco}
+                              onChange={e => {
+                                const updated = [...tabelaProdutos];
+                                updated[i] = { ...updated[i], preco: e.target.value };
+                                setTabelaProdutos(updated);
+                              }}
+                            />
+                          </div>
+                          {tabelaProdutos.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setTabelaProdutos(prev => prev.filter((_, idx) => idx !== i))}
+                              className="h-8 w-8 flex items-center justify-center text-destructive hover:bg-destructive/10 rounded"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setTabelaProdutos(prev => [...prev, { codProduto: '', produto: '', preco: '' }])}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar Produto
+                    </Button>
+
+                    {/* Observações */}
+                    <div className="pt-2 border-t">
+                      <Label className="text-[10px] text-muted-foreground">Observações</Label>
+                      <Textarea
+                        className="mt-1 min-h-[80px] text-xs"
+                        placeholder="Descrição adicional..."
+                        value={descricaoTexto}
+                        onChange={e => setDescricaoTexto(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                ) : isNegociacao ? (
                   <div className="mt-1 border border-destructive/50 rounded-lg p-4 space-y-3">
                     {/* Produtos */}
                     {produtos.map((prod, i) => (
