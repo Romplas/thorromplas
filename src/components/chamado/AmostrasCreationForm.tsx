@@ -142,20 +142,13 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
     onFormDataChange(updater(form));
   };
 
-  const toggleProduct = (key: string, checked: boolean) => {
+  const toggleProduct = (key: string, checked: boolean, numLam: number) => {
     setForm(prev => {
       const sp = { ...prev.selectedProducts };
-      if (checked) sp[key] = '';
+      if (checked) sp[key] = String(numLam);
       else delete sp[key];
       return { ...prev, selectedProducts: sp };
     });
-  };
-
-  const setProductLam = (key: string, value: string) => {
-    setForm(prev => ({
-      ...prev,
-      selectedProducts: { ...prev.selectedProducts, [key]: value },
-    }));
   };
 
   const updateMetragem = (index: number, field: 'codigo' | 'cor', value: string) => {
@@ -166,10 +159,16 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
     });
   };
 
-  const renderProductSection = (title: string, products: ProductEntry[], lineKey: string) => (
+  const renderProductSection = (title: string, products: ProductEntry[], lineKey: string, isFirstSection?: boolean) => (
     <div className="space-y-1">
       <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{title}</h4>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1">
+        {isFirstSection && (
+          <div className="col-span-full flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
+            <span className="w-[14px]" />
+            <span className="font-medium pl-0 pr-0 flex flex-wrap -ml-[21px] -mr-[21px]">N° Lamina</span>
+          </div>
+        )}
         {products.map(p => {
           const key = `${lineKey}|${p.name}`;
           const checked = key in form.selectedProducts;
@@ -178,20 +177,13 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
               <Checkbox
                 id={key}
                 checked={checked}
-                onCheckedChange={(c) => toggleProduct(key, !!c)}
-                className="h-3.5 w-3.5"
+                onCheckedChange={(c) => toggleProduct(key, !!c, p.numLam)}
+                className="h-3.5 w-3.5 shrink-0"
               />
-              <label htmlFor={key} className="cursor-pointer flex-1 truncate">
-                <span className="text-muted-foreground">{p.numLam}</span> {p.name}
+              <label htmlFor={key} className="cursor-pointer flex-1 truncate flex items-center gap-1">
+                <span className="text-muted-foreground shrink-0">{p.numLam}</span>
+                <span className="truncate">{p.name}</span>
               </label>
-              {checked && (
-                <Input
-                  className="h-6 w-14 text-xs px-1"
-                  placeholder="Nº Lam"
-                  value={form.selectedProducts[key] || ''}
-                  onChange={e => setProductLam(key, e.target.value)}
-                />
-              )}
             </div>
           );
         })}
@@ -260,7 +252,7 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
           const name = parts[parts.length - 1];
           const lam = form.selectedProducts[key];
           doc.setFont('helvetica', 'normal');
-          doc.text(`${name} (${line})${lam ? ' - Nº Lam: ' + lam : ''}`, margin + 3, y);
+          doc.text(`${name} (${line}) - Nº Lam: ${lam || ''}`, margin + 3, y);
           y += 5;
         });
       });
@@ -484,12 +476,12 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
             {/* ── Cartelas Romplas ── */}
             <div className="rounded-lg border p-4 space-y-4">
               <h3 className="text-sm font-bold">Cartelas Romplas — Artigos Padrão</h3>
-              <p className="text-xs text-muted-foreground">Selecione os produtos desejados e informe o Nº de Laminações.</p>
+              <p className="text-xs text-muted-foreground">Selecione os produtos desejados. O número exibido é o N° Lamina.</p>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Linha Original */}
                 <div className="space-y-4">
-                  {renderProductSection('Linha Original — Espalmado', LINHA_ORIGINAL_ESPALMADO, 'ORIGINAL ESP')}
+                  {renderProductSection('Linha Original — Espalmado', LINHA_ORIGINAL_ESPALMADO, 'ORIGINAL ESP', true)}
                   {renderProductSection('Linha Original — Extrusado', LINHA_ORIGINAL_EXTRUSADO, 'ORIGINAL EXT')}
                 </div>
                 {/* Linha Plus */}

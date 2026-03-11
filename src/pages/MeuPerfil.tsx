@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { User, Camera, Save } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { User, Camera, Save, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +12,7 @@ import Layout from '@/components/Layout';
 import { toast } from 'sonner';
 
 export default function MeuPerfil() {
+  const navigate = useNavigate();
   const { profile, user, role, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -119,11 +121,16 @@ export default function MeuPerfil() {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto">
-        <div className="flex items-center gap-3 mb-8">
-          <User className="h-8 w-8 text-primary" />
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} title="Voltar">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <User className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-xl font-bold">Meu Perfil</h1>
-            <p className="text-sm text-muted-foreground">Gerencie seus dados e foto de perfil</p>
+              <h1 className="text-xl font-bold">Meu Perfil</h1>
+              <p className="text-sm text-muted-foreground">Gerencie seus dados e foto de perfil</p>
+            </div>
           </div>
         </div>
 
