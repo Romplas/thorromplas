@@ -317,13 +317,25 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                       <span className="font-medium">{m.label}</span>
                     </label>
                     <span className="text-muted-foreground text-[10px] ml-5">Lâminas {m.laminas}</span>
-                    <button type="button" className="ml-5 flex items-center gap-1 text-[10px] text-primary hover:underline" onClick={() => window.open(m.img, '_blank')}>
+                    <button type="button" className="ml-5 flex items-center gap-1 text-[10px] text-primary hover:underline" onClick={() => setFotoModal({ open: true, img: m.img, label: `Book ${m.key}` })}>
                       <Eye className="h-3 w-3" /> Ver foto
                     </button>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* Modal de foto do Book */}
+            <Dialog open={fotoModal.open} onOpenChange={(v) => setFotoModal(p => ({ ...p, open: v }))}>
+              <DialogContent className="max-w-lg p-4">
+                <DialogHeader>
+                  <DialogTitle className="text-center">{fotoModal.label}</DialogTitle>
+                </DialogHeader>
+                <div className="flex justify-center">
+                  <img src={fotoModal.img} alt={fotoModal.label} className="max-h-[70vh] w-auto rounded-lg object-contain" />
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Dados do Book */}
             <div className="grid grid-cols-3 gap-3">
