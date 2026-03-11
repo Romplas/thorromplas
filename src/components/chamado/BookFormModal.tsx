@@ -309,12 +309,18 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
             {/* Modelo Book */}
             <div className="border rounded-lg p-3 space-y-2">
               <Label className="text-xs font-semibold">Modelo Book</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-5 gap-3">
                 {MODELOS.map(m => (
-                  <label key={m.key} className="flex items-center gap-1.5 text-xs">
-                    <input type="checkbox" checked={form.modeloBook.includes(m.key)} onChange={() => toggleModel(m.key)} />
-                    {m.label}<br /><span className="text-muted-foreground text-[10px]">Laminas {m.laminas}</span>
-                  </label>
+                  <div key={m.key} className="flex flex-col items-start gap-1">
+                    <label className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+                      <input type="checkbox" checked={form.modeloBook.includes(m.key)} onChange={() => toggleModel(m.key)} />
+                      <span className="font-medium">{m.label}</span>
+                    </label>
+                    <span className="text-muted-foreground text-[10px] ml-5">Lâminas {m.laminas}</span>
+                    <button type="button" className="ml-5 flex items-center gap-1 text-[10px] text-primary hover:underline" onClick={() => window.open(m.img, '_blank')}>
+                      <Eye className="h-3 w-3" /> Ver foto
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
