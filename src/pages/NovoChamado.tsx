@@ -1034,7 +1034,12 @@ export default function NovoChamado() {
                               setShowRNCForm(true);
                             }
                             else if (isAmostras) setShowAmostrasForm(true);
-                            else if (isBook) setShowBookForm(true);
+                            else if (isBook) {
+                              const repNome = representantes.find(r => r.id === selectedRepresentante)?.nome || '';
+                              const clienteNome = clientes.find(c => c.id === selectedCliente)?.nome || '';
+                              setBookForm(p => ({ ...p, representante: repNome, razaoSocial: p.razaoSocial || clienteNome }));
+                              setShowBookForm(true);
+                            }
                           }}
                         >
                           <Eye className="h-4 w-4" />
