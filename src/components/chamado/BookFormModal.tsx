@@ -405,6 +405,10 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
     ...p, bookEscolhido: p.bookEscolhido.includes(key) ? p.bookEscolhido.filter(k => k !== key) : [...p.bookEscolhido, key]
   }));
 
+  const toggleCustoCheck = (orcKey: string) => setFormWithSync(p => ({
+    ...p, custosChecked: (p.custosChecked || []).includes(orcKey) ? p.custosChecked.filter(k => k !== orcKey) : [...(p.custosChecked || []), orcKey]
+  }));
+
   const updateSeqRow = (col: 'colunaA' | 'colunaB' | 'colunaC', idx: number, field: 'linhas' | 'quantidade', value: string) => {
     setFormWithSync(p => {
       const rows = [...p[col]];
