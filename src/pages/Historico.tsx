@@ -1002,7 +1002,7 @@ export default function Historico() {
             </DialogHeader>
             <div className="flex items-center justify-center overflow-auto max-h-[70vh]">
               {previewUrl && previewName.toLowerCase().endsWith('.pdf') ? (
-                <iframe src={previewUrl} className="w-full h-[70vh] border-0 rounded" />
+                <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewUrl)}&embedded=true`} title={previewName} className="w-full h-[70vh] border-0 rounded" />
               ) : previewUrl ? (
                 <img src={previewUrl} alt={previewName} className="max-w-full max-h-[70vh] object-contain rounded" />
               ) : null}

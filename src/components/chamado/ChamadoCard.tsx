@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export interface AnexoFile {
@@ -93,7 +94,12 @@ function isPreviewable(nome: string): boolean {
   return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'].includes(ext);
 }
 
+function getPdfViewerUrl(url: string): string {
+  return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+}
+
 export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCardProps) {
+  const { role } = useAuth();
   const [editing, setEditing] = useState(false);
   const [showAnexos, setShowAnexos] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -203,35 +209,40 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
 
       if (error) throw error;
 
-      // Build change description for history
-      const changeParts: string[] = [];
-      if (draft.motivo !== chamado.motivo) changeParts.push(`Motivo: "${chamado.motivo}" → "${draft.motivo}"`);
-      if (draft.submotivo !== chamado.submotivo) changeParts.push(`Objetivo: "${chamado.submotivo || ''}" → "${draft.submotivo || ''}"`);
-      if ((draft.descricao || '') !== (chamado.descricao || '')) changeParts.push('Descrição atualizada');
-      if (draft.dataContato !== chamado.dataContato) changeParts.push('Data Contato atualizada');
-      if (draft.dataRetorno !== chamado.dataRetorno) changeParts.push('Data Retorno atualizada');
-      if (draft.metrosTotais !== chamado.metrosTotais) changeParts.push(`Metros Totais: "${chamado.metrosTotais}" → "${draft.metrosTotais}"`);
-      if (draft.negociadoCom !== chamado.negociadoCom) changeParts.push(`Negociado com: "${chamado.negociadoCom || 'Nenhum'}" → "${draft.negociadoCom || 'Nenhum'}"`);
-      if (draft.nfe !== chamado.nfe) changeParts.push(`Nº NFE: "${chamado.nfe}" → "${draft.nfe}"`);
-      if (draft.tipoSolicitacao !== chamado.tipoSolicitacao) changeParts.push(`Tipo Solicitação: "${chamado.tipoSolicitacao || 'Nenhum'}" → "${draft.tipoSolicitacao || 'Nenhum'}"`);
-      if (draft.statusAgendamento !== chamado.statusAgendamento) changeParts.push(`Status Agendamento: "${chamado.statusAgendamento || 'Nenhum'}" → "${draft.statusAgendamento || 'Nenhum'}"`);
+      // Representante editando solicitação ABERTO+THOR: não criar nova etapa no histórico
+      const skipHistory = role === 'representante'
+        && chamado.status?.toLowerCase() === 'aberto'
+        && chamado.etapa?.toLowerCase() === 'thor';
 
-      // Insert history entry
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      let userProfileId: string | null = null;
-      if (currentUser) {
-        const { data: prof } = await supabase.from('profiles').select('id').eq('user_id', currentUser.id).maybeSingle();
-        userProfileId = prof?.id || null;
+      if (!skipHistory) {
+        const changeParts: string[] = [];
+        if (draft.motivo !== chamado.motivo) changeParts.push(`Motivo: "${chamado.motivo}" → "${draft.motivo}"`);
+        if (draft.submotivo !== chamado.submotivo) changeParts.push(`Objetivo: "${chamado.submotivo || ''}" → "${draft.submotivo || ''}"`);
+        if ((draft.descricao || '') !== (chamado.descricao || '')) changeParts.push('Descrição atualizada');
+        if (draft.dataContato !== chamado.dataContato) changeParts.push('Data Contato atualizada');
+        if (draft.dataRetorno !== chamado.dataRetorno) changeParts.push('Data Retorno atualizada');
+        if (draft.metrosTotais !== chamado.metrosTotais) changeParts.push(`Metros Totais: "${chamado.metrosTotais}" → "${draft.metrosTotais}"`);
+        if (draft.negociadoCom !== chamado.negociadoCom) changeParts.push(`Negociado com: "${chamado.negociadoCom || 'Nenhum'}" → "${draft.negociadoCom || 'Nenhum'}"`);
+        if (draft.nfe !== chamado.nfe) changeParts.push(`Nº NFE: "${chamado.nfe}" → "${draft.nfe}"`);
+        if (draft.tipoSolicitacao !== chamado.tipoSolicitacao) changeParts.push(`Tipo Solicitação: "${chamado.tipoSolicitacao || 'Nenhum'}" → "${draft.tipoSolicitacao || 'Nenhum'}"`);
+        if (draft.statusAgendamento !== chamado.statusAgendamento) changeParts.push(`Status Agendamento: "${chamado.statusAgendamento || 'Nenhum'}" → "${draft.statusAgendamento || 'Nenhum'}"`);
+
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        let userProfileId: string | null = null;
+        if (currentUser) {
+          const { data: prof } = await supabase.from('profiles').select('id').eq('user_id', currentUser.id).maybeSingle();
+          userProfileId = prof?.id || null;
+        }
+        const acao = changeParts.length > 0 ? 'Atualização de Ticket' : 'Atualização';
+        const descricaoHistorico = changeParts.length > 0 ? changeParts.join(' | ') : 'Ticket atualizado sem alterações de campos';
+        await supabase.from('chamado_historico').insert({
+          chamado_id: chamado.id,
+          user_id: userProfileId,
+          acao,
+          descricao: descricaoHistorico,
+          descricao_ticket: draft.descricao || null,
+        } as any);
       }
-      const acao = changeParts.length > 0 ? 'Atualização de Ticket' : 'Atualização';
-      const descricaoHistorico = changeParts.length > 0 ? changeParts.join(' | ') : 'Ticket atualizado sem alterações de campos';
-      await supabase.from('chamado_historico').insert({
-        chamado_id: chamado.id,
-        user_id: userProfileId,
-        acao,
-        descricao: descricaoHistorico,
-        descricao_ticket: draft.descricao || null,
-      } as any);
 
       onUpdate(draft);
       setEditing(false);
@@ -561,7 +572,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
           </DialogHeader>
           <div className="flex items-center justify-center overflow-auto max-h-[70vh]">
             {previewUrl && previewName.toLowerCase().endsWith('.pdf') ? (
-              <iframe src={previewUrl} className="w-full h-[70vh] border-0 rounded" />
+              <iframe src={getPdfViewerUrl(previewUrl)} title={previewName} className="w-full h-[70vh] border-0 rounded" />
             ) : previewUrl ? (
               <img src={previewUrl} alt={previewName} className="max-w-full max-h-[70vh] object-contain rounded" />
             ) : null}

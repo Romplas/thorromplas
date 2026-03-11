@@ -290,15 +290,21 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       } as any).eq('id', chamado.id);
       if (error) throw error;
 
-      // Insert single consolidated history entry
-      const { error: histError } = await supabase.from('chamado_historico').insert({
-        chamado_id: chamado.id,
-        user_id: userProfileId,
-        acao,
-        descricao: descricaoHistorico,
-        descricao_ticket: descricao || null,
-      } as any);
-      if (histError) console.error('Erro ao inserir histórico:', histError);
+      // Representante editando ABERTO+THOR: não criar nova etapa no histórico
+      const skipHistory = role === 'representante'
+        && chamado.status?.toLowerCase() === 'aberto'
+        && (chamado.etapa || 'thor').toLowerCase() === 'thor';
+
+      if (!skipHistory) {
+        const { error: histError } = await supabase.from('chamado_historico').insert({
+          chamado_id: chamado.id,
+          user_id: userProfileId,
+          acao,
+          descricao: descricaoHistorico,
+          descricao_ticket: descricao || null,
+        } as any);
+        if (histError) console.error('Erro ao inserir histórico:', histError);
+      }
 
       toast.success(`Ticket ${chamado.id} atualizado!`);
       onSaved();
@@ -320,6 +326,10 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       window.open(url, '_blank');
     }
   };
+
+  const pdfViewerUrl = previewUrl && previewName.toLowerCase().endsWith('.pdf')
+    ? `https://docs.google.com/viewer?url=${encodeURIComponent(previewUrl || '')}&embedded=true`
+    : null;
 
   const handleDownload = (anexo: AnexoFile) => {
     const url = getFileUrl(anexo.path);
@@ -669,8 +679,8 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
             <DialogTitle>{previewName}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-auto flex items-center justify-center">
-            {previewUrl && previewName.toLowerCase().endsWith('.pdf') ? (
-              <iframe src={previewUrl} title={previewName} className="w-full min-h-[70vh] border-0 rounded flex-1" style={{ minHeight: '500px' }} />
+            {pdfViewerUrl ? (
+              <iframe src={pdfViewerUrl} title={previewName} className="w-full min-h-[70vh] border-0 rounded flex-1" style={{ minHeight: '500px' }} />
             ) : previewUrl ? (
               <img src={previewUrl} alt={previewName} className="max-w-full max-h-[70vh] object-contain rounded" />
             ) : null}
