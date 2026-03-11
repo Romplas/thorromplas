@@ -82,7 +82,7 @@ const formatDatePdf = (d: string) => {
   } catch { return d; }
 };
 
-export function generateBookPdf(form: BookFullFormData, clienteNome: string, representanteNome: string): Blob {
+export async function generateBookPdf(form: BookFullFormData, clienteNome: string, representanteNome: string): Promise<Blob> {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 15;
@@ -113,8 +113,11 @@ export function generateBookPdf(form: BookFullFormData, clienteNome: string, rep
 
   // Logo
   try {
-    // Logo loaded externally before calling; skip in pure function
-  } catch { /* */ }
+    const logoImg = new window.Image(); logoImg.crossOrigin = 'anonymous';
+    await new Promise<void>((resolve, reject) => { logoImg.onload = () => resolve(); logoImg.onerror = () => reject(); logoImg.src = '/images/romplas-logo-pdf.png'; });
+    const logoH = 12; const logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
+    doc.addImage(logoImg, 'PNG', (pageW - logoW) / 2, y, logoW, logoH); y += logoH + 4;
+  } catch { /* fallback sem logo */ }
 
   doc.setFontSize(13); doc.setFont('helvetica', 'bold');
   doc.text("Formulário Book's Personalizados", pageW / 2, y, { align: 'center' }); y += 8;
@@ -168,54 +171,121 @@ export function generateBookPdf(form: BookFullFormData, clienteNome: string, rep
   });
 
   // Observação
-  if (form.observacao) {
-    addSectionBox('Observação', () => {
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-      const lines = doc.splitTextToSize(form.observacao, contentW - 6);
-      doc.text(lines, margin + 3, y); y += lines.length * 5;
-    });
-  }
+  addSectionBox('Observação', () => {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    const obsText = form.observacao || 'Enviar junto com esse formulário, os códigos selecionados no ANEXO 01 para incluir no Book do cliente';
+    const lines = doc.splitTextToSize(obsText, contentW - 6);
+    doc.text(lines, margin + 3, y); y += lines.length * 5;
+  });
 
   // Personalização
   addSectionBox('Personalização', () => {
     doc.setFontSize(8);
-    doc.text(`(${form.arteCapa ? 'X' : ' '}) ARTE CAPA`, margin + 3, y);
+    doc.text(`(${form.arteCapa ? 'X' : ' '}) ARTE CAPA`, margin + 3, y); y += 5;
     const sc = form.silkCapa || [];
     doc.text(`SILK CAPA: (${sc.includes('sim') ? 'X' : ' '}) SIM  (${sc.includes('nao') ? 'X' : ' '}) NÃO  (${sc.includes('cor_unica') ? 'X' : ' '}) COR ÚNICA  (${sc.includes('colorido') ? 'X' : ' '}) COLORIDO`, margin + 3, y); y += 5;
-    doc.text(`(${form.logoCliente === 'sim' ? 'X' : ' '}) LOGO CLIENTE  SIM(${form.logoCliente === 'sim' ? 'X' : ' '})  NÃO(${form.logoCliente === 'nao' ? 'X' : ' '})`, margin + 3, y); y += 5;
+    doc.text(`(${form.logoCliente === 'sim' ? 'X' : ' '}) LOGO CLIENTE`, margin + 3, y); y += 5;
     doc.text(`(${form.nomeProjeto ? 'X' : ' '}) NOME PROJETO`, margin + 3, y); y += 5;
     doc.text(`(${form.acrilico ? 'X' : ' '}) ACRÍLICO TRANSP.`, margin + 3, y);
     doc.text(`ADESIVO PERS.: (${form.adesivoPers === 'sim' ? 'X' : ' '}) SIM  (${form.adesivoPers === 'nao' ? 'X' : ' '}) NÃO`, margin + 60, y); y += 5;
     doc.text(`(${form.placaMetalica ? 'X' : ' '}) PLACA METÁLICA (4X6)`, margin + 3, y); y += 5;
-    doc.text(`(${form.divisoria === 'sim' ? 'X' : ' '}) DIVISÓRIA  SIM(${form.divisoria === 'sim' ? 'X' : ' '})  NÃO(${form.divisoria === 'nao' ? 'X' : ' '})`, margin + 3, y); y += 5;
+    doc.text(`(${form.divisoria === 'sim' ? 'X' : ' '}) DIVISÓRIA`, margin + 3, y); y += 5;
     doc.text(`(${form.laminasNomeCliente ? 'X' : ' '}) LAMINAS (Nome cliente)`, margin + 3, y);
     doc.text(`(${form.contraCapaFrente ? 'X' : ' '}) CONTRA CAPA FRENTE`, margin + 80, y); y += 5;
     doc.text(`(${form.codigosCliente ? 'X' : ' '}) CODIGOS (Cod cliente)`, margin + 3, y);
     doc.text(`(${form.contraCapaFundo ? 'X' : ' '}) CONTRA CAPA FUNDO`, margin + 80, y); y += 3;
   });
 
-  // Custos (tabela resumida)
+  // Custos (tabela completa)
   checkPage(80);
+  const allCustosRows = [
+    ['CAPA', 'R$ 13,90', 'R$ 19,90', 'R$ 25,70', 'R$ 37,70', 'R$ 47,90'],
+    ['MAO DE OBRA', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40'],
+    ['MP P/ LAMINAS', 'R$ 0,25', 'R$ 0,30', 'R$ 0,50', 'R$ 0,35', 'R$ 0,35'],
+    ['LAMINAS (Nome cliente)', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05'],
+    ['CODIGOS (Codigo cliente)', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05'],
+    ['ARTE CAPA', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00'],
+    ['SILK CAPA - 1 COR', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20'],
+    ['SILK CAPA - COLORIDO', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50'],
+    ['DIVISÓRIAS', 'R$ 2,50', 'R$ 2,50', 'R$ 2,50', 'R$ 2,50', 'R$ 2,50'],
+    ['PLACA METALIZADA (6x4)', 'R$ 5,90', 'R$ 5,90', 'R$ 5,90', 'R$ 5,90', 'R$ 5,90'],
+    ['ADESIVOS', 'R$ 3,90', 'R$ 3,90', 'R$ 3,90', 'R$ 3,90', 'R$ 3,90'],
+    ['ACRILICO - 3 Modelos (Unid.)', 'R$ 7,50', 'R$ 7,50', 'R$ 7,50', 'R$ 7,50', 'R$ 7,50'],
+  ];
   addSectionBox('Custos', () => {
     doc.setFontSize(7);
-    const custosRows = [
-      ['CAPA', 'R$ 13,90', 'R$ 19,90', 'R$ 25,70', 'R$ 37,70', 'R$ 47,90'],
-      ['MAO DE OBRA', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40'],
-      ['SILK CAPA - 1 COR', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20'],
-      ['SILK CAPA - COLORIDO', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50', 'R$ 8,50'],
-    ];
-    doc.setFont('helvetica', 'bold'); doc.text('BOOK', margin + 3, y); doc.text('A', margin + 45, y); doc.text('B', margin + 60, y); doc.text('C', margin + 75, y); doc.text('D', margin + 90, y); doc.text('E', margin + 105, y); y += 5;
+    const colPositions = [margin + 55, margin + 75, margin + 95, margin + 115, margin + 135];
+    // Header
+    doc.setFont('helvetica', 'bold');
+    doc.text('BOOK ESCOLHIDO:', margin + 3, y);
+    ['A', 'B', 'C', 'D', 'E'].forEach((k, i) => {
+      doc.text(`(${form.bookEscolhido.includes(k) ? 'X' : ' '}) BOOK ${k}`, colPositions[i], y);
+    });
+    y += 5;
+    // Sub-header
+    doc.text('', margin + 3, y);
+    ['VALOR', 'VALOR', 'VALOR', 'VALOR', 'VALOR'].forEach((v, i) => {
+      doc.text(v, colPositions[i] + 3, y);
+    });
+    y += 5;
     doc.setFont('helvetica', 'normal');
-    custosRows.forEach(r => { doc.text(r[0], margin + 3, y); for (let j = 1; j <= 5; j++) doc.text(r[j], margin + 38 + (j - 1) * 18, y); y += 5; });
+    // Rows
+    allCustosRows.forEach(r => {
+      checkPage(8);
+      doc.text(r[0], margin + 3, y);
+      for (let j = 1; j <= 5; j++) doc.text(r[j], colPositions[j - 1], y);
+      y += 5;
+    });
   });
 
-  // Orçamento - Data
-  checkPage(35);
+  // Orçamento (tabela completa)
+  checkPage(100);
   addSectionBox('Orçamento', () => {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-    doc.text('PRAZO NEGOCIADO:', margin + 3, y); doc.text('DATA:', margin + 70, y); doc.text('ASSINATURA:', margin + 120, y); y += 6;
+    doc.setFontSize(7);
+    const sel = MODELOS.map(m => `(${form.bookEscolhido.includes(m.key) ? 'X' : ' '})${m.key}`).join('  ');
+    doc.setFont('helvetica', 'bold');
+    doc.text('BOOK ESCOLHIDO: ' + sel, margin + 3, y); y += 6;
+    doc.text('QUANTIDADE:', margin + 3, y); y += 6;
+
+    // Table header
+    const colOrcX = { item: margin + 3, qtd: margin + 85, unitario: margin + 115, total: margin + 145 };
+    doc.setFontSize(7);
+    doc.text('ITEM', colOrcX.item, y);
+    doc.text('QUANTIDADE', colOrcX.qtd, y);
+    doc.text('VALOR UNIT.', colOrcX.unitario, y);
+    doc.text('VALOR TOTAL', colOrcX.total, y);
+    y += 2;
+    doc.setDrawColor(200); doc.line(margin + 3, y, pageW - margin - 3, y); y += 4;
+
     doc.setFont('helvetica', 'normal');
-    doc.text('-', margin + 3, y); doc.text(formatDatePdf(form.dataOrcamento), margin + 70, y); doc.text('-', margin + 120, y); y += 2;
+    const orcItems = [
+      'CAPA (unidade)', 'MAO DE OBRA', 'MP P/ LAMINA (Unidade)',
+      'LAMINAS - Nome cliente (Unidade)', 'CODIGOS - Codigo cliente (Unidade)',
+      'ARTE CAPA (Pago 1x)', 'SILK CAPA - 1 COR (Unidade)',
+      'SILK CAPA - COLORIDO (Unidade)', 'DIVISÓRIAS (Unidade)',
+      'PLACA METALIZADA (6x4) (Unidade)', 'ADESIVOS (Unidade)',
+      'ACRILICO - 3Modl. (Unidade)',
+    ];
+    orcItems.forEach(item => {
+      checkPage(8);
+      doc.text(item, colOrcX.item, y);
+      doc.text('_______', colOrcX.qtd, y);
+      doc.text('_______', colOrcX.unitario, y);
+      doc.text('_______', colOrcX.total, y);
+      y += 5;
+    });
+
+    y += 3;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
+    doc.text('TOTAL R$: _______________', pageW - margin - 60, y); y += 6;
+    doc.text('VALOR UNITÁRIO R$: _______________', pageW - margin - 75, y); y += 6;
+    doc.text('DESCONTO: _______________', pageW - margin - 55, y); y += 8;
+
+    doc.setDrawColor(180); doc.line(margin + 3, y, pageW - margin - 3, y); y += 5;
+    doc.setFontSize(8);
+    doc.text('PRAZO NEGOCIADO: _______________', margin + 3, y); y += 6;
+    doc.text(`DATA: ${formatDatePdf(form.dataOrcamento)}`, margin + 3, y);
+    doc.text('ASSINATURA: _______________', margin + 80, y); y += 2;
   });
 
   return doc.output('blob');
