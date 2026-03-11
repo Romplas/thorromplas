@@ -431,6 +431,51 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
                 </div>
               </div>
             </div>
+
+            {/* Custos */}
+            <div className="border rounded-lg p-3 space-y-2">
+              <Label className="text-xs font-semibold text-center block">CUSTOS</Label>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-1 px-2 font-semibold">BOOK ESCOLHIDO:</th>
+                      <th className="text-center py-1 px-2 font-semibold">BOOK A ( )</th>
+                      <th className="text-center py-1 px-2 font-semibold">BOOK B ( )</th>
+                      <th className="text-center py-1 px-2 font-semibold">BOOK C ( )</th>
+                      <th className="text-center py-1 px-2 font-semibold">BOOK D ( )</th>
+                      <th className="text-center py-1 px-2 font-semibold">BOOK E ( )</th>
+                    </tr>
+                    <tr className="border-b">
+                      <th className="text-left py-1 px-2"></th>
+                      <th className="text-center py-1 px-2 text-muted-foreground font-medium">VALOR</th>
+                      <th className="text-center py-1 px-2 text-muted-foreground font-medium">VALOR</th>
+                      <th className="text-center py-1 px-2 text-muted-foreground font-medium">VALOR</th>
+                      <th className="text-center py-1 px-2 text-muted-foreground font-medium">VALOR</th>
+                      <th className="text-center py-1 px-2 text-muted-foreground font-medium">VALOR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { label: 'CAPA', values: ['R$ 13,90', 'R$ 19,90', 'R$ 25,70', 'R$ 37,70', 'R$ 47,90'] },
+                      { label: 'MAO DE OBRA', values: ['R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40', 'R$ 0,40'] },
+                      { label: 'MP P/ LAMINAS', values: ['R$ 0,25', 'R$ 0,30', 'R$ 0,50', 'R$ 0,35', 'R$ 0,35'] },
+                      { label: 'LAMINAS (Nome cliente)', values: ['R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05'] },
+                      { label: 'CODIGOS (Codigo cliente)', values: ['R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05', 'R$ 0,05'] },
+                      { label: 'ARTE CAPA', values: ['R$ 75,00', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00', 'R$ 75,00'] },
+                      { label: 'SILK CAPA - 1 COR', values: ['R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20', 'R$ 4,20'] },
+                    ].map((row, i) => (
+                      <tr key={i} className="border-b last:border-b-0">
+                        <td className="py-1 px-2 font-medium">{row.label}</td>
+                        {row.values.map((v, j) => (
+                          <td key={j} className="text-center py-1 px-2">{v}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </ScrollArea>
         <DialogFooter className="px-6 pb-6 pt-2 flex-col sm:flex-row gap-2">
