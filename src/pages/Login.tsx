@@ -88,7 +88,7 @@ export default function Login() {
     <div className="min-h-screen flex">
       {/* Left side - image + branding */}
       <div className="hidden lg:flex lg:w-1/2 relative items-end p-12 bg-primary/25">
-        <div className="absolute inset-0 bg-gradient-to-t from-primary/50 via-primary/25 to-transparent" />
+        <div className="absolute inset-0 m-0 p-0 bg-[#4169E1]" />
         <div className="relative z-10 text-white">
           <div className="flex items-center gap-3 mb-6">
             <div className="h-14 w-14 rounded-xl overflow-hidden bg-white/10 flex items-center justify-center">

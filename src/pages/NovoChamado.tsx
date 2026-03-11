@@ -226,6 +226,7 @@ export default function NovoChamado() {
 
   const isSupervisorLocked = role === 'supervisor' || role === 'representante';
   const isRepresentanteLocked = role === 'representante';
+  const isRepresentante = role === 'representante';
 
   // Derived filtered lists
   const filteredRepresentantes = selectedSupervisor
@@ -801,9 +802,9 @@ export default function NovoChamado() {
                 </Select>
               </div>
               <div>
-                <Label className="text-xs font-semibold">Objetivo Principal da Solicitação</Label>
+                <Label className={`text-xs font-semibold ${selectedMotivo ? 'text-destructive' : ''}`}>Objetivo Principal da Solicitação</Label>
                 <Select disabled={!selectedMotivo} value={selectedSubmotivo} onValueChange={setSelectedSubmotivo}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder={selectedMotivo ? "Selecione o Objetivo" : "Selecione um motivo primeiro"} /></SelectTrigger>
+                  <SelectTrigger className={`mt-1 ${selectedMotivo ? 'border-destructive/50' : ''}`}><SelectValue placeholder={selectedMotivo ? "Selecione o Objetivo" : "Selecione um motivo primeiro"} /></SelectTrigger>
                   <SelectContent>
                     {filteredSubmotivos.map(s => (
                       <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
@@ -837,37 +838,41 @@ export default function NovoChamado() {
                 <Label className="text-xs font-semibold">Nº NFE</Label>
                 <Input className="mt-1" value={nfe} onChange={e => setNfe(e.target.value)} />
               </div>
-              <div>
-                <Label className="text-xs font-semibold">Tipo de Solicitação</Label>
-                <Select value={tipoSolicitacao} onValueChange={setTipoSolicitacao}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Interna">Interna</SelectItem>
-                    <SelectItem value="Romplas">Romplas</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs font-semibold">Gestor</Label>
-                <Select value={gestor} onValueChange={setGestor}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
-                  <SelectContent>
-                    {gestorProfiles.map(g => (
-                      <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs font-semibold">Status Agendamentos</Label>
-                <Select value={statusAgendamento} onValueChange={setStatusAgendamento}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Agendado">Agendado</SelectItem>
-                    <SelectItem value="Concluído">Concluído</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {!isRepresentante && (
+                <>
+                  <div>
+                    <Label className="text-xs font-semibold">Tipo de Solicitação</Label>
+                    <Select value={tipoSolicitacao} onValueChange={setTipoSolicitacao}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Interna">Interna</SelectItem>
+                        <SelectItem value="Romplas">Romplas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold">Gestor</Label>
+                    <Select value={gestor} onValueChange={setGestor}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+                      <SelectContent>
+                        {gestorProfiles.map(g => (
+                          <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold">Status Agendamentos</Label>
+                    <Select value={statusAgendamento} onValueChange={setStatusAgendamento}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Localizar itens" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Agendado">Agendado</SelectItem>
+                        <SelectItem value="Concluído">Concluído</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
             </div>
 
 
