@@ -74,6 +74,60 @@ const MODELOS = [
   { key: 'E', label: 'E (40×21×6)', laminas: '150/165', img: '/images/book-model-e.png' },
 ];
 
+// Custos indexed by book model key
+const CUSTOS_PRICES: Record<string, Record<string, number>> = {
+  A: { CAPA: 13.90, MAO_DE_OBRA: 0.40, MP_LAMINAS: 0.25, LAMINAS_NOME: 0.05, CODIGOS: 0.05, ARTE_CAPA: 75.00, SILK_1COR: 4.20, SILK_COLORIDO: 8.50, DIVISORIAS: 2.50, PLACA: 5.90, ADESIVOS: 3.90, ACRILICO: 7.50 },
+  B: { CAPA: 19.90, MAO_DE_OBRA: 0.40, MP_LAMINAS: 0.30, LAMINAS_NOME: 0.05, CODIGOS: 0.05, ARTE_CAPA: 75.00, SILK_1COR: 4.20, SILK_COLORIDO: 8.50, DIVISORIAS: 2.50, PLACA: 5.90, ADESIVOS: 3.90, ACRILICO: 7.50 },
+  C: { CAPA: 25.70, MAO_DE_OBRA: 0.40, MP_LAMINAS: 0.50, LAMINAS_NOME: 0.05, CODIGOS: 0.05, ARTE_CAPA: 75.00, SILK_1COR: 4.20, SILK_COLORIDO: 8.50, DIVISORIAS: 2.50, PLACA: 5.90, ADESIVOS: 3.90, ACRILICO: 7.50 },
+  D: { CAPA: 37.70, MAO_DE_OBRA: 0.40, MP_LAMINAS: 0.35, LAMINAS_NOME: 0.05, CODIGOS: 0.05, ARTE_CAPA: 75.00, SILK_1COR: 4.20, SILK_COLORIDO: 8.50, DIVISORIAS: 2.50, PLACA: 5.90, ADESIVOS: 3.90, ACRILICO: 7.50 },
+  E: { CAPA: 47.90, MAO_DE_OBRA: 0.40, MP_LAMINAS: 0.35, LAMINAS_NOME: 0.05, CODIGOS: 0.05, ARTE_CAPA: 75.00, SILK_1COR: 4.20, SILK_COLORIDO: 8.50, DIVISORIAS: 2.50, PLACA: 5.90, ADESIVOS: 3.90, ACRILICO: 7.50 },
+};
+
+const ORCAMENTO_KEYS = [
+  'CAPA', 'MAO_DE_OBRA', 'MP_LAMINAS', 'LAMINAS_NOME', 'CODIGOS',
+  'ARTE_CAPA', 'SILK_1COR', 'SILK_COLORIDO', 'DIVISORIAS', 'PLACA', 'ADESIVOS', 'ACRILICO',
+] as const;
+
+const ORCAMENTO_LABELS = [
+  'CAPA (unidade)', 'MAO DE OBRA', 'MP P/ LAMINA (Unidade)',
+  'LAMINAS - Nome cliente (Unidade)', 'CODIGOS - Codigo cliente (Unidade)',
+  'ARTE CAPA (Pago 1x)', 'SILK CAPA - 1 COR (Unidade)',
+  'SILK CAPA - COLORIDO (Unidade)', 'DIVISÓRIAS (Unidade)',
+  'PLACA METALIZADA (6x4) (Unidade)', 'ADESIVOS (Unidade)',
+  'ACRILICO - 3Modl. (Unidade)',
+];
+
+function calcOrcamento(form: BookFullFormData) {
+  const selectedBook = form.bookEscolhido.length > 0 ? form.bookEscolhido[0] : null;
+  const prices = selectedBook ? CUSTOS_PRICES[selectedBook] : null;
+  const qtdBook = parseFloat(form.quantidadeBook) || 0;
+  const nLaminas = parseFloat(form.nLaminas) || 0;
+
+  const rows = ORCAMENTO_KEYS.map((key) => {
+    const unitPrice = prices ? prices[key] : 0;
+    let qty = 0;
+
+    if (key === 'MP_LAMINAS' || key === 'LAMINAS_NOME' || key === 'CODIGOS') {
+      // Quantidade = quantidadeBook × nLaminas
+      qty = qtdBook * nLaminas;
+    } else if (key === 'ARTE_CAPA') {
+      // Pago 1x
+      qty = qtdBook > 0 ? 1 : 0;
+    } else {
+      // Capa, Mão de obra, e demais: quantidade = quantidadeBook
+      qty = qtdBook;
+    }
+
+    const total = qty * unitPrice;
+    return { qty, unitPrice, total };
+  });
+
+  const totalGeral = rows.reduce((sum, r) => sum + r.total, 0);
+  const valorUnitario = qtdBook > 0 ? totalGeral / qtdBook : 0;
+
+  return { rows, totalGeral, valorUnitario };
+}
+
 const formatDatePdf = (d: string) => {
   if (!d) return '-';
   try {
