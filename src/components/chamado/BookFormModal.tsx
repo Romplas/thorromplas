@@ -193,7 +193,7 @@ interface Props {
 export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNome, representanteNome, onPdfUploaded }: Props) {
   const [form, setForm] = useState<BookFullFormData>({ ...defaultBookFullForm });
   const [saving, setSaving] = useState(false);
-
+  const [fotoModal, setFotoModal] = useState<{ open: boolean; img: string; label: string }>({ open: false, img: '', label: '' });
   useEffect(() => {
     if (!open) return;
     const load = async () => {
