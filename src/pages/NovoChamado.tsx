@@ -355,9 +355,9 @@ export default function NovoChamado() {
     }
   };
 
-  // Carregar catálogo de produtos quando motivo for Negociação
+  // Carregar catálogo de produtos quando motivo for Negociação ou RNC
   useEffect(() => {
-    if (!isNegociacao) return;
+    if (!isNegociacao && !isRNC) return;
     const load = async () => {
       const all: { cod_produto: string; produto: string }[] = [];
       let offset = 0;
@@ -376,7 +376,7 @@ export default function NovoChamado() {
       setCatalogoProdutos(all);
     };
     load();
-  }, [isNegociacao]);
+  }, [isNegociacao, isRNC]);
 
   useEffect(() => {
     loadExistingTickets();
@@ -1179,8 +1179,10 @@ export default function NovoChamado() {
                           else if (isAmostras) setShowAmostrasForm(true);
                           else if (isBook) {
                             const repNome = representantes.find(r => r.id === selectedRepresentante)?.nome || '';
-                            const clienteNome = clientes.find(c => c.id === selectedCliente)?.nome || '';
-                            setBookForm(p => ({ ...p, representante: repNome, razaoSocial: p.razaoSocial || clienteNome }));
+                            const cli = clientes.find(c => c.id === selectedCliente);
+                            const clienteNome = cli?.nome || '';
+                            const codigoCliente = cli?.codigo?.toString() || '';
+                            setBookForm(p => ({ ...p, representante: repNome, razaoSocial: p.razaoSocial || clienteNome, codigo: p.codigo || codigoCliente }));
                             setShowBookForm(true);
                           }
                         }}
@@ -1209,8 +1211,10 @@ export default function NovoChamado() {
                             else if (isAmostras) setShowAmostrasForm(true);
                             else if (isBook) {
                               const repNome = representantes.find(r => r.id === selectedRepresentante)?.nome || '';
-                              const clienteNome = clientes.find(c => c.id === selectedCliente)?.nome || '';
-                              setBookForm(p => ({ ...p, representante: repNome, razaoSocial: p.razaoSocial || clienteNome }));
+                              const cli = clientes.find(c => c.id === selectedCliente);
+                              const clienteNome = cli?.nome || '';
+                              const codigoCliente = cli?.codigo?.toString() || '';
+                              setBookForm(p => ({ ...p, representante: repNome, razaoSocial: p.razaoSocial || clienteNome, codigo: p.codigo || codigoCliente }));
                               setShowBookForm(true);
                             }
                           }}
@@ -1823,11 +1827,36 @@ export default function NovoChamado() {
               <div><Label className="text-xs">Representante *</Label><Input className="mt-1" value={rncForm.representante} disabled /></div>
             </div>
 
-            {/* Produtos dinâmicos */}
-            {rncForm.produtos.map((prod, idx) => (
+            {/* Produtos dinâmicos - Cód. primeiro, Produto depois (tabela produtos) */}
+            {rncForm.produtos.map((prod, idx) => {
+              const opcoesCodRnc = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.cod_produto }));
+              const opcoesProdutoRnc = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.produto }));
+              const handleSelectRncProduto = (cod: string) => {
+                const item = catalogoProdutos.find(x => x.cod_produto === cod);
+                if (item) {
+                  const prods = [...rncForm.produtos];
+                  prods[idx] = { ...prods[idx], cod: item.cod_produto, produto: item.produto };
+                  setRncForm(p => ({ ...p, produtos: prods }));
+                }
+              };
+              return (
               <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
-                <div><Label className="text-xs">Produto {idx === 0 ? '*' : idx + 1}</Label><Input className="mt-1" value={prod.produto} onChange={e => { const prods = [...rncForm.produtos]; prods[idx] = { ...prods[idx], produto: e.target.value }; setRncForm(p => ({ ...p, produtos: prods })); }} /></div>
-                <div><Label className="text-xs">Cód.</Label><Input className="mt-1" value={prod.cod} onChange={e => { const prods = [...rncForm.produtos]; prods[idx] = { ...prods[idx], cod: e.target.value }; setRncForm(p => ({ ...p, produtos: prods })); }} /></div>
+                <div>
+                  <Label className="text-xs">Cód. {idx === 0 ? '*' : ''}</Label>
+                  {catalogoProdutos.length > 0 ? (
+                    <SearchableSelect options={opcoesCodRnc} value={prod.cod} onValueChange={handleSelectRncProduto} placeholder="Pesquisar código" searchPlaceholder="Pesquisar código..." className="h-9 mt-1" />
+                  ) : (
+                    <Input className="mt-1" value={prod.cod} onChange={e => { const prods = [...rncForm.produtos]; prods[idx] = { ...prods[idx], cod: e.target.value }; setRncForm(p => ({ ...p, produtos: prods })); }} />
+                  )}
+                </div>
+                <div>
+                  <Label className="text-xs">Produto {idx === 0 ? '*' : idx + 1}</Label>
+                  {catalogoProdutos.length > 0 ? (
+                    <SearchableSelect options={opcoesProdutoRnc} value={prod.cod} onValueChange={handleSelectRncProduto} placeholder="Pesquisar produto" searchPlaceholder="Pesquisar produto..." className="h-9 mt-1" />
+                  ) : (
+                    <Input className="mt-1" value={prod.produto} onChange={e => { const prods = [...rncForm.produtos]; prods[idx] = { ...prods[idx], produto: e.target.value }; setRncForm(p => ({ ...p, produtos: prods })); }} />
+                  )}
+                </div>
                 <div><Label className="text-xs">Metros</Label><Input className="mt-1" value={prod.metros} onChange={e => { const prods = [...rncForm.produtos]; prods[idx] = { ...prods[idx], metros: e.target.value }; setRncForm(p => ({ ...p, produtos: prods })); }} /></div>
                 <div className="flex gap-1 pb-0.5">
                   {idx === rncForm.produtos.length - 1 && (
@@ -1842,7 +1871,8 @@ export default function NovoChamado() {
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
 
             {/* Amostra Anexa + Imagens */}
             <div className="border rounded-lg p-3 space-y-2">
@@ -2072,6 +2102,7 @@ export default function NovoChamado() {
         onOpenChange={setShowBookForm}
         chamadoId={null}
         clienteNome={clientes.find(c => c.id === selectedCliente)?.nome || ''}
+        codigoCliente={clientes.find(c => c.id === selectedCliente)?.codigo?.toString() || ''}
         representanteNome={representantes.find(r => r.id === selectedRepresentante)?.nome || ''}
         initialFormData={bookForm}
         onFormDataChange={setBookForm}

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -111,6 +112,9 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
   const [form, setForm] = useState<AmostrasFullFormData>({ ...defaultForm });
   const [saving, setSaving] = useState(false);
 
+  interface ProdutoCatalogo { cod_produto: string; produto: string }
+  const [catalogoProdutos, setCatalogoProdutos] = useState<ProdutoCatalogo[]>([]);
+
   useEffect(() => {
     if (!open) return;
     const load = async () => {
@@ -125,6 +129,24 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
     };
     load();
   }, [open, chamadoId]);
+
+  useEffect(() => {
+    if (!open) return;
+    const load = async () => {
+      const all: ProdutoCatalogo[] = [];
+      let offset = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data } = await supabase.from('produtos').select('cod_produto, produto').order('produto').range(offset, offset + pageSize - 1);
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < pageSize) break;
+        offset += pageSize;
+      }
+      setCatalogoProdutos(all);
+    };
+    load();
+  }, [open]);
 
   const toggleProduct = (key: string, checked: boolean, numLam: number) => {
     setForm(prev => {
@@ -479,15 +501,50 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
             <div className="rounded-lg border p-4 space-y-3">
               <h3 className="text-sm font-bold">Amostra Metragem <span className="text-xs font-normal text-muted-foreground">(Quantidade Máximo - 1 rolo)</span></h3>
               <div className="space-y-2">
-                {(form.metragems || []).map((m, i) => (
+                {(form.metragems || []).map((m, i) => {
+                  const opcoesCod = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.cod_produto }));
+                  const opcoesCor = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.produto }));
+                  const handleSelectProduto = (cod: string) => {
+                    const item = catalogoProdutos.find(x => x.cod_produto === cod);
+                    if (item) {
+                      setForm(prev => {
+                        const mm = [...(prev.metragems || [])];
+                        mm[i] = { codigo: item.cod_produto, cor: item.produto };
+                        return { ...prev, metragems: mm };
+                      });
+                    }
+                  };
+                  return (
                   <div key={i} className="flex items-end gap-2">
                     <div className="flex-1">
                       <Label className="text-xs">Código</Label>
-                      <Input className="mt-1 h-8 text-xs" value={m.codigo} onChange={e => updateMetragem(i, 'codigo', e.target.value)} />
+                      {catalogoProdutos.length > 0 ? (
+                        <SearchableSelect
+                          options={opcoesCod}
+                          value={m.codigo}
+                          onValueChange={handleSelectProduto}
+                          placeholder="Pesquisar ou selecionar código"
+                          searchPlaceholder="Pesquisar código..."
+                          className="h-8 text-xs mt-1"
+                        />
+                      ) : (
+                        <Input className="mt-1 h-8 text-xs" value={m.codigo} onChange={e => updateMetragem(i, 'codigo', e.target.value)} />
+                      )}
                     </div>
                     <div className="flex-1">
                       <Label className="text-xs">Cor</Label>
-                      <Input className="mt-1 h-8 text-xs" value={m.cor} onChange={e => updateMetragem(i, 'cor', e.target.value)} />
+                      {catalogoProdutos.length > 0 ? (
+                        <SearchableSelect
+                          options={opcoesCor}
+                          value={m.codigo}
+                          onValueChange={handleSelectProduto}
+                          placeholder="Pesquisar ou selecionar produto"
+                          searchPlaceholder="Pesquisar produto..."
+                          className="h-8 text-xs mt-1"
+                        />
+                      ) : (
+                        <Input className="mt-1 h-8 text-xs" value={m.cor} onChange={e => updateMetragem(i, 'cor', e.target.value)} />
+                      )}
                     </div>
                     {i === (form.metragems || []).length - 1 && (
                       <Button
@@ -501,7 +558,8 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
                       </Button>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

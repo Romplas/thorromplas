@@ -143,7 +143,7 @@ export default function Historico() {
   const [representanteMap, setRepresentanteMap] = useState<Map<string, string>>(new Map());
   const [dbEtapas, setDbEtapas] = useState<{ nome: string; label: string; cor: string }[]>([]);
   const [srLinks, setSrLinks] = useState<SupervisorRepresentante[]>([]);
-  const [allClientes, setAllClientes] = useState<{ id: string; nome: string; representante_id: string | null }[]>([]);
+  const [allClientes, setAllClientes] = useState<{ id: string; nome: string; codigo?: number | null; representante_id: string | null }[]>([]);
   const [roleFilterApplied, setRoleFilterApplied] = useState(false);
   // Resolved names for detail panel
   const [supervisorNome, setSupervisorNome] = useState('');
@@ -181,7 +181,7 @@ export default function Historico() {
       supabase.from('representantes').select('id, nome'),
       supabase.from('etapas').select('nome, label, cor').order('ordem'),
       supabase.from('supervisor_representante').select('supervisor_id, representante_id'),
-      supabase.from('clientes').select('id, nome, representante_id').order('nome').limit(1000),
+      supabase.from('clientes').select('id, nome, codigo, representante_id').order('nome').limit(1000),
     ]);
 
     const pMap = new Map<string, string>();
@@ -956,6 +956,7 @@ export default function Historico() {
             onOpenChange={setBookModalOpen}
             chamadoId={selectedChamado.id}
             clienteNome={selectedChamado.cliente_nome}
+            codigoCliente={allClientes.find((c: any) => c.id === selectedChamado.cliente_id)?.codigo?.toString() || ''}
             representanteNome={representanteNome}
             onPdfUploaded={fetchData}
           />

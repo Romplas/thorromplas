@@ -731,6 +731,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
           onOpenChange={setShowBookModal}
           chamadoId={chamado.id}
           clienteNome={chamado.cliente_nome}
+          codigoCliente={clienteCodigo}
           representanteNome={representanteNome}
           onPdfUploaded={() => loadAnexos(chamado.id)}
         />

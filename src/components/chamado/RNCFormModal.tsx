@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -50,6 +51,9 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
   const [form, setForm] = useState<RNCFormData>({ ...defaultForm, cliente: clienteNome, representante: representanteNome });
   const [saving, setSaving] = useState(false);
 
+  interface ProdutoCatalogo { cod_produto: string; produto: string }
+  const [catalogoProdutos, setCatalogoProdutos] = useState<ProdutoCatalogo[]>([]);
+
   useEffect(() => {
     if (!open) return;
     const load = async () => {
@@ -64,6 +68,24 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
     };
     load();
   }, [open, chamadoId, clienteNome, representanteNome]);
+
+  useEffect(() => {
+    if (!open) return;
+    const load = async () => {
+      const all: ProdutoCatalogo[] = [];
+      let offset = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data } = await supabase.from('produtos').select('cod_produto, produto').order('produto').range(offset, offset + pageSize - 1);
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < pageSize) break;
+        offset += pageSize;
+      }
+      setCatalogoProdutos(all);
+    };
+    load();
+  }, [open]);
 
   const addProduto = () => setForm(p => ({ ...p, produtos: [...p.produtos, { produto: '', cod: '', metros: '' }] }));
   const removeProduto = (idx: number) => setForm(p => ({ ...p, produtos: p.produtos.filter((_, i) => i !== idx) }));
@@ -194,20 +216,46 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
             <div><Label className="text-xs">Representante *</Label><Input className="mt-1" value={form.representante} disabled /></div>
           </div>
 
-          {/* Produtos dinâmicos */}
+          {/* Produtos dinâmicos - Cód. primeiro, Produto depois (tabela produtos) */}
           <div className="border rounded-lg p-3 space-y-2">
             <Label className="text-xs font-semibold">Produtos *</Label>
-            {form.produtos.map((prod, idx) => (
+            {form.produtos.map((prod, idx) => {
+              const opcoesCod = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.cod_produto }));
+              const opcoesProduto = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.produto }));
+              const handleSelectProduto = (cod: string) => {
+                const item = catalogoProdutos.find(x => x.cod_produto === cod);
+                if (item) {
+                  const u = [...form.produtos];
+                  u[idx] = { ...u[idx], cod: item.cod_produto, produto: item.produto };
+                  setForm(p => ({ ...p, produtos: u }));
+                }
+              };
+              return (
               <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
-                <div><Label className="text-[10px] text-muted-foreground">Produto</Label><Input className="mt-0.5 h-8 text-xs" value={prod.produto} onChange={e => { const u = [...form.produtos]; u[idx] = { ...u[idx], produto: e.target.value }; setForm(p => ({ ...p, produtos: u })); }} /></div>
-                <div><Label className="text-[10px] text-muted-foreground">Cód.</Label><Input className="mt-0.5 h-8 text-xs" value={prod.cod} onChange={e => { const u = [...form.produtos]; u[idx] = { ...u[idx], cod: e.target.value }; setForm(p => ({ ...p, produtos: u })); }} /></div>
+                <div>
+                  <Label className="text-[10px] text-muted-foreground">Cód.</Label>
+                  {catalogoProdutos.length > 0 ? (
+                    <SearchableSelect options={opcoesCod} value={prod.cod} onValueChange={handleSelectProduto} placeholder="Pesquisar código" searchPlaceholder="Pesquisar código..." className="h-8 text-xs mt-0.5" />
+                  ) : (
+                    <Input className="mt-0.5 h-8 text-xs" value={prod.cod} onChange={e => { const u = [...form.produtos]; u[idx] = { ...u[idx], cod: e.target.value }; setForm(p => ({ ...p, produtos: u })); }} />
+                  )}
+                </div>
+                <div>
+                  <Label className="text-[10px] text-muted-foreground">Produto</Label>
+                  {catalogoProdutos.length > 0 ? (
+                    <SearchableSelect options={opcoesProduto} value={prod.cod} onValueChange={handleSelectProduto} placeholder="Pesquisar produto" searchPlaceholder="Pesquisar produto..." className="h-8 text-xs mt-0.5" />
+                  ) : (
+                    <Input className="mt-0.5 h-8 text-xs" value={prod.produto} onChange={e => { const u = [...form.produtos]; u[idx] = { ...u[idx], produto: e.target.value }; setForm(p => ({ ...p, produtos: u })); }} />
+                  )}
+                </div>
                 <div><Label className="text-[10px] text-muted-foreground">Metros</Label><Input className="mt-0.5 h-8 text-xs" value={prod.metros} onChange={e => { const u = [...form.produtos]; u[idx] = { ...u[idx], metros: e.target.value }; setForm(p => ({ ...p, produtos: u })); }} /></div>
                 <div className="flex gap-1">
                   <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={addProduto}><Plus className="h-3.5 w-3.5" /></Button>
                   {form.produtos.length > 1 && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeProduto(idx)}><Trash2 className="h-3.5 w-3.5" /></Button>}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Amostra / Imagens */}

@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -349,6 +350,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   chamadoId?: number | null;
   clienteNome: string;
+  codigoCliente?: string;
   representanteNome: string;
   /** Modo criação (NovoChamado): dados iniciais e callback ao confirmar */
   initialFormData?: BookFullFormData;
@@ -358,19 +360,47 @@ interface Props {
   onPdfUploaded?: () => void;
 }
 
-export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNome, representanteNome, initialFormData, onFormDataChange, onConfirmCreate, onPdfUploaded }: Props) {
+interface ProdutoCatalogo { cod_produto: string; produto: string }
+
+export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNome, codigoCliente = '', representanteNome, initialFormData, onFormDataChange, onConfirmCreate, onPdfUploaded }: Props) {
   const isCreateMode = !chamadoId;
   const [form, setForm] = useState<BookFullFormData>({ ...defaultBookFullForm });
   const [saving, setSaving] = useState(false);
   const [fotoModal, setFotoModal] = useState<{ open: boolean; img: string; label: string }>({ open: false, img: '', label: '' });
+  const [catalogoProdutos, setCatalogoProdutos] = useState<ProdutoCatalogo[]>([]);
 
-  // Modo criação: sincronizar com dados iniciais do pai
+  useEffect(() => {
+    if (!open) return;
+    const load = async () => {
+      const all: ProdutoCatalogo[] = [];
+      let offset = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data } = await supabase.from('produtos').select('cod_produto, produto').order('produto').range(offset, offset + pageSize - 1);
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < pageSize) break;
+        offset += pageSize;
+      }
+      setCatalogoProdutos(all);
+    };
+    load();
+  }, [open]);
+
+  // Modo criação: sincronizar com dados iniciais do pai (cliente/código da solicitação)
   useEffect(() => {
     if (open && isCreateMode && initialFormData) {
       const sc = Array.isArray(initialFormData.silkCapa) ? initialFormData.silkCapa : (initialFormData.silkCapa ? [initialFormData.silkCapa] : []);
-      setForm({ ...defaultBookFullForm, ...initialFormData, silkCapa: sc } as BookFullFormData);
+      const merged = {
+        ...defaultBookFullForm,
+        ...initialFormData,
+        silkCapa: sc,
+        razaoSocial: initialFormData.razaoSocial || clienteNome,
+        codigo: initialFormData.codigo || codigoCliente,
+      } as BookFullFormData;
+      setForm(merged);
     }
-  }, [open, isCreateMode, initialFormData]);
+  }, [open, isCreateMode, initialFormData, clienteNome, codigoCliente]);
 
   // Modo edição: carregar do banco
   useEffect(() => {
@@ -482,12 +512,12 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6">
           <div className="space-y-4 pb-4">
-            {/* Dados Gerais */}
+            {/* Dados Gerais - Razão Social e Código preenchidos do cliente da solicitação */}
             <div className="border rounded-lg p-3 space-y-3">
               <Label className="text-xs font-semibold">Dados Gerais</Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div><Label className="text-xs text-muted-foreground">Razão Social *</Label><Input className="mt-1 h-9 text-sm" value={form.razaoSocial} onChange={e => setFormWithSync(p => ({ ...p, razaoSocial: e.target.value }))} /></div>
-                <div><Label className="text-xs text-muted-foreground">Código</Label><Input className="mt-1 h-9 text-sm" value={form.codigo} onChange={e => setFormWithSync(p => ({ ...p, codigo: e.target.value }))} /></div>
+                <div><Label className="text-xs text-muted-foreground">Razão Social *</Label><Input className="mt-1 h-9 text-sm" value={form.razaoSocial || clienteNome} onChange={e => setFormWithSync(p => ({ ...p, razaoSocial: e.target.value }))} placeholder={clienteNome || 'Nome do cliente'} /></div>
+                <div><Label className="text-xs text-muted-foreground">Código</Label><Input className="mt-1 h-9 text-sm" value={form.codigo || codigoCliente} onChange={e => setFormWithSync(p => ({ ...p, codigo: e.target.value }))} placeholder={codigoCliente || 'Código do cliente'} /></div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><Label className="text-xs text-muted-foreground">Representante</Label><Input className="mt-1 h-9 text-sm" value={form.representante} disabled /></div>
@@ -575,8 +605,34 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
               <div><Label className="text-xs">Nº Laminas</Label><Input className="mt-1" value={form.nLaminas} onChange={e => setFormWithSync(p => ({ ...p, nLaminas: e.target.value }))} /></div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div><Label className="text-xs">Material/Cor Capa</Label><Input className="mt-1" value={form.materialCorCapa} onChange={e => setFormWithSync(p => ({ ...p, materialCorCapa: e.target.value }))} /></div>
-              <div><Label className="text-xs">Código Capa</Label><Input className="mt-1" value={form.codigoCapa} onChange={e => setFormWithSync(p => ({ ...p, codigoCapa: e.target.value }))} /></div>
+              {(() => {
+                const opcoesCod = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.cod_produto }));
+                const opcoesMaterial = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.produto }));
+                const handleSelectCapa = (cod: string) => {
+                  const item = catalogoProdutos.find(x => x.cod_produto === cod);
+                  if (item) setFormWithSync(p => ({ ...p, codigoCapa: item.cod_produto, materialCorCapa: item.produto }));
+                };
+                return (
+                  <>
+                    <div>
+                      <Label className="text-xs">Código Capa</Label>
+                      {catalogoProdutos.length > 0 ? (
+                        <SearchableSelect options={opcoesCod} value={form.codigoCapa} onValueChange={handleSelectCapa} placeholder="Pesquisar ou selecionar código" searchPlaceholder="Pesquisar código..." className="h-9 mt-1" />
+                      ) : (
+                        <Input className="mt-1" value={form.codigoCapa} onChange={e => setFormWithSync(p => ({ ...p, codigoCapa: e.target.value }))} />
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-xs">Material/Cor Capa</Label>
+                      {catalogoProdutos.length > 0 ? (
+                        <SearchableSelect options={opcoesMaterial} value={form.codigoCapa} onValueChange={handleSelectCapa} placeholder="Pesquisar ou selecionar produto" searchPlaceholder="Pesquisar produto..." className="h-9 mt-1" />
+                      ) : (
+                        <Input className="mt-1" value={form.materialCorCapa} onChange={e => setFormWithSync(p => ({ ...p, materialCorCapa: e.target.value }))} />
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
             <div><Label className="text-xs">Descrição Capa</Label><Input className="mt-1" value={form.descricaoCapa} onChange={e => setFormWithSync(p => ({ ...p, descricaoCapa: e.target.value }))} /></div>
             </div>
