@@ -155,17 +155,26 @@ export default function ImportClientes() {
       setProdutoStatus('importing');
       setProdutoMessage(`Importando ${validRows.length} produtos...`);
 
-      const { data: resp, error } = await supabase.functions.invoke('import-produtos', {
-        body: { rows: validRows },
-      });
+      const inserts = validRows.map((r) => ({
+        cod_produto: r.codProduto,
+        produto: r.produto,
+      }));
 
-      if (error) throw new Error(error.message);
-      if (resp?.error) throw new Error(resp.error);
+      let insertedCount = 0;
+      const chunkSize = 500;
+      for (let i = 0; i < inserts.length; i += chunkSize) {
+        const batch = inserts.slice(i, i + chunkSize);
+        const { error } = await supabase
+          .from('produtos')
+          .upsert(batch, { onConflict: 'cod_produto' });
+        if (error) throw new Error(error.message);
+        insertedCount += batch.length;
+      }
 
       setProdutoProgress(100);
       setProdutoStatus('success');
       setProdutoMessage('Importação de produtos concluída!');
-      setProdutoResult(resp?.produtos ?? validRows.length);
+      setProdutoResult(insertedCount);
     } catch (err: any) {
       setProdutoStatus('error');
       setProdutoMessage(`Erro: ${err.message}`);
