@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Loader2, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -17,13 +17,24 @@ interface RawRow {
   cliente: string;
 }
 
+interface ProdutoRow {
+  codProduto: string;
+  produto: string;
+}
+
 export default function ImportClientes() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const produtoFileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [produtoFile, setProdutoFile] = useState<File | null>(null);
   const [status, setStatus] = useState<'idle' | 'parsing' | 'importing' | 'success' | 'error'>('idle');
+  const [produtoStatus, setProdutoStatus] = useState<'idle' | 'parsing' | 'importing' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
+  const [produtoMessage, setProdutoMessage] = useState('');
   const [progress, setProgress] = useState(0);
+  const [produtoProgress, setProdutoProgress] = useState(0);
   const [result, setResult] = useState<Record<string, number> | null>(null);
+  const [produtoResult, setProdutoResult] = useState<number | null>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -32,6 +43,16 @@ export default function ImportClientes() {
       setStatus('idle');
       setMessage('');
       setResult(null);
+    }
+  };
+
+  const handleProdutoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      setProdutoFile(f);
+      setProdutoStatus('idle');
+      setProdutoMessage('');
+      setProdutoResult(null);
     }
   };
 
@@ -105,6 +126,53 @@ export default function ImportClientes() {
     }
   };
 
+  const handleProdutoImport = async () => {
+    if (!produtoFile) return;
+
+    try {
+      setProdutoStatus('parsing');
+      setProdutoMessage('Lendo planilha...');
+      setProdutoProgress(20);
+
+      const data = await produtoFile.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+      const rows: ProdutoRow[] = jsonData.map((row: any) => ({
+        codProduto: String(row['codProduto'] ?? row['CodProduto'] ?? row['Cód Produto'] ?? row['cod_produto'] ?? '').trim(),
+        produto: String(row['produto'] ?? row['Produto'] ?? '').trim(),
+      }));
+
+      const validRows = rows.filter((r) => r.codProduto && r.produto);
+      if (validRows.length === 0) {
+        setProdutoStatus('error');
+        setProdutoMessage('Nenhuma linha válida encontrada. Use colunas codProduto e Produto.');
+        return;
+      }
+
+      setProdutoProgress(50);
+      setProdutoStatus('importing');
+      setProdutoMessage(`Importando ${validRows.length} produtos...`);
+
+      const { data: resp, error } = await supabase.functions.invoke('import-produtos', {
+        body: { rows: validRows },
+      });
+
+      if (error) throw new Error(error.message);
+      if (resp?.error) throw new Error(resp.error);
+
+      setProdutoProgress(100);
+      setProdutoStatus('success');
+      setProdutoMessage('Importação de produtos concluída!');
+      setProdutoResult(resp?.produtos ?? validRows.length);
+    } catch (err: any) {
+      setProdutoStatus('error');
+      setProdutoMessage(`Erro: ${err.message}`);
+      setProdutoProgress(0);
+    }
+  };
+
   return (
     <Layout>
       <div className="max-w-2xl mx-auto p-4 sm:p-6">
@@ -173,6 +241,72 @@ export default function ImportClientes() {
               <div className="flex items-center gap-2 text-destructive">
                 <AlertCircle className="h-5 w-5" />
                 <span className="text-sm">{message}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Importar Produtos
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+              Selecione o arquivo XLSX com as colunas: <strong>codProduto</strong> e <strong>Produto</strong>.
+            </p>
+
+            <div className="flex items-center gap-3">
+              <input
+                ref={produtoFileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={handleProdutoFileSelect}
+              />
+              <Button variant="outline" onClick={() => produtoFileInputRef.current?.click()}>
+                <Upload className="h-4 w-4 mr-2" />
+                Selecionar arquivo
+              </Button>
+              {produtoFile && <span className="text-sm text-muted-foreground">{produtoFile.name}</span>}
+            </div>
+
+            {produtoFile && produtoStatus !== 'importing' && produtoStatus !== 'parsing' && (
+              <Button onClick={handleProdutoImport} disabled={!produtoFile}>
+                Iniciar Importação de Produtos
+              </Button>
+            )}
+
+            {(produtoStatus === 'parsing' || produtoStatus === 'importing') && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">{produtoMessage}</span>
+                </div>
+                <Progress value={produtoProgress} />
+              </div>
+            )}
+
+            {produtoStatus === 'success' && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-green-600">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="font-medium">{produtoMessage}</span>
+                </div>
+                {produtoResult != null && (
+                  <div className="bg-muted rounded-lg p-4 text-sm">
+                    <p>Produtos importados: {produtoResult}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {produtoStatus === 'error' && (
+              <div className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="h-5 w-5" />
+                <span className="text-sm">{produtoMessage}</span>
               </div>
             )}
           </CardContent>
