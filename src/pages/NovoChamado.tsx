@@ -104,6 +104,10 @@ export default function NovoChamado() {
   interface TabelaProdutoItem { codProduto: string; produto: string; preco: string }
   const [tabelaProdutos, setTabelaProdutos] = useState<TabelaProdutoItem[]>([{ codProduto: '', produto: '', preco: '' }]);
 
+  // Catálogo de produtos (tabela produtos) - usado em Negociação
+  interface ProdutoCatalogo { cod_produto: string; produto: string }
+  const [catalogoProdutos, setCatalogoProdutos] = useState<ProdutoCatalogo[]>([]);
+
   // Check if motivo is Negociação
   const selectedMotivoNome = motivos.find(m => m.id === selectedMotivo)?.nome || '';
   const isNegociacao = selectedMotivoNome.toLowerCase() === 'negociação';
@@ -350,6 +354,29 @@ export default function NovoChamado() {
       setLoadingTickets(false);
     }
   };
+
+  // Carregar catálogo de produtos quando motivo for Negociação
+  useEffect(() => {
+    if (!isNegociacao) return;
+    const load = async () => {
+      const all: { cod_produto: string; produto: string }[] = [];
+      let offset = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data } = await supabase
+          .from('produtos')
+          .select('cod_produto, produto')
+          .order('produto')
+          .range(offset, offset + pageSize - 1);
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < pageSize) break;
+        offset += pageSize;
+      }
+      setCatalogoProdutos(all);
+    };
+    load();
+  }, [isNegociacao]);
 
   useEffect(() => {
     loadExistingTickets();
@@ -986,33 +1013,66 @@ export default function NovoChamado() {
                 ) : isNegociacao ? (
                   <div className="mt-1 border border-destructive/50 rounded-lg p-4 space-y-3">
                     {/* Produtos */}
-                    {produtos.map((prod, i) => (
+                    {produtos.map((prod, i) => {
+                      const opcoesCod = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.cod_produto }));
+                      const opcoesProduto = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.produto }));
+                      const handleSelectProduto = (cod: string) => {
+                        const item = catalogoProdutos.find(x => x.cod_produto === cod);
+                        if (item) {
+                          const updated = [...produtos];
+                          updated[i] = { ...updated[i], codProduto: item.cod_produto, produto: item.produto };
+                          setProdutos(updated);
+                        }
+                      };
+                      return (
                       <div key={i} className="grid grid-cols-2 md:grid-cols-4 gap-2 items-end">
                         <div>
                           <Label className="text-[10px] text-muted-foreground">Cód Produto *</Label>
-                          <Input
-                            className="h-8 text-xs border-destructive/50"
-                            placeholder="Código"
-                            value={prod.codProduto}
-                            onChange={e => {
-                              const updated = [...produtos];
-                              updated[i] = { ...updated[i], codProduto: e.target.value };
-                              setProdutos(updated);
-                            }}
-                          />
+                          {catalogoProdutos.length > 0 ? (
+                            <SearchableSelect
+                              options={opcoesCod}
+                              value={prod.codProduto}
+                              onValueChange={handleSelectProduto}
+                              placeholder="Pesquisar ou selecionar código"
+                              searchPlaceholder="Pesquisar por código ou produto..."
+                              className="h-8 text-xs border-destructive/50"
+                            />
+                          ) : (
+                            <Input
+                              className="h-8 text-xs border-destructive/50"
+                              placeholder="Código"
+                              value={prod.codProduto}
+                              onChange={e => {
+                                const updated = [...produtos];
+                                updated[i] = { ...updated[i], codProduto: e.target.value };
+                                setProdutos(updated);
+                              }}
+                            />
+                          )}
                         </div>
                         <div>
                           <Label className="text-[10px] text-muted-foreground">Produto *</Label>
-                          <Input
-                            className="h-8 text-xs border-destructive/50"
-                            placeholder="Produto"
-                            value={prod.produto}
-                            onChange={e => {
-                              const updated = [...produtos];
-                              updated[i] = { ...updated[i], produto: e.target.value };
-                              setProdutos(updated);
-                            }}
-                          />
+                          {catalogoProdutos.length > 0 ? (
+                            <SearchableSelect
+                              options={opcoesProduto}
+                              value={prod.codProduto}
+                              onValueChange={handleSelectProduto}
+                              placeholder="Pesquisar ou selecionar produto"
+                              searchPlaceholder="Pesquisar por produto ou código..."
+                              className="h-8 text-xs border-destructive/50"
+                            />
+                          ) : (
+                            <Input
+                              className="h-8 text-xs border-destructive/50"
+                              placeholder="Produto"
+                              value={prod.produto}
+                              onChange={e => {
+                                const updated = [...produtos];
+                                updated[i] = { ...updated[i], produto: e.target.value };
+                                setProdutos(updated);
+                              }}
+                            />
+                          )}
                         </div>
                         <div>
                           <Label className="text-[10px] text-muted-foreground">Preço *</Label>
@@ -1052,7 +1112,7 @@ export default function NovoChamado() {
                           )}
                         </div>
                       </div>
-                    ))}
+                    );})}
                     <Button
                       type="button"
                       variant="outline"
