@@ -203,14 +203,14 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col max-w-[calc(100vw-1rem)] sm:max-w-2xl max-h-[85dvh] sm:max-h-[90vh] overflow-hidden p-0">
+      <DialogContent className="flex flex-col w-[min(100%,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] sm:w-auto sm:max-w-2xl max-h-[85dvh] sm:max-h-[90vh] overflow-hidden p-0">
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2 shrink-0">
           <div className="flex justify-center mb-2">
             <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
           </div>
           <DialogTitle className="text-center">RNC - Relatório de Não Conformidade</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 space-y-4 pb-4">
+        <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 space-y-4 pb-4 max-w-full">
           <div className="border rounded-lg p-3 space-y-3 min-w-0">
             <Label className="text-xs font-semibold">Cliente / Representante</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -234,7 +234,7 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
                 }
               };
               return (
-              <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
+              <div key={idx} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end max-w-full">
                 <div className="min-w-0 overflow-hidden">
                   <Label className="text-[10px] text-muted-foreground">Cód.</Label>
                   {catalogoProdutos.length > 0 ? (
@@ -251,7 +251,7 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
                     <Input className="mt-0.5 h-8 text-xs w-full" value={prod.produto} onChange={e => { const u = [...form.produtos]; u[idx] = { ...u[idx], produto: e.target.value }; setForm(p => ({ ...p, produtos: u })); }} />
                   )}
                 </div>
-                <div className="min-w-0"><Label className="text-[10px] text-muted-foreground">Metros</Label><Input className="mt-0.5 h-8 text-xs w-full min-w-0" value={prod.metros} onChange={e => { const u = [...form.produtos]; u[idx] = { ...u[idx], metros: e.target.value }; setForm(p => ({ ...p, produtos: u })); }} /></div>
+                <div className="min-w-0 overflow-hidden"><Label className="text-[10px] text-muted-foreground">Metros</Label><Input className="mt-0.5 h-8 text-xs w-full min-w-0 max-w-full" value={prod.metros} onChange={e => { const u = [...form.produtos]; u[idx] = { ...u[idx], metros: e.target.value }; setForm(p => ({ ...p, produtos: u })); }} /></div>
                 <div className="flex gap-1">
                   <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={addProduto}><Plus className="h-3.5 w-3.5" /></Button>
                   {form.produtos.length > 1 && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeProduto(idx)}><Trash2 className="h-3.5 w-3.5" /></Button>}
