@@ -211,9 +211,12 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
           <DialogTitle className="text-center">RNC - Relatório de Não Conformidade</DialogTitle>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 space-y-4 pb-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div><Label className="text-xs">Cliente *</Label><Input className="mt-1" value={form.cliente} onChange={e => setForm(p => ({ ...p, cliente: e.target.value }))} /></div>
-            <div><Label className="text-xs">Representante *</Label><Input className="mt-1" value={form.representante} disabled /></div>
+          <div className="border rounded-lg p-3 space-y-3">
+            <Label className="text-xs font-semibold">Cliente / Representante</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div><Label className="text-xs">Cliente *</Label><Input className="mt-1" value={form.cliente} onChange={e => setForm(p => ({ ...p, cliente: e.target.value }))} /></div>
+              <div><Label className="text-xs">Representante *</Label><Input className="mt-1" value={form.representante} disabled /></div>
+            </div>
           </div>
 
           {/* Produtos dinâmicos - Cód. primeiro, Produto depois (tabela produtos) */}
@@ -232,20 +235,20 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
               };
               return (
               <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
-                <div>
+                <div className="min-w-0">
                   <Label className="text-[10px] text-muted-foreground">Cód.</Label>
                   {catalogoProdutos.length > 0 ? (
-                    <SearchableSelect options={opcoesCod} value={prod.cod} onValueChange={handleSelectProduto} placeholder="Pesquisar código" searchPlaceholder="Pesquisar código..." className="h-8 text-xs mt-0.5" />
+                    <SearchableSelect options={opcoesCod} value={prod.cod} onValueChange={handleSelectProduto} placeholder="Pesquisar código" searchPlaceholder="Pesquisar código..." className="h-8 text-xs mt-0.5 w-full min-w-0" />
                   ) : (
-                    <Input className="mt-0.5 h-8 text-xs" value={prod.cod} onChange={e => { const u = [...form.produtos]; u[idx] = { ...u[idx], cod: e.target.value }; setForm(p => ({ ...p, produtos: u })); }} />
+                    <Input className="mt-0.5 h-8 text-xs w-full" value={prod.cod} onChange={e => { const u = [...form.produtos]; u[idx] = { ...u[idx], cod: e.target.value }; setForm(p => ({ ...p, produtos: u })); }} />
                   )}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <Label className="text-[10px] text-muted-foreground">Produto</Label>
                   {catalogoProdutos.length > 0 ? (
-                    <SearchableSelect options={opcoesProduto} value={prod.cod} onValueChange={handleSelectProduto} placeholder="Pesquisar produto" searchPlaceholder="Pesquisar produto..." className="h-8 text-xs mt-0.5" />
+                    <SearchableSelect options={opcoesProduto} value={prod.cod} onValueChange={handleSelectProduto} placeholder="Pesquisar produto" searchPlaceholder="Pesquisar produto..." className="h-8 text-xs mt-0.5 w-full min-w-0" />
                   ) : (
-                    <Input className="mt-0.5 h-8 text-xs" value={prod.produto} onChange={e => { const u = [...form.produtos]; u[idx] = { ...u[idx], produto: e.target.value }; setForm(p => ({ ...p, produtos: u })); }} />
+                    <Input className="mt-0.5 h-8 text-xs w-full" value={prod.produto} onChange={e => { const u = [...form.produtos]; u[idx] = { ...u[idx], produto: e.target.value }; setForm(p => ({ ...p, produtos: u })); }} />
                   )}
                 </div>
                 <div><Label className="text-[10px] text-muted-foreground">Metros</Label><Input className="mt-0.5 h-8 text-xs" value={prod.metros} onChange={e => { const u = [...form.produtos]; u[idx] = { ...u[idx], metros: e.target.value }; setForm(p => ({ ...p, produtos: u })); }} /></div>
@@ -272,13 +275,16 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
             </div>
           </div>
 
-          <div><Label className="text-xs">Número da Nota Fiscal de Venda *</Label><Input className="mt-1" value={form.nfVenda} onChange={e => setForm(p => ({ ...p, nfVenda: e.target.value }))} /></div>
-          <div><Label className="text-xs">Descrição da Não Conformidade *</Label><Textarea className="mt-1 min-h-[80px]" value={form.descricaoNaoConformidade} onChange={e => setForm(p => ({ ...p, descricaoNaoConformidade: e.target.value }))} /></div>
+          <div className="border rounded-lg p-3 space-y-2">
+            <Label className="text-xs font-semibold">NF Venda / Descrição</Label>
+            <div><Label className="text-xs">Número da Nota Fiscal de Venda *</Label><Input className="mt-1" value={form.nfVenda} onChange={e => setForm(p => ({ ...p, nfVenda: e.target.value }))} /></div>
+            <div><Label className="text-xs">Descrição da Não Conformidade *</Label><Textarea className="mt-1 min-h-[80px]" value={form.descricaoNaoConformidade} onChange={e => setForm(p => ({ ...p, descricaoNaoConformidade: e.target.value }))} /></div>
+          </div>
 
           {/* Objetivo */}
           <div className="border rounded-lg p-3 space-y-2">
             <Label className="text-xs font-semibold">Objetivo da RNC:</Label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <label className="flex items-center gap-1.5 text-xs"><Checkbox checked={form.objetivoAlertarEmpresa} onCheckedChange={v => setForm(p => ({ ...p, objetivoAlertarEmpresa: !!v }))} /> Alertar a Empresa</label>
               <label className="flex items-center gap-1.5 text-xs"><Checkbox checked={form.objetivoDevParcial} onCheckedChange={v => setForm(p => ({ ...p, objetivoDevParcial: !!v }))} /> Devolução Parcial</label>
               <label className="flex items-center gap-1.5 text-xs"><Checkbox checked={form.objetivoDevTotal} onCheckedChange={v => setForm(p => ({ ...p, objetivoDevTotal: !!v }))} /> Devolução Total</label>
@@ -302,21 +308,28 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
             )}
           </div>
 
-          <div><Label className="text-xs font-semibold text-center block">MOTIVO</Label><Textarea className="mt-1" placeholder="R:" value={form.motivo} onChange={e => setForm(p => ({ ...p, motivo: e.target.value }))} /></div>
+          <div className="border rounded-lg p-3 space-y-2">
+            <Label className="text-xs font-semibold text-center block">MOTIVO</Label>
+            <Textarea className="mt-1" placeholder="R:" value={form.motivo} onChange={e => setForm(p => ({ ...p, motivo: e.target.value }))} />
+          </div>
 
-          <div><Label className="text-xs font-semibold text-center block">FECHAMENTO DA RNC (COMERCIAL/FINANCEIRO)</Label><Textarea className="mt-1 min-h-[80px]" placeholder="R:" value={form.fechamentoRnc} onChange={e => setForm(p => ({ ...p, fechamentoRnc: e.target.value }))} /></div>
+          <div className="border rounded-lg p-3 space-y-2">
+            <Label className="text-xs font-semibold text-center block">FECHAMENTO DA RNC (COMERCIAL/FINANCEIRO)</Label>
+            <Textarea className="mt-1 min-h-[80px]" placeholder="R:" value={form.fechamentoRnc} onChange={e => setForm(p => ({ ...p, fechamentoRnc: e.target.value }))} />
+          </div>
 
           {/* Assinaturas */}
           <div className="border rounded-lg p-3 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <Label className="text-xs font-semibold">Assinaturas</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div><Label className="text-xs">Data Comercial</Label><Input type="date" className="mt-1" value={form.dataComercial} onChange={e => setForm(p => ({ ...p, dataComercial: e.target.value }))} /></div>
               <div><Label className="text-xs">Assinatura Comercial</Label><Input className="mt-1" value={form.assinaturaComercial} onChange={e => setForm(p => ({ ...p, assinaturaComercial: e.target.value }))} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div><Label className="text-xs">Data Qualidade</Label><Input type="date" className="mt-1" value={form.dataQualidade} onChange={e => setForm(p => ({ ...p, dataQualidade: e.target.value }))} /></div>
               <div><Label className="text-xs">Assinatura Qualidade</Label><Input className="mt-1" value={form.assinaturaQualidade} onChange={e => setForm(p => ({ ...p, assinaturaQualidade: e.target.value }))} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div><Label className="text-xs">Data Financeiro</Label><Input type="date" className="mt-1" value={form.dataFinanceiro} onChange={e => setForm(p => ({ ...p, dataFinanceiro: e.target.value }))} /></div>
               <div><Label className="text-xs">Assinatura Financeiro</Label><Input className="mt-1" value={form.assinaturaFinanceiro} onChange={e => setForm(p => ({ ...p, assinaturaFinanceiro: e.target.value }))} /></div>
             </div>

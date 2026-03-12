@@ -536,8 +536,8 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
                     }
                   };
                   return (
-                  <div key={i} className="flex items-end gap-2">
-                    <div className="flex-1">
+                  <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-end">
+                    <div className="min-w-0">
                       <Label className="text-xs">Código</Label>
                       {catalogoProdutos.length > 0 ? (
                         <SearchableSelect
@@ -546,13 +546,13 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
                           onValueChange={handleSelectProduto}
                           placeholder="Pesquisar ou selecionar código"
                           searchPlaceholder="Pesquisar código..."
-                          className="h-8 text-xs mt-1"
+                          className="h-8 text-xs mt-1 w-full min-w-0"
                         />
                       ) : (
-                        <Input className="mt-1 h-8 text-xs" value={m.codigo} onChange={e => updateMetragem(i, 'codigo', e.target.value)} />
+                        <Input className="mt-1 h-8 text-xs w-full" value={m.codigo} onChange={e => updateMetragem(i, 'codigo', e.target.value)} />
                       )}
                     </div>
-                    <div className="flex-1">
+                    <div className="min-w-0">
                       <Label className="text-xs">Cor</Label>
                       {catalogoProdutos.length > 0 ? (
                         <SearchableSelect
@@ -561,10 +561,10 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
                           onValueChange={handleSelectProduto}
                           placeholder="Pesquisar ou selecionar produto"
                           searchPlaceholder="Pesquisar produto..."
-                          className="h-8 text-xs mt-1"
+                          className="h-8 text-xs mt-1 w-full min-w-0"
                         />
                       ) : (
-                        <Input className="mt-1 h-8 text-xs" value={m.cor} onChange={e => updateMetragem(i, 'cor', e.target.value)} />
+                        <Input className="mt-1 h-8 text-xs w-full" value={m.cor} onChange={e => updateMetragem(i, 'cor', e.target.value)} />
                       )}
                     </div>
                     {i === form.metragems.length - 1 && (
