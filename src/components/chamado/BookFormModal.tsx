@@ -503,14 +503,14 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-3xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-2 flex-shrink-0">
+      <DialogContent className="flex flex-col max-w-[calc(100vw-2rem)] sm:max-w-3xl max-h-[85dvh] sm:max-h-[90vh] overflow-hidden p-0">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2 shrink-0">
           <div className="flex justify-center mb-2">
             <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
           </div>
           <DialogTitle className="text-center">Formulário Book's Personalizados</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6">
           <div className="space-y-4 pb-4">
             {/* Dados Gerais - Razão Social e Código preenchidos do cliente da solicitação */}
             <div className="border rounded-lg p-3 space-y-3">
@@ -881,14 +881,14 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
             })()}
           </div>
         </div>
-        <DialogFooter className="px-6 pb-6 pt-2 flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+        <DialogFooter className="px-4 sm:px-6 pb-4 sm:pb-6 pt-2 shrink-0 border-t bg-background flex-col sm:flex-row gap-2">
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>Cancelar</Button>
           {isCreateMode && onConfirmCreate && (
-            <Button variant="secondary" onClick={() => { onConfirmCreate(form); onOpenChange(false); }}>
+            <Button variant="secondary" className="w-full sm:w-auto" onClick={() => { onConfirmCreate(form); onOpenChange(false); }}>
               Confirmar
             </Button>
           )}
-          <Button onClick={generateAndUploadPdf} disabled={saving}>
+          <Button className="w-full sm:w-auto" onClick={generateAndUploadPdf} disabled={saving}>
             <FileText className="h-4 w-4 mr-1.5" />{saving ? 'Gerando...' : isCreateMode ? 'Confirmar e Anexar PDF' : 'Confirmar e Anexar PDF'}
           </Button>
         </DialogFooter>

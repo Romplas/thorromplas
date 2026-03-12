@@ -13,7 +13,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 // ──── Product Catalog Data ────
 interface ProductEntry { name: string; numLam: number }
@@ -355,16 +354,16 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-5xl max-h-[92vh] p-0 gap-0">
-        <DialogHeader className="px-6 pt-5 pb-3">
+      <DialogContent className="flex flex-col max-w-[calc(100vw-2rem)] sm:max-w-5xl max-h-[85dvh] sm:max-h-[92vh] p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-5 pb-2 shrink-0">
           <div className="flex justify-center mb-2">
             <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
           </div>
           <DialogTitle className="text-center text-lg">Solicitação de Amostras</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="px-6 max-h-[calc(92vh-160px)]">
-          <div className="space-y-5 pb-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 pb-4">
+          <div className="space-y-5">
 
             {/* ── Dados Gerais ── */}
             <div className="rounded-lg border p-4 space-y-3">
@@ -619,14 +618,14 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
             </div>
 
           </div>
-        </ScrollArea>
+        </div>
 
-        <DialogFooter className="px-6 py-3 border-t flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button variant="secondary" onClick={handleConfirmWithPdf}>
+        <DialogFooter className="px-4 sm:px-6 py-3 border-t shrink-0 flex-col sm:flex-row gap-2 bg-background">
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="secondary" className="w-full sm:w-auto" onClick={handleConfirmWithPdf}>
             <FileText className="h-4 w-4 mr-1.5" /> Confirmar e Anexar PDF
           </Button>
-          <Button onClick={handleConfirmOnly}>Confirmar</Button>
+          <Button className="w-full sm:w-auto" onClick={handleConfirmOnly}>Confirmar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

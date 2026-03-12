@@ -341,14 +341,14 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="p-6 pb-2 shrink-0">
+      <DialogContent className="flex flex-col max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[85dvh] sm:max-h-[90vh] overflow-hidden p-0">
+        <DialogHeader className="px-4 sm:px-6 py-4 sm:py-6 pb-2 shrink-0">
           <div className="flex justify-center mb-2">
             <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
           </div>
           <DialogTitle className="text-center">Solicitação de Amostras</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 pt-2 space-y-6">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-2 space-y-6">
 
             {/* ── Dados Gerais ── */}
             <div className="rounded-lg border p-4 space-y-3">
@@ -596,9 +596,9 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
               <p className="text-[10px] text-muted-foreground italic">"Tempo máximo de retorno das amostras rolo - 30 dias após o faturamento"</p>
             </div>
         </div>
-        <DialogFooter className="flex-col sm:flex-row gap-2 p-6 pt-2 shrink-0 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={generateAndUploadPdf} disabled={saving}>
+        <DialogFooter className="flex-col sm:flex-row gap-2 p-4 sm:p-6 pt-2 shrink-0 border-t bg-background">
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button className="w-full sm:w-auto" onClick={generateAndUploadPdf} disabled={saving}>
             <FileText className="h-4 w-4 mr-1.5" />{saving ? 'Gerando...' : 'Confirmar e Anexar PDF'}
           </Button>
         </DialogFooter>
