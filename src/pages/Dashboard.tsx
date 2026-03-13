@@ -35,6 +35,21 @@ const etapaLabels: Record<string, string> = {
   book: 'Book',
 };
 
+const etapaShortLabels: Record<string, string> = {
+  pendente: 'Pend.',
+  thor: 'THOR',
+  aguardando_resposta: 'Aguard. Resp.',
+  retorno_interno: 'Ret. Interno',
+  negociacao: 'Negociação',
+  alteracao: 'Alteração',
+  completo: 'Completo',
+  perdido: 'Perdido',
+  rnc: 'RNC',
+  sdp: 'SDP',
+  amostras: 'Amostras',
+  book: 'Book',
+};
+
 const statusShortLabels: Record<string, string> = {
   Pendente: 'Pend.',
   Aberto: 'Ab.',
@@ -273,6 +288,7 @@ export default function Dashboard() {
       .sort((a, b) => (ordem[a[0]] ?? 99) - (ordem[b[0]] ?? 99))
       .map(([key, value]) => ({
         name: etapaLabels[key] || key,
+        shortName: etapaShortLabels[key] || key,
         value,
         fill: colors[key] || '#6B7280',
       }));
@@ -444,15 +460,15 @@ export default function Dashboard() {
 
       {/* Charts - Row 1: Etapa + Distribuição */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-card border rounded-lg p-4">
+        <div className="bg-card border rounded-lg p-4 shadow-sm">
           <h3 className="font-semibold text-sm mb-4">Chamados por Etapa de Ticket</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={barEtapaData} margin={{ top: 16, right: 8, left: 8, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={50} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+            <BarChart data={barEtapaData} margin={{ top: 20, right: 12, left: 8, bottom: 24 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+              <XAxis dataKey="shortName" tick={{ fontSize: 10 }} angle={0} textAnchor="middle" height={40} interval={0} />
+              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+              <Tooltip formatter={(v: number) => [v, 'Chamados']} labelFormatter={(_, payload) => payload?.[0]?.payload?.name} />
+              <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={48}>
                 {barEtapaData.map((entry, index) => (
                   <Cell key={index} fill={entry.fill} />
                 ))}
@@ -461,25 +477,34 @@ export default function Dashboard() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="bg-card border rounded-lg p-4">
+        <div className="bg-card border rounded-lg p-4 shadow-sm">
           <h3 className="font-semibold text-sm mb-4">Distribuição de Chamados</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
                 data={pieData}
                 cx="50%"
-                cy="50%"
-                innerRadius="40%"
-                outerRadius="65%"
+                cy="45%"
+                innerRadius="38%"
+                outerRadius="58%"
                 dataKey="value"
-                label={({ shortName, value }) => `${shortName} ${value}%`}
-                labelLine={false}
+                paddingAngle={2}
               >
                 {pieData.map((entry, index) => (
-                  <Cell key={index} fill={entry.color} />
+                  <Cell key={index} fill={entry.color} stroke="white" strokeWidth={1.5} />
                 ))}
               </Pie>
-              <Legend formatter={(value, entry) => (statusShortLabels[value] || value)} iconType="square" wrapperStyle={{ fontSize: 10 }} />
+              <Legend
+                layout="horizontal"
+                verticalAlign="bottom"
+                formatter={(_value, entry: any) => {
+                  const p = entry?.payload;
+                  return p ? `${p.value}% ${p.name}` : '';
+                }}
+                iconType="circle"
+                iconSize={8}
+                wrapperStyle={{ fontSize: 11, gap: 16 }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -487,30 +512,30 @@ export default function Dashboard() {
 
       {/* Charts - Row 2: Motivo + Objetivo (horizontal bars) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-card border rounded-lg p-4">
+        <div className="bg-card border rounded-lg p-4 shadow-sm">
           <h3 className="font-semibold text-sm mb-4">Quantidade de Chamados por Motivo</h3>
-          <ResponsiveContainer width="100%" height={Math.max(200, motivoData.length * 32)}>
-            <BarChart data={motivoData} layout="vertical" margin={{ left: 8, right: 36 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10 }} />
-              <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} />
-              <Tooltip formatter={(v: number) => [v, 'Chamados']} labelFormatter={(v, payload) => payload?.[0]?.payload?.fullName || v} />
-              <Bar dataKey="value" radius={[0, 4, 4, 0]} fill="#7C3AED" barSize={20}>
-                <LabelList dataKey="value" position="right" style={{ fontSize: 11, fontWeight: 600 }} />
+          <ResponsiveContainer width="100%" height={Math.max(200, motivoData.length * 40)}>
+            <BarChart data={motivoData} layout="vertical" margin={{ left: 8, right: 44 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} tickFormatter={(v) => Math.round(v)} />
+              <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+              <Tooltip formatter={(v: number) => [v, 'Chamados']} labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName} contentStyle={{ borderRadius: 8 }} />
+              <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={28} fill="#7C3AED" fillOpacity={0.9}>
+                <LabelList dataKey="value" position="right" style={{ fontSize: 11, fontWeight: 600, fill: '#7C3AED' }} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="bg-card border rounded-lg p-4">
+        <div className="bg-card border rounded-lg p-4 shadow-sm">
           <h3 className="font-semibold text-sm mb-4">Quantidade de Chamados por Objetivo</h3>
-          <ResponsiveContainer width="100%" height={Math.max(200, objetivoData.length * 32)}>
-            <BarChart data={objetivoData} layout="vertical" margin={{ left: 8, right: 36 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10 }} />
-              <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} />
-              <Tooltip formatter={(v: number) => [v, 'Chamados']} labelFormatter={(v, payload) => payload?.[0]?.payload?.fullName || v} />
-              <Bar dataKey="value" radius={[0, 4, 4, 0]} fill="#0EA5E9" barSize={20}>
-                <LabelList dataKey="value" position="right" style={{ fontSize: 11, fontWeight: 600 }} />
+          <ResponsiveContainer width="100%" height={Math.max(200, objetivoData.length * 40)}>
+            <BarChart data={objetivoData} layout="vertical" margin={{ left: 8, right: 44 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} tickFormatter={(v) => Math.round(v)} />
+              <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+              <Tooltip formatter={(v: number) => [v, 'Chamados']} labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName} contentStyle={{ borderRadius: 8 }} />
+              <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={28} fill="#0EA5E9" fillOpacity={0.9}>
+                <LabelList dataKey="value" position="right" style={{ fontSize: 11, fontWeight: 600, fill: '#0EA5E9' }} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
