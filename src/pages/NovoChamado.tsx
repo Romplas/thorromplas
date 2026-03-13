@@ -1357,23 +1357,23 @@ export default function NovoChamado() {
         </div>
 
         {/* Bottom bar */}
-        <div className="sticky bottom-0 bg-card border-t px-4 sm:px-6 py-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 z-10">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => navigate('/')}>
-              <Home className="h-4 w-4 mr-1.5" />
+        <div className="sticky bottom-0 bg-card border-t px-4 sm:px-6 py-3 flex flex-col sm:flex-row flex-wrap sm:flex-nowrap items-stretch sm:items-center justify-between gap-2 z-10">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => navigate('/')}>
+              <Home className="h-4 w-4 mr-1.5 shrink-0" />
               Início
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate('/historico')}>
-              <Clock className="h-4 w-4 mr-1.5" />
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => navigate('/historico')}>
+              <Clock className="h-4 w-4 mr-1.5 shrink-0" />
               Histórico
             </Button>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handleLimpar}>
-              <RotateCcw className="h-4 w-4 mr-1.5" />
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:justify-end">
+            <Button variant="ghost" size="sm" className="w-full sm:w-auto" onClick={handleLimpar}>
+              <RotateCcw className="h-4 w-4 mr-1.5 shrink-0" />
               Limpar
             </Button>
-            <Button size="sm" onClick={handleCriarChamado} disabled={submitting}>
+            <Button size="sm" className="w-full sm:w-auto" onClick={handleCriarChamado} disabled={submitting}>
               {submitting ? 'Criando...' : 'Criar Chamado'}
             </Button>
           </div>
