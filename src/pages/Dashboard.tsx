@@ -49,9 +49,12 @@ export default function Dashboard() {
   const [endDate, setEndDate] = useState<Date>(new Date(2026, 2, 31));
   const [chamados, setChamados] = useState<any[]>([]);
   const [representanteId, setRepresentanteId] = useState<string | null>(null);
+  const [supervisorId, setSupervisorId] = useState<string | null>(null);
   const isRepresentante = role === 'representante';
+  const isSupervisor = role === 'supervisor';
+  const isGestorOuAdmin = role === 'gestor' || role === 'admin';
 
-  // Filter data (for non-representante)
+  // Filter data (only for gestor/admin - they see all and can filter)
   const [supervisores, setSupervisores] = useState<{ id: string; nome: string }[]>([]);
   const [representantes, setRepresentantes] = useState<{ id: string; nome: string }[]>([]);
   const [gestores, setGestores] = useState<{ id: string; nome: string }[]>([]);
@@ -60,9 +63,18 @@ export default function Dashboard() {
   const [filterRepresentante, setFilterRepresentante] = useState<string>('todos');
   const [filterGestor, setFilterGestor] = useState<string>('todos');
 
-  // Fetch filter options (supervisores, representantes, gestores)
+  // Fetch filter options (gestor/admin) and srLinks (gestor/admin + supervisor)
   useEffect(() => {
-    if (isRepresentante) return;
+    const fetchSrLinks = async () => {
+      const { data } = await supabase.from('supervisor_representante').select('supervisor_id, representante_id');
+      if (data) setSrLinks(data);
+    };
+    // Supervisor precisa de srLinks para filtrar seus representantes
+    if (isSupervisor) {
+      fetchSrLinks();
+      return;
+    }
+    if (!isGestorOuAdmin) return;
     const fetchFilterData = async () => {
       const [supRes, repRes, srRes, profilesRes, gestorRolesRes] = await Promise.all([
         supabase.from('supervisores').select('id, nome').eq('status', 'ativo').order('nome'),
@@ -81,7 +93,7 @@ export default function Dashboard() {
       }
     };
     fetchFilterData();
-  }, [isRepresentante]);
+  }, [isGestorOuAdmin, isSupervisor]);
 
   const filteredRepresentantes = filterSupervisor !== 'todos'
     ? representantes.filter(r => srLinks.some(sr => sr.supervisor_id === filterSupervisor && sr.representante_id === r.id))
@@ -93,7 +105,7 @@ export default function Dashboard() {
     setFilterRepresentante('todos');
   };
 
-  // Fetch representante ID for the logged-in user
+  // Fetch representante ID for the logged-in user (Representante)
   useEffect(() => {
     if (!profile || !isRepresentante) return;
     const fetchRepId = async () => {
@@ -107,14 +119,50 @@ export default function Dashboard() {
     fetchRepId();
   }, [profile, isRepresentante]);
 
-  // Fetch chamados (with filters for non-representante)
+  // Fetch supervisor ID for the logged-in user (Supervisor)
+  useEffect(() => {
+    if (!profile || !isSupervisor) return;
+    const fetchSupId = async () => {
+      const { data } = await supabase
+        .from('supervisores')
+        .select('id')
+        .ilike('nome', profile.nome)
+        .eq('status', 'ativo')
+        .maybeSingle();
+      if (data) setSupervisorId(data.id);
+    };
+    fetchSupId();
+  }, [profile, isSupervisor]);
+
+  // Representantes do supervisor logado (para filtrar chamados)
+  const repIdsDoSupervisor = useMemo(() => {
+    if (!supervisorId) return new Set<string>();
+    return new Set(
+      srLinks.filter(sr => sr.supervisor_id === supervisorId).map(sr => sr.representante_id)
+    );
+  }, [supervisorId, srLinks]);
+
+  // Fetch chamados
   useEffect(() => {
     const fetchChamados = async () => {
       let query = supabase.from('chamados').select('*').order('created_at', { ascending: false });
 
+      // Representante: apenas seus chamados
       if (isRepresentante && representanteId) {
         query = query.eq('representante_id', representanteId);
       }
+
+      // Supervisor: apenas chamados dos representantes que ele supervisiona
+      if (isSupervisor && supervisorId) {
+        const repIds = Array.from(repIdsDoSupervisor);
+        if (repIds.length === 0) {
+          setChamados([]);
+          return;
+        }
+        query = query.in('representante_id', repIds);
+      }
+
+      // Gestor/Admin: busca todos (filtros aplicados depois no client)
 
       const { data } = await query;
       if (!data) return;
@@ -139,8 +187,8 @@ export default function Dashboard() {
         });
       }
 
-      // Apply role filters (for admin/gestor/supervisor)
-      if (!isRepresentante) {
+      // Apply UI filters (only for gestor/admin)
+      if (isGestorOuAdmin) {
         if (filterRepresentante !== 'todos') {
           filtered = filtered.filter((c: any) => c.representante_id === filterRepresentante);
         }
@@ -158,31 +206,38 @@ export default function Dashboard() {
       setChamados(filtered);
     };
 
-    if (!isRepresentante || representanteId) {
-      fetchChamados();
+    // Representante: precisa do representanteId
+    if (isRepresentante && !representanteId) return;
+    // Supervisor: precisa do supervisorId e srLinks (para repIdsDoSupervisor)
+    if (isSupervisor && !supervisorId) return;
+    // Gestor/Admin: pode buscar sempre (srLinks vem do fetchFilterData)
+    if (isSupervisor && repIdsDoSupervisor.size === 0 && supervisorId) {
+      setChamados([]);
+      return;
     }
-  }, [isRepresentante, representanteId, filterSupervisor, filterRepresentante, filterGestor, startDate, endDate, srLinks]);
 
-  // Realtime
+    fetchChamados();
+  }, [isRepresentante, representanteId, isSupervisor, supervisorId, repIdsDoSupervisor, isGestorOuAdmin, filterSupervisor, filterRepresentante, filterGestor, startDate, endDate, srLinks]);
+
+  // Realtime - re-fetch on chamados change
   useEffect(() => {
     const channel = supabase
       .channel('dashboard-chamados')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chamados' }, () => {
-        // Re-fetch
-        const fetchChamados = async () => {
+        const refetch = async () => {
           let query = supabase.from('chamados').select('*').order('created_at', { ascending: false });
-          if (isRepresentante && representanteId) {
-            query = query.eq('representante_id', representanteId);
+          if (isRepresentante && representanteId) query = query.eq('representante_id', representanteId);
+          if (isSupervisor && supervisorId && repIdsDoSupervisor.size > 0) {
+            query = query.in('representante_id', Array.from(repIdsDoSupervisor));
           }
           const { data } = await query;
           if (data) setChamados(data);
         };
-        fetchChamados();
+        refetch();
       })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
-  }, [isRepresentante, representanteId]);
+  }, [isRepresentante, representanteId, isSupervisor, supervisorId, repIdsDoSupervisor]);
 
   // Compute stats: Pendentes = status pendente, Abertos = aberto, Em Progresso = em_progresso, Finalizados = fechado
   const stats = useMemo(() => {
@@ -293,8 +348,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Filters - hidden for representante */}
-      {!isRepresentante && (
+      {/* Filters - only for gestor/admin (supervisor and representante see only their data) */}
+      {isGestorOuAdmin && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mb-6 bg-card rounded-lg p-3 shadow-sm border">
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Supervisor</span>
