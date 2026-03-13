@@ -158,6 +158,7 @@ export default function Historico() {
     return new Date(d.getFullYear(), d.getMonth() + 1, 0);
   });
   const [filterCollapsed, setFilterCollapsed] = useState(false);
+  const [historicoTableExpanded, setHistoricoTableExpanded] = useState(true);
 
   // Reference data
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
@@ -916,45 +917,45 @@ export default function Historico() {
                   </div>
                 </div>
 
-                {/* Action buttons */}
-                <div className="flex items-center gap-3 pt-2">
-                  <Button variant="default" size="sm" className="gap-1.5" onClick={handleEditClick}>
+                {/* Action buttons - vertical stack */}
+                <div className="flex flex-col gap-2 pt-2">
+                  <Button variant="default" size="sm" className="gap-1.5 justify-start" onClick={handleEditClick}>
                     <Pencil className="h-4 w-4" />
                     Editar
                   </Button>
                   {(selectedChamado.motivo.toLowerCase().includes('sd') || selectedChamado.motivo.toLowerCase().includes('solicitação de desenvolvimento')) && (
-                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setSdpModalOpen(true)} title="Preencher / Editar Solicitação de SD">
+                    <Button variant="outline" size="sm" className="gap-1.5 justify-start" onClick={() => setSdpModalOpen(true)} title="Preencher / Editar Solicitação de SD">
                       <Eye className="h-4 w-4" />
                       SDP
                     </Button>
                   )}
                   {selectedChamado.motivo.toLowerCase().includes('rnc') && (
-                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setRncModalOpen(true)} title="Visualizar / Editar RNC">
+                    <Button variant="outline" size="sm" className="gap-1.5 justify-start" onClick={() => setRncModalOpen(true)} title="Visualizar / Editar RNC">
                       <Eye className="h-4 w-4" />
                       RNC
                     </Button>
                   )}
                   {selectedChamado.motivo.toLowerCase().includes('amostra') && (
-                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setAmostrasModalOpen(true)} title="Visualizar / Editar Amostras">
+                    <Button variant="outline" size="sm" className="gap-1.5 justify-start" onClick={() => setAmostrasModalOpen(true)} title="Visualizar / Editar Amostras">
                       <Eye className="h-4 w-4" />
                       Amostras
                     </Button>
                   )}
                   {selectedChamado.motivo.toLowerCase().includes('book') && (
-                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setBookModalOpen(true)} title="Visualizar / Editar Book">
+                    <Button variant="outline" size="sm" className="gap-1.5 justify-start" onClick={() => setBookModalOpen(true)} title="Visualizar / Editar Book">
                       <Eye className="h-4 w-4" />
                       Book
                     </Button>
                   )}
-                  <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => handleDeleteRequest(selectedChamado.id)}>
+                  <Button variant="destructive" size="sm" className="gap-1.5 justify-start" onClick={() => handleDeleteRequest(selectedChamado.id)}>
                     <Trash2 className="h-4 w-4" />
                     Excluir
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={handleClearSelection}>
+                  <Button variant="outline" size="sm" className="gap-1.5 justify-start" onClick={handleClearSelection}>
                     <Eraser className="h-4 w-4" />
                     Limpar
                   </Button>
-                  <Button variant="secondary" size="sm" className="gap-1.5" onClick={handleVerAnexoClick}>
+                  <Button variant="secondary" size="sm" className="gap-1.5 justify-start" onClick={handleVerAnexoClick}>
                     <Paperclip className="h-4 w-4" />
                     Ver Anexo{anexoCount > 0 ? ` (${anexoCount})` : ''}
                   </Button>
@@ -1013,14 +1014,28 @@ export default function Historico() {
 
           return (
             <div className="mt-6">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <h2 className="text-lg font-semibold">{titleLabel} <span className="text-sm font-normal text-muted-foreground">({tableEntries.length} registros)</span></h2>
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExportPdf}>
-                  <FileDown className="h-4 w-4" />
-                  Exportar PDF
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => setHistoricoTableExpanded(!historicoTableExpanded)}
+                    title={historicoTableExpanded ? 'Recolher tabela' : 'Exportar Histórico'}
+                  >
+                    {historicoTableExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    Exportar Histórico
+                  </Button>
+                  {historicoTableExpanded && (
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExportPdf}>
+                      <FileDown className="h-4 w-4" />
+                      Exportar PDF
+                    </Button>
+                  )}
+                </div>
               </div>
-              <div className="border rounded-lg overflow-auto max-h-[50vh]">
+              <div className={cn("border rounded-lg overflow-auto max-h-[50vh]", !historicoTableExpanded && "hidden")}>
                 <table className="w-full text-xs border-collapse">
                   <thead className="bg-primary text-primary-foreground sticky top-0">
                     <tr>
