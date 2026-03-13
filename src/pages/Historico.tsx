@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Pencil, Trash2, Eye, Eraser, Paperclip, Download, FileDown } from 'lucide-react';
+import { Pencil, Trash2, Eye, Eraser, Paperclip, Download, FileDown, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import SDPFormModal from '@/components/chamado/SDPFormModal';
 import RNCFormModal from '@/components/chamado/RNCFormModal';
 import AmostrasFormModal from '@/components/chamado/AmostrasFormModal';
@@ -13,6 +15,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import Layout from '@/components/Layout';
 import EditChamadoModal from '@/components/kanban/EditChamadoModal';
 import { supabase } from '@/integrations/supabase/client';
@@ -144,6 +149,14 @@ export default function Historico() {
   const [filterStatus, setFilterStatus] = useState('todos');
   const [filterEtapa, setFilterEtapa] = useState('todos');
   const [filterGestor, setFilterGestor] = useState('todos');
+  const [filterDateStart, setFilterDateStart] = useState<Date>(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [filterDateEnd, setFilterDateEnd] = useState<Date>(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  });
 
   // Reference data
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
@@ -436,6 +449,20 @@ export default function Historico() {
         seenIds.add(h.id);
         if (selectedTicketId !== 'todos' && String(h.chamado_id) !== selectedTicketId) return false;
         if (!filteredChamadoIds.has(h.chamado_id)) return false;
+        // Filter by date range (created_at of the history entry)
+        if (filterDateStart || filterDateEnd) {
+          const entryDate = new Date(h.created_at);
+          if (filterDateStart) {
+            const start = new Date(filterDateStart);
+            start.setHours(0, 0, 0, 0);
+            if (entryDate < start) return false;
+          }
+          if (filterDateEnd) {
+            const end = new Date(filterDateEnd);
+            end.setHours(23, 59, 59, 999);
+            if (entryDate > end) return false;
+          }
+        }
         // Filter by per-entry etapa
         if (filterEtapa !== 'todos') {
           const entryEtapa = entryEtapaMap.get(h.id) || 'thor';
@@ -634,6 +661,31 @@ export default function Historico() {
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("h-9 gap-1.5 text-xs font-normal bg-background", !filterDateStart && "text-muted-foreground")}>
+                  <CalendarIcon className="h-4 w-4 text-primary" />
+                  {filterDateStart ? format(filterDateStart, 'dd/MM/yyyy', { locale: ptBR }) : 'Data início'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={filterDateStart} onSelect={(d) => d && setFilterDateStart(d)} locale={ptBR} />
+              </PopoverContent>
+            </Popover>
+            <span className="text-muted-foreground text-xs">até</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("h-9 gap-1.5 text-xs font-normal bg-background", !filterDateEnd && "text-muted-foreground")}>
+                  <CalendarIcon className="h-4 w-4 text-primary" />
+                  {filterDateEnd ? format(filterDateEnd, 'dd/MM/yyyy', { locale: ptBR }) : 'Data fim'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={filterDateEnd} onSelect={(d) => d && setFilterDateEnd(d)} locale={ptBR} />
+              </PopoverContent>
+            </Popover>
+          </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Supervisor</span>
             <Select value={filterSupervisor} onValueChange={(v) => { setFilterSupervisor(v); setFilterRepresentante('todos'); }} disabled={isSupervisorLocked}>

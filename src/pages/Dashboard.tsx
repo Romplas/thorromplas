@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Mail, AlertCircle, AlertTriangle, TrendingUp, CheckCircle, FileText, Trash2, CalendarIcon, Clock } from 'lucide-react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LabelList } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -18,6 +18,28 @@ const statusLabels: Record<string, string> = {
   aberto: 'Aberto',
   em_progresso: 'Em Progresso',
   fechado: 'Fechado',
+};
+
+const etapaLabels: Record<string, string> = {
+  pendente: 'Pendente',
+  thor: 'THOR',
+  aguardando_resposta: 'Aguardando Resposta',
+  retorno_interno: 'Retorno Interno',
+  negociacao: 'Em Negociação',
+  alteracao: 'Alteração',
+  completo: 'Completo',
+  perdido: 'Perdido',
+  rnc: 'RNC',
+  sdp: 'SDP',
+  amostras: 'Amostras',
+  book: 'Book',
+};
+
+const statusShortLabels: Record<string, string> = {
+  Pendente: 'Pend.',
+  Aberto: 'Ab.',
+  'Em Progresso': 'Em Prog.',
+  Finalizado: 'Final.',
 };
 
 export default function Dashboard() {
@@ -183,22 +205,56 @@ export default function Dashboard() {
   const last5 = chamados.slice(0, 5);
   const pendentesAtivacao = chamados.filter(c => c.status === 'pendente');
 
-  // Chart data
-  const barData = useMemo(() => [
-    { name: 'Pendente', value: chamados.filter(c => c.status === 'pendente').length, fill: '#F59E0B' },
-    { name: 'Aberto', value: chamados.filter(c => c.status === 'aberto').length, fill: '#EF4444' },
-    { name: 'Em Progresso', value: chamados.filter(c => c.status === 'em_progresso').length, fill: '#3B82F6' },
-    { name: 'Finalizado', value: chamados.filter(c => c.status === 'fechado').length, fill: '#22C55E' },
-  ], [chamados]);
+  // Chart data - Chamados por Etapa de Ticket
+  const barEtapaData = useMemo(() => {
+    const etapaCounts: Record<string, number> = {};
+    chamados.forEach(c => {
+      const e = (c.etapa || 'thor').toLowerCase().trim();
+      etapaCounts[e] = (etapaCounts[e] || 0) + 1;
+    });
+    const ordem: Record<string, number> = { pendente: 0, thor: 1, aguardando_resposta: 2, retorno_interno: 3, negociacao: 4, alteracao: 5, completo: 6, perdido: 7, rnc: 8, sdp: 9, amostras: 10, book: 11 };
+    const colors: Record<string, string> = { pendente: '#F59E0B', thor: '#EF4444', aguardando_resposta: '#A855F7', retorno_interno: '#3B82F6', negociacao: '#EAB308', alteracao: '#14B8A6', completo: '#22C55E', perdido: '#6B7280', rnc: '#EC4899', sdp: '#F97316', amostras: '#1E3A8A', book: '#84CC16' };
+    return Object.entries(etapaCounts)
+      .sort((a, b) => (ordem[a[0]] ?? 99) - (ordem[b[0]] ?? 99))
+      .map(([key, value]) => ({
+        name: etapaLabels[key] || key,
+        value,
+        fill: colors[key] || '#6B7280',
+      }));
+  }, [chamados]);
 
   const pieData = useMemo(() => {
     const total = chamados.length || 1;
     return [
-      { name: 'Pendente', value: Math.round((chamados.filter(c => c.status === 'pendente').length / total) * 100), color: '#F59E0B' },
-      { name: 'Aberto', value: Math.round((chamados.filter(c => c.status === 'aberto').length / total) * 100), color: '#EF4444' },
-      { name: 'Em Progresso', value: Math.round((chamados.filter(c => c.status === 'em_progresso').length / total) * 100), color: '#3B82F6' },
-      { name: 'Finalizado', value: Math.round((chamados.filter(c => c.status === 'fechado').length / total) * 100), color: '#22C55E' },
+      { name: 'Pendente', shortName: 'Pend.', value: Math.round((chamados.filter(c => c.status === 'pendente').length / total) * 100), color: '#F59E0B' },
+      { name: 'Aberto', shortName: 'Ab.', value: Math.round((chamados.filter(c => c.status === 'aberto').length / total) * 100), color: '#EF4444' },
+      { name: 'Em Progresso', shortName: 'Em Prog.', value: Math.round((chamados.filter(c => c.status === 'em_progresso').length / total) * 100), color: '#3B82F6' },
+      { name: 'Finalizado', shortName: 'Final.', value: Math.round((chamados.filter(c => c.status === 'fechado').length / total) * 100), color: '#22C55E' },
     ];
+  }, [chamados]);
+
+  const motivoData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    chamados.forEach(c => {
+      const m = c.motivo || 'Não informado';
+      counts[m] = (counts[m] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, value]) => ({ name: name.length > 25 ? name.slice(0, 22) + '...' : name, fullName: name, value }));
+  }, [chamados]);
+
+  const objetivoData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    chamados.forEach(c => {
+      const o = c.submotivo || 'Não informado';
+      counts[o] = (counts[o] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, value]) => ({ name: name.length > 25 ? name.slice(0, 22) + '...' : name, fullName: name, value }));
   }, [chamados]);
 
   return (
@@ -331,20 +387,21 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Charts */}
+      {/* Charts - Row 1: Etapa + Distribuição */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="bg-card border rounded-lg p-4">
-          <h3 className="font-semibold text-sm mb-4">Chamados por Status</h3>
+          <h3 className="font-semibold text-sm mb-4">Chamados por Etapa de Ticket</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={barData}>
+            <BarChart data={barEtapaData} margin={{ top: 16, right: 8, left: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={50} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                {barData.map((entry, index) => (
+                {barEtapaData.map((entry, index) => (
                   <Cell key={index} fill={entry.fill} />
                 ))}
+                <LabelList dataKey="value" position="top" style={{ fontSize: 11, fontWeight: 600 }} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -353,13 +410,54 @@ export default function Dashboard() {
           <h3 className="font-semibold text-sm mb-4">Distribuição de Chamados</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
-              <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} dataKey="value" label={({ name, value }) => `${name} ${value}%`}>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                innerRadius="40%"
+                outerRadius="65%"
+                dataKey="value"
+                label={({ shortName, value }) => `${shortName} ${value}%`}
+                labelLine={false}
+              >
                 {pieData.map((entry, index) => (
                   <Cell key={index} fill={entry.color} />
                 ))}
               </Pie>
-              <Legend iconType="square" wrapperStyle={{ fontSize: 11 }} />
+              <Legend formatter={(value, entry) => (statusShortLabels[value] || value)} iconType="square" wrapperStyle={{ fontSize: 10 }} />
             </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Charts - Row 2: Motivo + Objetivo (horizontal bars) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="bg-card border rounded-lg p-4">
+          <h3 className="font-semibold text-sm mb-4">Quantidade de Chamados por Motivo</h3>
+          <ResponsiveContainer width="100%" height={Math.max(200, motivoData.length * 32)}>
+            <BarChart data={motivoData} layout="vertical" margin={{ left: 8, right: 36 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 10 }} />
+              <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} />
+              <Tooltip formatter={(v: number) => [v, 'Chamados']} labelFormatter={(v, payload) => payload?.[0]?.payload?.fullName || v} />
+              <Bar dataKey="value" radius={[0, 4, 4, 0]} fill="#7C3AED" barSize={20}>
+                <LabelList dataKey="value" position="right" style={{ fontSize: 11, fontWeight: 600 }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="bg-card border rounded-lg p-4">
+          <h3 className="font-semibold text-sm mb-4">Quantidade de Chamados por Objetivo</h3>
+          <ResponsiveContainer width="100%" height={Math.max(200, objetivoData.length * 32)}>
+            <BarChart data={objetivoData} layout="vertical" margin={{ left: 8, right: 36 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 10 }} />
+              <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} />
+              <Tooltip formatter={(v: number) => [v, 'Chamados']} labelFormatter={(v, payload) => payload?.[0]?.payload?.fullName || v} />
+              <Bar dataKey="value" radius={[0, 4, 4, 0]} fill="#0EA5E9" barSize={20}>
+                <LabelList dataKey="value" position="right" style={{ fontSize: 11, fontWeight: 600 }} />
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
