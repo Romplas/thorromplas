@@ -643,7 +643,7 @@ export default function NovoChamado() {
         chamado_id: data.id,
         user_id: userProfileId,
         acao: 'Ticket Criado',
-        descricao: `Ticket criado — Cliente: ${clienteObj?.nome || ''}, Motivo: ${motivoNome}${submotivoNome ? ', Objetivo: ' + submotivoNome : ''}, Status: Aberto, Etapa: THOR`,
+        descricao: `Ticket criado — Cliente: ${clienteObj?.nome || ''}, Motivo: ${motivoNome}${submotivoNome ? ', Objetivo: ' + submotivoNome : ''}, Status: ${initialStatus === 'pendente' ? 'Pendente' : 'Aberto'}, Etapa: ${initialEtapa === 'pendente' ? 'Pendente' : 'THOR'}`,
         descricao_ticket: buildDescricao(isNegociacao) || null,
       } as any);
       if (histError) console.error('Erro ao inserir histórico de criação:', histError);

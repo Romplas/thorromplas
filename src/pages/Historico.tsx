@@ -76,6 +76,15 @@ const etapaLabelsMap: Record<string, string> = {
   book: 'Book',
 };
 
+// Cores por Status Ticket (alinhado com Dashboard)
+const statusColors: Record<string, string> = {
+  pendente: 'bg-amber-600',
+  aberto: 'bg-red-600',
+  em_progresso: 'bg-blue-600',
+  fechado: 'bg-green-600',
+};
+
+// Cores por Etapa (fallback quando etapa difere de status)
 const etapaColors: Record<string, string> = {
   pendente: 'bg-amber-600',
   thor: 'bg-red-600',
@@ -308,44 +317,97 @@ export default function Historico() {
       .map(c => c.id)
   );
 
-  // Build entryEtapaMap BEFORE filtered so we can filter by per-entry etapa
-  const entryEtapaMap = (() => {
-    const map = new Map<string, string>();
+  // Mapa de label (ex: "Pendente") para chave (ex: "pendente")
+  const labelToStatusKey = (label: string) => {
+    const l = (label || '').toLowerCase().trim();
+    if (l === 'pendente') return 'pendente';
+    if (l === 'aberto') return 'aberto';
+    if (l === 'em progresso') return 'em_progresso';
+    if (l === 'fechado') return 'fechado';
+    return null;
+  };
+
+  // Build entryEtapaMap and entryStatusMap - reconstrução da timeline por entrada
+  const { entryEtapaMap, entryStatusMap } = (() => {
+    const etapaMap = new Map<string, string>();
+    const statusMap = new Map<string, string>();
     const dynamicLabelToKey = new Map<string, string>();
     dbEtapas.forEach(e => dynamicLabelToKey.set(e.label.toLowerCase(), e.nome));
     Object.entries(etapaLabelsMap).forEach(([k, v]) => {
       if (!dynamicLabelToKey.has(v.toLowerCase())) dynamicLabelToKey.set(v.toLowerCase(), k);
     });
-    const resolveLabel = (label: string): string | undefined => {
-      return dynamicLabelToKey.get(label.toLowerCase());
+    const resolveEtapaLabel = (label: string): string | undefined => {
+      return dynamicLabelToKey.get((label || '').toLowerCase().trim());
     };
+
     const byChamado = new Map<number, HistoricoEntry[]>();
     historico.forEach(h => {
       if (!byChamado.has(h.chamado_id)) byChamado.set(h.chamado_id, []);
       byChamado.get(h.chamado_id)!.push(h);
     });
+
     byChamado.forEach((entries, chamadoId) => {
       const sorted = [...entries].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      const chamado = chamados.find(c => c.id === chamadoId);
+
+      // Inicial: alinhado com Kanban - usa etapa/status do chamado quando pendente
       let currentEtapa = 'thor';
-      sorted.forEach(entry => {
-        if (entry.descricao) {
-          let newLabel: string | null = null;
-          if (entry.acao === 'Alteração de Etapa') {
-            const match = entry.descricao.match(/para "([^"]+)"/);
-            if (match) newLabel = match[1];
-          } else if (entry.descricao.includes('Etapa:')) {
-            const match = entry.descricao.match(/Etapa:.*?→\s*"([^"]+)"/);
-            if (match) newLabel = match[1];
-          }
-          if (newLabel) {
-            const key = resolveLabel(newLabel);
+      let currentStatus = chamado?.status || 'aberto';
+
+      const firstEntry = sorted[0];
+      const chamadoEtapa = chamado?.etapa?.toLowerCase().trim();
+      const chamadoStatus = chamado?.status?.toLowerCase().trim();
+
+      if (firstEntry?.acao === 'Ticket Criado') {
+        // Prioridade: chamado atual pendente (igual Kanban) > parse da descrição
+        if (chamadoEtapa === 'pendente' && chamadoStatus === 'pendente') {
+          currentEtapa = 'pendente';
+          currentStatus = 'pendente';
+        } else if (firstEntry.descricao) {
+          const statusMatch = firstEntry.descricao.match(/Status:\s*([^,|]+)/);
+          const etapaMatch = firstEntry.descricao.match(/Etapa:\s*([^,|]+)/);
+          if (etapaMatch) {
+            const key = resolveEtapaLabel(etapaMatch[1].trim());
             if (key) currentEtapa = key;
           }
+          if (statusMatch) {
+            const key = labelToStatusKey(statusMatch[1].trim());
+            if (key) currentStatus = key;
+          }
         }
-        map.set(entry.id, currentEtapa);
+      } else if (chamadoEtapa && etapaLabelsMap[chamadoEtapa]) {
+        currentEtapa = chamadoEtapa;
+        if (chamadoStatus && statusLabels[chamadoStatus]) currentStatus = chamadoStatus;
+      }
+
+      sorted.forEach(entry => {
+        etapaMap.set(entry.id, currentEtapa);
+        statusMap.set(entry.id, currentStatus);
+
+        if (entry.descricao) {
+          if (entry.acao === 'Alteração de Etapa') {
+            const match = entry.descricao.match(/para "([^"]+)"/);
+            if (match) {
+              const key = resolveEtapaLabel(match[1]);
+              if (key) currentEtapa = key;
+            }
+          } else if (entry.descricao.includes('Etapa:')) {
+            const match = entry.descricao.match(/Etapa:.*?→\s*"([^"]+)"/);
+            if (match) {
+              const key = resolveEtapaLabel(match[1]);
+              if (key) currentEtapa = key;
+            }
+          }
+          const statusChange = entry.descricao.match(/Status:.*?→\s*"([^"]+)"/);
+          if (statusChange) {
+            const key = labelToStatusKey(statusChange[1]);
+            if (key) currentStatus = key;
+          }
+        }
       });
     });
-    return map;
+
+    return { entryEtapaMap: etapaMap, entryStatusMap: statusMap };
   })();
 
   const filtered = (() => {
@@ -437,6 +499,10 @@ export default function Historico() {
   })();
 
   const getEntryColor = (entry: HistoricoEntry) => {
+    const entryStatus = entryStatusMap.get(entry.id);
+    if (entryStatus && statusColors[entryStatus]) {
+      return statusColors[entryStatus];
+    }
     const etapa = entryEtapaMap.get(entry.id) || 'thor';
     return etapaColors[etapa] || 'bg-blue-500';
   };
@@ -666,7 +732,8 @@ export default function Historico() {
                 const isSelected = entry.id === selectedEntryId;
                 const entryEtapa = entryEtapaMap.get(entry.id) || 'thor';
                 const etapaLabel = etapaLabelsMap[entryEtapa] || entryEtapa;
-                const statusLabel = chamado ? (statusLabels[chamado.status] || chamado.status) : '—';
+                const entryStatus = entryStatusMap.get(entry.id);
+                const statusLabel = entryStatus ? (statusLabels[entryStatus] || entryStatus) : (chamado ? (statusLabels[chamado.status] || chamado.status) : '—');
                 const cardRepNome = chamado?.representante_id ? (representanteMap.get(chamado.representante_id) || profileMap.get(chamado.representante_id) || '') : '';
                 const gestorName = entryGestorNameMap.get(entry.id) || '';
 
@@ -750,7 +817,7 @@ export default function Historico() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <ReadOnlyField label="EtapaTicket" value={etapaLabelsMap[selectedChamado.etapa || 'thor'] || selectedChamado.etapa || 'THOR'} />
+                  <ReadOnlyField label="EtapaTicket" value={etapaLabelsMap[(selectedChamado.etapa || 'thor').toLowerCase()] || selectedChamado.etapa || '—'} />
                   <ReadOnlyField label="Gestor" value={selectedEntry ? (entryGestorNameMap.get(selectedEntry.id) || '') : gestorNome} />
                   <ReadOnlyField label="StatusTicket" value={statusLabels[selectedChamado.status] || selectedChamado.status} />
                 </div>
@@ -878,9 +945,10 @@ export default function Historico() {
                   <tbody>
                     {tableEntries.map((entry, i) => {
                       const chamado = chamados.find(c => c.id === entry.chamado_id);
-                      const etapa = etapaLabelsMap[entryEtapaMap.get(entry.id) || 'thor'] || entryEtapaMap.get(entry.id) || 'THOR';
+                      const entryStatus = entryStatusMap.get(entry.id);
+                      const etapa = etapaLabelsMap[entryEtapaMap.get(entry.id) || 'thor'] || entryEtapaMap.get(entry.id) || '—';
                       const gestor = entryGestorNameMap.get(entry.id) || '—';
-                      const status = chamado ? (statusLabels[chamado.status] || chamado.status) : '—';
+                      const status = entryStatus ? (statusLabels[entryStatus] || entryStatus) : (chamado ? (statusLabels[chamado.status] || chamado.status) : '—');
                       const repNome = chamado?.representante_id ? (representanteMap.get(chamado.representante_id) || '—') : '—';
                       const supNome = chamado?.supervisor_id ? (supervisorMap.get(chamado.supervisor_id) || '—') : '—';
                       return (
@@ -893,7 +961,15 @@ export default function Historico() {
                           <td className="px-2 py-1.5">{etapa}</td>
                           <td className="px-2 py-1.5">{chamado?.motivo || '—'}</td>
                           <td className="px-2 py-1.5">{chamado?.submotivo || '—'}</td>
-                          <td className="px-2 py-1.5">{status}</td>
+                          <td className="px-2 py-1.5">
+                            {entryStatus && statusColors[entryStatus] ? (
+                              <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold text-white ${statusColors[entryStatus]}`}>
+                                {status}
+                              </span>
+                            ) : (
+                              status
+                            )}
+                          </td>
                           <td className="px-2 py-1.5">{gestor}</td>
                           <td className="px-2 py-1.5">{entry.user_nome || '—'}</td>
                           <td className="px-2 py-1.5">{entry.acao}</td>
