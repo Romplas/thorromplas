@@ -203,17 +203,17 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col w-[min(100%,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] sm:w-auto sm:max-w-2xl max-h-[85dvh] sm:max-h-[90vh] overflow-hidden p-0">
+      <DialogContent className="flex flex-col max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[85dvh] sm:max-h-[90vh] overflow-hidden p-0">
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2 shrink-0">
           <div className="flex justify-center mb-2">
             <img src={romplasLogo} alt="Romplas" className="h-10 object-contain" />
           </div>
           <DialogTitle className="text-center">RNC - Relatório de Não Conformidade</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 space-y-4 pb-4 max-w-full">
+        <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 space-y-4 pb-4">
           <div className="border rounded-lg p-3 space-y-3 min-w-0">
             <Label className="text-xs font-semibold">Cliente / Representante</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="min-w-0"><Label className="text-xs">Cliente *</Label><Input className="mt-1 w-full min-w-0" value={form.cliente} onChange={e => setForm(p => ({ ...p, cliente: e.target.value }))} /></div>
               <div className="min-w-0"><Label className="text-xs">Representante *</Label><Input className="mt-1 w-full min-w-0" value={form.representante} disabled /></div>
             </div>
@@ -234,7 +234,7 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
                 }
               };
               return (
-              <div key={idx} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end max-w-full">
+              <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
                 <div className="min-w-0 overflow-hidden">
                   <Label className="text-[10px] text-muted-foreground">Cód.</Label>
                   {catalogoProdutos.length > 0 ? (
@@ -321,16 +321,16 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
           {/* Assinaturas */}
           <div className="border rounded-lg p-3 space-y-3 min-w-0">
             <Label className="text-xs font-semibold">Assinaturas</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="min-w-0"><Label className="text-xs">Data Comercial</Label><Input type="date" className="mt-1 w-full min-w-0 max-w-full" value={form.dataComercial} onChange={e => setForm(p => ({ ...p, dataComercial: e.target.value }))} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="min-w-0"><Label className="text-xs">Data Comercial</Label><Input type="date" className="mt-1 w-full min-w-0" value={form.dataComercial} onChange={e => setForm(p => ({ ...p, dataComercial: e.target.value }))} /></div>
               <div className="min-w-0"><Label className="text-xs">Assinatura Comercial</Label><Input className="mt-1 w-full min-w-0" value={form.assinaturaComercial} onChange={e => setForm(p => ({ ...p, assinaturaComercial: e.target.value }))} /></div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="min-w-0"><Label className="text-xs">Data Qualidade</Label><Input type="date" className="mt-1 w-full min-w-0 max-w-full" value={form.dataQualidade} onChange={e => setForm(p => ({ ...p, dataQualidade: e.target.value }))} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="min-w-0"><Label className="text-xs">Data Qualidade</Label><Input type="date" className="mt-1 w-full min-w-0" value={form.dataQualidade} onChange={e => setForm(p => ({ ...p, dataQualidade: e.target.value }))} /></div>
               <div className="min-w-0"><Label className="text-xs">Assinatura Qualidade</Label><Input className="mt-1 w-full min-w-0" value={form.assinaturaQualidade} onChange={e => setForm(p => ({ ...p, assinaturaQualidade: e.target.value }))} /></div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="min-w-0"><Label className="text-xs">Data Financeiro</Label><Input type="date" className="mt-1 w-full min-w-0 max-w-full" value={form.dataFinanceiro} onChange={e => setForm(p => ({ ...p, dataFinanceiro: e.target.value }))} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="min-w-0"><Label className="text-xs">Data Financeiro</Label><Input type="date" className="mt-1 w-full min-w-0" value={form.dataFinanceiro} onChange={e => setForm(p => ({ ...p, dataFinanceiro: e.target.value }))} /></div>
               <div className="min-w-0"><Label className="text-xs">Assinatura Financeiro</Label><Input className="mt-1 w-full min-w-0" value={form.assinaturaFinanceiro} onChange={e => setForm(p => ({ ...p, assinaturaFinanceiro: e.target.value }))} /></div>
             </div>
           </div>
