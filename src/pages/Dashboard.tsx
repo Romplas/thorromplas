@@ -531,7 +531,7 @@ export default function Dashboard() {
           <ResponsiveContainer width="100%" height={Math.max(200, objetivoData.length * 40)}>
             <BarChart data={objetivoData} layout="vertical" margin={{ left: 8, right: 44 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} tickFormatter={(v) => Math.round(v)} />
+              <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} tickFormatter={(v) => String(Math.round(v))} />
               <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
               <Tooltip formatter={(v: number) => [v, 'Chamados']} labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName} contentStyle={{ borderRadius: 8 }} />
               <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={28} fill="#0EA5E9" fillOpacity={0.9}>
