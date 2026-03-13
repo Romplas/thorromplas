@@ -210,7 +210,7 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
           </div>
           <DialogTitle className="text-center">RNC - Relatório de Não Conformidade</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 space-y-4 pb-4">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col gap-4 overflow-y-auto overflow-x-hidden px-4 sm:px-6 pb-4">
           <div className="border rounded-lg p-3 space-y-3 min-w-0">
             <Label className="text-xs font-semibold">Cliente / Representante</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
