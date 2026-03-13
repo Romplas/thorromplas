@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Pencil, Trash2, Eye, Eraser, Paperclip, Download, FileDown, CalendarIcon } from 'lucide-react';
+import { Pencil, Trash2, Eye, Eraser, Paperclip, Download, FileDown, CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import SDPFormModal from '@/components/chamado/SDPFormModal';
@@ -157,6 +157,7 @@ export default function Historico() {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth() + 1, 0);
   });
+  const [filterCollapsed, setFilterCollapsed] = useState(false);
 
   // Reference data
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
@@ -656,131 +657,150 @@ export default function Historico() {
       <div className="p-4">
         <h1 className="text-xl font-bold text-center mb-4">Histórico de Atendimento</h1>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
-          <div className="flex items-center gap-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className={cn("h-9 gap-1.5 text-xs font-normal bg-background", !filterDateStart && "text-muted-foreground")}>
-                  <CalendarIcon className="h-4 w-4 text-primary" />
-                  {filterDateStart ? format(filterDateStart, 'dd/MM/yyyy', { locale: ptBR }) : 'Data início'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={filterDateStart} onSelect={(d) => d && setFilterDateStart(d)} locale={ptBR} />
-              </PopoverContent>
-            </Popover>
-            <span className="text-muted-foreground text-xs">até</span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className={cn("h-9 gap-1.5 text-xs font-normal bg-background", !filterDateEnd && "text-muted-foreground")}>
-                  <CalendarIcon className="h-4 w-4 text-primary" />
-                  {filterDateEnd ? format(filterDateEnd, 'dd/MM/yyyy', { locale: ptBR }) : 'Data fim'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={filterDateEnd} onSelect={(d) => d && setFilterDateEnd(d)} locale={ptBR} />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Supervisor</span>
-            <Select value={filterSupervisor} onValueChange={(v) => { setFilterSupervisor(v); setFilterRepresentante('todos'); }} disabled={isSupervisorLocked}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {supervisores.map(s => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Representante</span>
-            <Select value={filterRepresentante} onValueChange={setFilterRepresentante} disabled={isRepresentanteLocked}>
-              <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {filteredRepresentantesForFilter.map(r => <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">TicketID</span>
-            <SearchableSelect
-              options={[{ value: 'todos', label: 'Todos' }, ...chamados.map(c => ({ value: String(c.id), label: String(c.id) }))]}
-              value={selectedTicketId}
-              onValueChange={(v) => { setSelectedTicketId(v); setSelectedEntryId(null); }}
-              placeholder="Todos"
-              searchPlaceholder="Pesquisar ticket..."
-              className="h-8 w-36 text-xs"
-            />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Clientes</span>
-            <SearchableSelect
-              options={[{ value: 'todos', label: 'Todos' }, ...uniqueClientes.map(c => ({ value: c, label: c }))]}
-              value={filterCliente}
-              onValueChange={setFilterCliente}
-              placeholder="Todos"
-              searchPlaceholder="Pesquisar cliente..."
-              className="h-8 w-44 text-xs"
-            />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Motivo</span>
-            <Select value={filterMotivo} onValueChange={(v) => { setFilterMotivo(v); setFilterSubmotivo('todos'); }}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {motivos.map(m => <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">SubMotivos</span>
-            <Select value={filterSubmotivo} onValueChange={setFilterSubmotivo}>
-              <SelectTrigger className="h-8 w-44 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {filteredSubmotivos.map(s => <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Etapa</span>
-            <Select value={filterEtapa} onValueChange={setFilterEtapa}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {dbEtapas.map(e => <SelectItem key={e.nome} value={e.nome}>{e.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Status Ticket</span>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="aberto">Aberto</SelectItem>
-                <SelectItem value="em_progresso">Em Progresso</SelectItem>
-                <SelectItem value="fechado">Fechado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Gestores</span>
-            <Select value={filterGestor} onValueChange={setFilterGestor}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {[...new Map(chamados.filter(c => c.gestor_id).map(c => [c.gestor_id!, profileMap.get(c.gestor_id!) || 'Desconhecido'])).entries()]
-                  .sort((a, b) => a[1].localeCompare(b[1]))
-                  .map(([id, nome]) => (
-                    <SelectItem key={id} value={id}>{nome}</SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+        {/* Filters - collapsible */}
+        <div className="mb-4 bg-card rounded-lg shadow-sm border overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setFilterCollapsed(!filterCollapsed)}
+            className="w-full flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-muted/50 transition-colors text-left"
+            aria-expanded={!filterCollapsed}
+          >
+            <span className="text-sm font-medium">Filtros</span>
+            <span className="text-muted-foreground">
+              {filterCollapsed ? (
+                <ChevronDown className="h-4 w-4" aria-label="Expandir filtros" />
+              ) : (
+                <ChevronUp className="h-4 w-4" aria-label="Recolher filtros" />
+              )}
+            </span>
+          </button>
+          <div className={cn("border-t border-border", filterCollapsed && "hidden")}>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3 p-3">
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("h-9 gap-1.5 text-xs font-normal bg-background", !filterDateStart && "text-muted-foreground")}>
+                      <CalendarIcon className="h-4 w-4 text-primary" />
+                      {filterDateStart ? format(filterDateStart, 'dd/MM/yyyy', { locale: ptBR }) : 'Data início'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={filterDateStart} onSelect={(d) => d && setFilterDateStart(d)} locale={ptBR} />
+                  </PopoverContent>
+                </Popover>
+                <span className="text-muted-foreground text-xs">até</span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("h-9 gap-1.5 text-xs font-normal bg-background", !filterDateEnd && "text-muted-foreground")}>
+                      <CalendarIcon className="h-4 w-4 text-primary" />
+                      {filterDateEnd ? format(filterDateEnd, 'dd/MM/yyyy', { locale: ptBR }) : 'Data fim'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={filterDateEnd} onSelect={(d) => d && setFilterDateEnd(d)} locale={ptBR} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Supervisor</span>
+                <Select value={filterSupervisor} onValueChange={(v) => { setFilterSupervisor(v); setFilterRepresentante('todos'); }} disabled={isSupervisorLocked}>
+                  <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {supervisores.map(s => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Representante</span>
+                <Select value={filterRepresentante} onValueChange={setFilterRepresentante} disabled={isRepresentanteLocked}>
+                  <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {filteredRepresentantesForFilter.map(r => <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">TicketID</span>
+                <SearchableSelect
+                  options={[{ value: 'todos', label: 'Todos' }, ...chamados.map(c => ({ value: String(c.id), label: String(c.id) }))]}
+                  value={selectedTicketId}
+                  onValueChange={(v) => { setSelectedTicketId(v); setSelectedEntryId(null); }}
+                  placeholder="Todos"
+                  searchPlaceholder="Pesquisar ticket..."
+                  className="h-8 w-36 text-xs min-w-[140px]"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Clientes</span>
+                <SearchableSelect
+                  options={[{ value: 'todos', label: 'Todos' }, ...uniqueClientes.map(c => ({ value: c, label: c }))]}
+                  value={filterCliente}
+                  onValueChange={setFilterCliente}
+                  placeholder="Todos"
+                  searchPlaceholder="Pesquisar cliente..."
+                  className="h-8 w-36 text-xs min-w-[140px]"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Motivo</span>
+                <Select value={filterMotivo} onValueChange={(v) => { setFilterMotivo(v); setFilterSubmotivo('todos'); }}>
+                  <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {motivos.map(m => <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">SubMotivos</span>
+                <Select value={filterSubmotivo} onValueChange={setFilterSubmotivo}>
+                  <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {filteredSubmotivos.map(s => <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Etapa</span>
+                <Select value={filterEtapa} onValueChange={setFilterEtapa}>
+                  <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {dbEtapas.map(e => <SelectItem key={e.nome} value={e.nome}>{e.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Status Ticket</span>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="aberto">Aberto</SelectItem>
+                    <SelectItem value="em_progresso">Em Progresso</SelectItem>
+                    <SelectItem value="fechado">Fechado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Gestores</span>
+                <Select value={filterGestor} onValueChange={setFilterGestor}>
+                  <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {[...new Map(chamados.filter(c => c.gestor_id).map(c => [c.gestor_id!, profileMap.get(c.gestor_id!) || 'Desconhecido'])).entries()]
+                      .sort((a, b) => a[1].localeCompare(b[1]))
+                      .map(([id, nome]) => (
+                        <SelectItem key={id} value={id}>{nome}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </div>
 
