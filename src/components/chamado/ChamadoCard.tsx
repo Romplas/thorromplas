@@ -114,7 +114,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const canEdit = chamado.status === 'aberto' && chamado.etapa.toLowerCase() === 'thor';
+  const canEdit = (chamado.status === 'pendente' || chamado.status === 'aberto') && chamado.etapa?.toLowerCase() === 'thor';
 
   // Load anexos from Supabase Storage
   useEffect(() => {
@@ -211,7 +211,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
 
       // Representante editando solicitação ABERTO+THOR: não criar nova etapa no histórico
       const skipHistory = role === 'representante'
-        && chamado.status?.toLowerCase() === 'aberto'
+        && (chamado.status?.toLowerCase() === 'aberto' || chamado.status?.toLowerCase() === 'pendente')
         && chamado.etapa?.toLowerCase() === 'thor';
 
       if (!skipHistory) {
@@ -290,6 +290,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
   };
 
   const statusColor = {
+    pendente: 'bg-amber-100 text-amber-800 border-amber-300',
     aberto: 'bg-amber-100 text-amber-800 border-amber-300',
     em_progresso: 'bg-blue-100 text-blue-800 border-blue-300',
     fechado: 'bg-muted text-muted-foreground border-border',
@@ -308,7 +309,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
           <div className="flex items-center gap-3">
             <span className="font-mono font-bold text-base">TicketID {chamado.id}</span>
             <Badge variant="outline" className={`text-xs ${statusColor[c.status as keyof typeof statusColor] || statusColor.aberto}`}>
-              {c.status === 'aberto' ? 'Aberto' : c.status === 'em_progresso' ? 'Em Progresso' : 'Fechado'}
+              {c.status === 'pendente' ? 'Pendente' : c.status === 'aberto' ? 'Aberto' : c.status === 'em_progresso' ? 'Em Progresso' : 'Fechado'}
             </Badge>
             <Badge className={`text-xs ${etapaColor}`}>{c.etapa.toUpperCase()}</Badge>
             <span className="text-xs text-muted-foreground">Criado em {chamado.criadoEm}</span>
@@ -329,7 +330,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
               </>
             ) : (
               <>
-                <Button variant="outline" size="sm" onClick={handleEdit} disabled={!canEdit} title={!canEdit ? 'Edição disponível apenas com Status Aberto e Etapa THOR' : ''}>
+                <Button variant="outline" size="sm" onClick={handleEdit} disabled={!canEdit} title={!canEdit ? 'Edição disponível apenas com Status Pendente/Aberto e Etapa THOR' : ''}>
                   <Pencil className="h-4 w-4 mr-1.5" />Editar
                 </Button>
                 {canEdit && (
@@ -477,7 +478,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
         <div className="mb-5">
           <h3 className="text-xs font-semibold text-primary uppercase tracking-wide mb-3">Controle do Ticket</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <ReadOnlyField label="Status Ticket" value={c.status === 'aberto' ? 'Aberto' : c.status === 'em_progresso' ? 'Em Progresso' : 'Fechado'} />
+            <ReadOnlyField label="Status Ticket" value={c.status === 'pendente' ? 'Pendente' : c.status === 'aberto' ? 'Aberto' : c.status === 'em_progresso' ? 'Em Progresso' : 'Fechado'} />
             <ReadOnlyField label="Etapa Ticket" value={c.etapa.toUpperCase()} />
           </div>
         </div>

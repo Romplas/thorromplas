@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
 const statusLabels: Record<string, string> = {
+  pendente: 'Pendente',
   aberto: 'Aberto',
   em_progresso: 'Em Progresso',
   fechado: 'Fechado',
@@ -161,78 +162,44 @@ export default function Dashboard() {
     return () => { supabase.removeChannel(channel); };
   }, [isRepresentante, representanteId]);
 
-  // Compute stats
+  // Compute stats: Pendentes = status pendente, Abertos = aberto, Em Progresso = em_progresso, Finalizados = fechado
   const stats = useMemo(() => {
-    if (isRepresentante) {
-      const total = chamados.length;
-      const pendentes = chamados.filter(c => c.status === 'aberto' && c.etapa !== 'THOR').length;
-      const abertas = chamados.filter(c => c.status === 'aberto' && c.etapa && c.etapa !== 'THOR').length;
-      const emProgresso = chamados.filter(c => c.status === 'em_progresso').length;
-      const finalizados = chamados.filter(c => c.status === 'fechado').length;
+    const total = chamados.length;
+    const pendentes = chamados.filter(c => c.status === 'pendente').length;
+    const abertos = chamados.filter(c => c.status === 'aberto').length;
+    const emProgresso = chamados.filter(c => c.status === 'em_progresso').length;
+    const finalizados = chamados.filter(c => c.status === 'fechado').length;
 
-      return [
-        { label: 'Total de Chamados', value: total, icon: Mail, color: 'text-primary' },
-        { label: 'Pendentes', value: pendentes, icon: AlertCircle, color: 'text-red-500' },
-        { label: 'Abertas', value: abertas, icon: AlertTriangle, color: 'text-red-500' },
-        { label: 'Em Progresso', value: emProgresso, icon: TrendingUp, color: 'text-blue-500' },
-        { label: 'Finalizados', value: finalizados, icon: CheckCircle, color: 'text-green-500' },
-      ];
-    } else {
-      const total = chamados.length;
-      const pendentes = chamados.filter(c => c.status === 'aberto').length;
-      const abertas = chamados.filter(c => c.status === 'aberto').length;
-      const emProgresso = chamados.filter(c => c.status === 'em_progresso').length;
-      const aguardando = chamados.filter(c => c.etapa && c.etapa !== 'THOR' && c.status === 'aberto').length;
-      const finalizados = chamados.filter(c => c.status === 'fechado').length;
-
-      return [
-        { label: 'Total de Chamados', value: total, icon: Mail, color: 'text-primary' },
-        { label: 'Pendentes', value: pendentes, icon: AlertCircle, color: 'text-red-500' },
-        { label: 'Abertas', value: abertas, icon: AlertTriangle, color: 'text-red-500' },
-        { label: 'Em Progresso', value: emProgresso, icon: TrendingUp, color: 'text-blue-500' },
-        { label: 'Aguardando', value: aguardando, icon: FileText, color: 'text-yellow-500' },
-        { label: 'Finalizados', value: finalizados, icon: CheckCircle, color: 'text-green-500' },
-      ];
-    }
-  }, [chamados, isRepresentante]);
+    return [
+      { label: 'Total de Chamados', value: total, icon: Mail, color: 'text-primary' },
+      { label: 'Pendentes', value: pendentes, icon: AlertCircle, color: 'text-amber-500' },
+      { label: 'Abertos', value: abertos, icon: AlertTriangle, color: 'text-red-500' },
+      { label: 'Em Progresso', value: emProgresso, icon: TrendingUp, color: 'text-blue-500' },
+      { label: 'Finalizados', value: finalizados, icon: CheckCircle, color: 'text-green-500' },
+    ];
+  }, [chamados]);
 
   const lastTicket = chamados[0];
   const last5 = chamados.slice(0, 5);
-  const pendentesAtivacao = chamados.filter(c => c.etapa === 'THOR' && c.status === 'aberto');
+  const pendentesAtivacao = chamados.filter(c => c.etapa === 'THOR' && c.status === 'pendente');
 
   // Chart data
-  const barData = useMemo(() => {
-    if (isRepresentante) {
-      return [
-        { name: 'Aberto', value: chamados.filter(c => c.status === 'aberto').length, fill: '#EF4444' },
-        { name: 'Em Progresso', value: chamados.filter(c => c.status === 'em_progresso').length, fill: '#3B82F6' },
-        { name: 'Finalizado', value: chamados.filter(c => c.status === 'fechado').length, fill: '#22C55E' },
-      ];
-    }
-    return [
-      { name: 'Aberto', value: chamados.filter(c => c.status === 'aberto').length, fill: '#EF4444' },
-      { name: 'Em Progresso', value: chamados.filter(c => c.status === 'em_progresso').length, fill: '#3B82F6' },
-      { name: 'Aguardando', value: chamados.filter(c => c.etapa && c.etapa !== 'THOR' && c.status === 'aberto').length, fill: '#F59E0B' },
-      { name: 'Finalizado', value: chamados.filter(c => c.status === 'fechado').length, fill: '#22C55E' },
-    ];
-  }, [chamados, isRepresentante]);
+  const barData = useMemo(() => [
+    { name: 'Pendente', value: chamados.filter(c => c.status === 'pendente').length, fill: '#F59E0B' },
+    { name: 'Aberto', value: chamados.filter(c => c.status === 'aberto').length, fill: '#EF4444' },
+    { name: 'Em Progresso', value: chamados.filter(c => c.status === 'em_progresso').length, fill: '#3B82F6' },
+    { name: 'Finalizado', value: chamados.filter(c => c.status === 'fechado').length, fill: '#22C55E' },
+  ], [chamados]);
 
   const pieData = useMemo(() => {
     const total = chamados.length || 1;
-    if (isRepresentante) {
-      return [
-        { name: 'Aberto', value: Math.round((chamados.filter(c => c.status === 'aberto').length / total) * 100), color: '#EF4444' },
-        { name: 'Em Progresso', value: Math.round((chamados.filter(c => c.status === 'em_progresso').length / total) * 100), color: '#3B82F6' },
-        { name: 'Finalizado', value: Math.round((chamados.filter(c => c.status === 'fechado').length / total) * 100), color: '#22C55E' },
-      ];
-    }
     return [
+      { name: 'Pendente', value: Math.round((chamados.filter(c => c.status === 'pendente').length / total) * 100), color: '#F59E0B' },
       { name: 'Aberto', value: Math.round((chamados.filter(c => c.status === 'aberto').length / total) * 100), color: '#EF4444' },
       { name: 'Em Progresso', value: Math.round((chamados.filter(c => c.status === 'em_progresso').length / total) * 100), color: '#3B82F6' },
-      { name: 'Aguardando', value: Math.round((chamados.filter(c => c.etapa && c.etapa !== 'THOR' && c.status === 'aberto').length / total) * 100), color: '#F59E0B' },
       { name: 'Finalizado', value: Math.round((chamados.filter(c => c.status === 'fechado').length / total) * 100), color: '#22C55E' },
     ];
-  }, [chamados, isRepresentante]);
+  }, [chamados]);
 
   return (
     <Layout>
@@ -319,7 +286,7 @@ export default function Dashboard() {
       )}
 
       {/* Stats */}
-      <div className={cn("grid gap-3 mb-6", isRepresentante ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-5" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-6")}>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         {stats.map((s) => (
           <div key={s.label} className="bg-card border rounded-lg p-4 text-center">
             <s.icon className={`h-5 w-5 mx-auto mb-1 ${s.color}`} />
@@ -342,13 +309,23 @@ export default function Dashboard() {
               <p className="text-xs"><span className="font-medium">Cliente:</span> {lastTicket.cliente_nome}</p>
               <p className="text-xs"><span className="font-medium">Motivo:</span> {lastTicket.motivo}</p>
             </div>
-            <div className="text-right">
-              <span className={`status-badge ${lastTicket.status === 'aberto' ? 'status-open' : lastTicket.status === 'em_progresso' ? 'status-progress' : 'status-done'}`}>
+            <div className="text-right flex flex-col items-end gap-1">
+              <span className={`status-badge ${lastTicket.status === 'pendente' ? 'status-waiting' : lastTicket.status === 'aberto' ? 'status-open' : lastTicket.status === 'em_progresso' ? 'status-progress' : 'status-done'}`}>
                 {statusLabels[lastTicket.status] || lastTicket.status}
               </span>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                {format(new Date(lastTicket.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-[10px] text-muted-foreground">
+                  {format(new Date(lastTicket.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                </p>
+                <button
+                  type="button"
+                  className="text-primary hover:text-primary/70 transition-colors"
+                  title="Ver histórico"
+                  onClick={() => navigate(`/historico?ticketId=${lastTicket.id}`)}
+                >
+                  <Clock className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -394,7 +371,7 @@ export default function Dashboard() {
           {last5.map((ticket) => (
             <div key={ticket.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-3">
-                <div className={`h-2 w-2 rounded-full ${ticket.status === 'aberto' ? 'bg-red-500' : ticket.status === 'em_progresso' ? 'bg-blue-500' : 'bg-green-500'}`} />
+                <div className={`h-2 w-2 rounded-full ${ticket.status === 'pendente' ? 'bg-amber-500' : ticket.status === 'aberto' ? 'bg-red-500' : ticket.status === 'em_progresso' ? 'bg-blue-500' : 'bg-green-500'}`} />
                 <div>
                   <p className="text-sm font-semibold">#{ticket.id}</p>
                   <p className="text-xs text-muted-foreground">
@@ -403,7 +380,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className={`status-badge ${ticket.status === 'aberto' ? 'status-open' : ticket.status === 'em_progresso' ? 'status-progress' : 'status-done'}`}>
+                <span className={`status-badge ${ticket.status === 'pendente' ? 'status-waiting' : ticket.status === 'aberto' ? 'status-open' : ticket.status === 'em_progresso' ? 'status-progress' : 'status-done'}`}>
                   {statusLabels[ticket.status] || ticket.status}
                 </span>
                 <span className="text-[10px] text-muted-foreground">
@@ -442,7 +419,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="status-badge status-open">Pendente</span>
+                  <span className="status-badge status-waiting">Pendente</span>
                   <span className="text-[10px] text-muted-foreground">
                     {format(new Date(ticket.created_at), "dd/MM/yyyy", { locale: ptBR })}
                   </span>

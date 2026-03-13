@@ -250,7 +250,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       // Build list of changes for history
       const changeParts: string[] = [];
       
-      const statusLabels: Record<string, string> = { aberto: 'Aberto', em_progresso: 'Em Progresso', fechado: 'Fechado' };
+      const statusLabels: Record<string, string> = { pendente: 'Pendente', aberto: 'Aberto', em_progresso: 'Em Progresso', fechado: 'Fechado' };
       if (status !== chamado.status) {
         changeParts.push(`Status: "${statusLabels[chamado.status] || chamado.status}" → "${statusLabels[status] || status}"`);
       }
@@ -290,9 +290,9 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       } as any).eq('id', chamado.id);
       if (error) throw error;
 
-      // Representante editando ABERTO+THOR: não criar nova etapa no histórico
+      // Representante editando PENDENTE/ABERTO+THOR: não criar nova etapa no histórico
       const skipHistory = role === 'representante'
-        && chamado.status?.toLowerCase() === 'aberto'
+        && (chamado.status?.toLowerCase() === 'aberto' || chamado.status?.toLowerCase() === 'pendente')
         && (chamado.etapa || 'thor').toLowerCase() === 'thor';
 
       if (!skipHistory) {
@@ -502,6 +502,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
                     <Select value={status} onValueChange={setStatus}>
                       <SelectTrigger className="h-[40px]"><SelectValue /></SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="pendente">Pendente</SelectItem>
                         <SelectItem value="aberto">Aberto</SelectItem>
                         <SelectItem value="em_progresso">Em Progresso</SelectItem>
                         <SelectItem value="fechado">Fechado</SelectItem>
@@ -509,7 +510,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
                     </Select>
                   </div>
                 ) : (
-                  <ReadOnlyField label="Status Ticket" value={status === 'aberto' ? 'Aberto' : status === 'em_progresso' ? 'Em Progresso' : 'Fechado'} />
+                  <ReadOnlyField label="Status Ticket" value={status === 'pendente' ? 'Pendente' : status === 'aberto' ? 'Aberto' : status === 'em_progresso' ? 'Em Progresso' : 'Fechado'} />
                 )}
                 {isEditable ? (
                   <div className="space-y-1.5">

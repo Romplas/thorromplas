@@ -55,6 +55,7 @@ interface Representante { id: string; nome: string }
 interface SupervisorRepresentante { supervisor_id: string; representante_id: string }
 
 const statusLabels: Record<string, string> = {
+  pendente: 'Pendente',
   aberto: 'Aberto',
   em_progresso: 'Em Progresso',
   fechado: 'Fechado',
@@ -625,6 +626,7 @@ export default function Historico() {
               <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="pendente">Pendente</SelectItem>
                 <SelectItem value="aberto">Aberto</SelectItem>
                 <SelectItem value="em_progresso">Em Progresso</SelectItem>
                 <SelectItem value="fechado">Fechado</SelectItem>

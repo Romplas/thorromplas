@@ -294,7 +294,7 @@ export default function NovoChamado() {
       const { data, error } = await supabase
         .from('chamados')
         .select('*')
-        .eq('status', 'aberto')
+        .in('status', ['pendente', 'aberto'])
         .eq('etapa', 'thor')
         .order('created_at', { ascending: false })
         .limit(100);
@@ -540,13 +540,14 @@ export default function NovoChamado() {
       const motivoNome = getName(motivos, selectedMotivo);
       const submotivoNome = getName(filteredSubmotivos, selectedSubmotivo);
 
+      const initialStatus = role === 'representante' ? 'pendente' : 'aberto';
       const { data, error } = await supabase.from('chamados').insert({
         cliente_id: selectedCliente,
         cliente_nome: clienteObj?.nome || '',
         motivo: motivoNome,
         submotivo: submotivoNome || null,
         descricao: buildDescricao(isNegociacao) || null,
-        status: 'aberto',
+        status: initialStatus,
         etapa: 'thor',
         supervisor_id: selectedSupervisor || null,
         representante_id: selectedRepresentante || null,
@@ -585,7 +586,7 @@ export default function NovoChamado() {
 
       const novoChamado: ChamadoCriado = {
         id: data.id,
-        status: 'aberto',
+        status: initialStatus,
         etapa: 'THOR',
         supervisor: getName(supervisores, selectedSupervisor),
         representante: getName(representantes, selectedRepresentante),
@@ -1327,14 +1328,14 @@ export default function NovoChamado() {
           </div>
 
           {/* Chamados Criados - only show status=aberto & etapa=THOR */}
-          {chamadosCriados.filter(c => c.status === 'aberto' && c.etapa.toLowerCase() === 'thor').length > 0 && (
+          {(chamadosCriados.filter(c => (c.status === 'pendente' || c.status === 'aberto') && c.etapa?.toLowerCase() === 'thor').length) > 0 && (
             <div className="mt-6 space-y-4">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
                 <h2 className="text-sm font-semibold">Tickets Criados</h2>
-                <Badge variant="secondary" className="ml-1">{chamadosCriados.filter(c => c.status === 'aberto' && c.etapa.toLowerCase() === 'thor').length}</Badge>
+                <Badge variant="secondary" className="ml-1">{chamadosCriados.filter(c => (c.status === 'pendente' || c.status === 'aberto') && c.etapa?.toLowerCase() === 'thor').length}</Badge>
               </div>
-              {chamadosCriados.filter(c => c.status === 'aberto' && c.etapa.toLowerCase() === 'thor').map(c => (
+              {chamadosCriados.filter(c => (c.status === 'pendente' || c.status === 'aberto') && c.etapa?.toLowerCase() === 'thor').map(c => (
                 <ChamadoCard
                   key={c.id}
                   chamado={c}

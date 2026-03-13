@@ -1,6 +1,6 @@
 export type UserRole = 'admin' | 'gestor' | 'supervisor' | 'representante';
 
-export type TicketStatus = 'aberto' | 'em_progresso' | 'fechado';
+export type TicketStatus = 'pendente' | 'aberto' | 'em_progresso' | 'fechado';
 
 export interface User {
   id: string;

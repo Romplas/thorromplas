@@ -126,8 +126,9 @@
     @apply bg-blue-500 text-white;
   }
 
-  .status-waiting {
-    @apply bg-yellow-500 text-white;
+  .status-waiting,
+  .status-pending {
+    @apply bg-amber-500 text-white;
   }
 
   .status-done {

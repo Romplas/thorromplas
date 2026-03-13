@@ -49,6 +49,7 @@ const columns = [
 ];
 
 const statusToEtapa: Record<string, string> = {
+  pendente: 'thor',
   aberto: 'thor',
   em_progresso: 'aguardando_resposta',
   fechado: 'completo',
