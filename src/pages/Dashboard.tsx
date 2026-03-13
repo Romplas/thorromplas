@@ -295,11 +295,11 @@ export default function Dashboard() {
 
       {/* Filters - hidden for representante */}
       {!isRepresentante && (
-        <div className="flex flex-wrap items-center gap-3 mb-6 bg-card rounded-lg p-3 shadow-sm border">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Supervisor</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mb-6 bg-card rounded-lg p-3 shadow-sm border">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Supervisor</span>
             <Select value={filterSupervisor} onValueChange={handleSupervisorChange}>
-              <SelectTrigger className="h-8 w-28 text-xs">
+              <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
@@ -310,10 +310,10 @@ export default function Dashboard() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Representante</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Representante</span>
             <Select value={filterRepresentante} onValueChange={setFilterRepresentante}>
-              <SelectTrigger className="h-8 w-28 text-xs">
+              <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
@@ -324,10 +324,10 @@ export default function Dashboard() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Gestor</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Gestor</span>
             <Select value={filterGestor} onValueChange={setFilterGestor}>
-              <SelectTrigger className="h-8 w-28 text-xs">
+              <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>

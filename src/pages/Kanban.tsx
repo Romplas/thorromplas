@@ -407,61 +407,61 @@ export default function Kanban() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Supervisor</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Supervisor</span>
             <Select value={filterSupervisor} onValueChange={handleSupervisorChange} disabled={isRestricted}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 {supervisores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Representantes</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Representantes</span>
             <Select value={filterRepresentante} onValueChange={handleRepresentanteChange} disabled={role === 'representante'}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 {filteredRepresentantes.map((r) => <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Clientes</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Clientes</span>
             <Select value={filterCliente} onValueChange={setFilterCliente}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 {clienteOptions.map((nome) => <SelectItem key={nome} value={nome}>{nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">TicketID</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">TicketID</span>
             <Select value={filterTicketId} onValueChange={setFilterTicketId}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 {ticketIdOptions.map((id) => <SelectItem key={id} value={id}>{id}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Motivo</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Motivo</span>
             <Select value={filterMotivo} onValueChange={setFilterMotivo}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 {motivoOptions.map((nome) => <SelectItem key={nome} value={nome}>{nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Gestores</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Gestores</span>
             <Select value={filterGestor} onValueChange={setFilterGestor}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
