@@ -89,7 +89,7 @@ const statusColors: Record<string, string> = {
   fechado: 'bg-green-600',
 };
 
-// Cores por Etapa (fallback quando etapa difere de status)
+// Cores por Etapa (idênticas ao Kanban - cardBg)
 const etapaColors: Record<string, string> = {
   pendente: 'bg-amber-600',
   thor: 'bg-red-600',
@@ -544,12 +544,9 @@ export default function Historico() {
   })();
 
   const getEntryColor = (entry: HistoricoEntry) => {
-    const entryStatus = entryStatusMap.get(entry.id);
-    if (entryStatus && statusColors[entryStatus]) {
-      return statusColors[entryStatus];
-    }
-    const etapa = entryEtapaMap.get(entry.id) || 'thor';
-    return etapaColors[etapa] || 'bg-blue-500';
+    // Usar Etapa Ticket (igual ao Kanban) - cor do card deve vir da etapa
+    const etapa = (entryEtapaMap.get(entry.id) || 'thor').toLowerCase().trim();
+    return etapaColors[etapa] || etapaColors.thor;
   };
 
   const handleCardClick = async (entry: HistoricoEntry) => {
