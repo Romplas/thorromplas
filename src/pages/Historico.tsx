@@ -381,9 +381,25 @@ export default function Historico() {
       }
 
       sorted.forEach(entry => {
-        etapaMap.set(entry.id, currentEtapa);
-        statusMap.set(entry.id, currentStatus);
-
+        if (entry.acao === 'Ticket Criado') {
+          // Entrada de criação: sempre Pendente/Pendente (regra de negócio - representante cria com Pendente)
+          etapaMap.set(entry.id, 'pendente');
+          statusMap.set(entry.id, 'pendente');
+          // Mantém currentEtapa/currentStatus para próxima entrada; se descrição tiver Status/Etapa, usamos como base
+          if (entry.descricao) {
+            const statusMatch = entry.descricao.match(/Status:\s*([^,|]+)/);
+            const etapaMatch = entry.descricao.match(/Etapa:\s*([^,|]+)/);
+            if (etapaMatch) {
+              const key = resolveEtapaLabel(etapaMatch[1].trim());
+              if (key) currentEtapa = key;
+            }
+            if (statusMatch) {
+              const key = labelToStatusKey(statusMatch[1].trim());
+              if (key) currentStatus = key;
+            }
+          }
+          return;
+        }
         if (entry.descricao) {
           if (entry.acao === 'Alteração de Etapa') {
             const match = entry.descricao.match(/para "([^"]+)"/);
@@ -404,6 +420,8 @@ export default function Historico() {
             if (key) currentStatus = key;
           }
         }
+        etapaMap.set(entry.id, currentEtapa);
+        statusMap.set(entry.id, currentStatus);
       });
     });
 
