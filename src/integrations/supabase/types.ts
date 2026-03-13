@@ -246,6 +246,27 @@ export type Database = {
         }
         Relationships: []
       }
+      produtos: {
+        Row: {
+          cod_produto: string
+          created_at: string
+          id: string
+          produto: string
+        }
+        Insert: {
+          cod_produto: string
+          created_at?: string
+          id?: string
+          produto: string
+        }
+        Update: {
+          cod_produto?: string
+          created_at?: string
+          id?: string
+          produto?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -445,7 +466,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "gestor" | "supervisor" | "representante"
       ticket_prioridade: "Alta" | "Média" | "Baixa"
-      ticket_status: "pendente" | "aberto" | "em_progresso" | "fechado"
+      ticket_status: "aberto" | "em_progresso" | "fechado" | "pendente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -575,7 +596,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "gestor", "supervisor", "representante"],
       ticket_prioridade: ["Alta", "Média", "Baixa"],
-      ticket_status: ["pendente", "aberto", "em_progresso", "fechado"],
+      ticket_status: ["aberto", "em_progresso", "fechado", "pendente"],
     },
   },
 } as const
