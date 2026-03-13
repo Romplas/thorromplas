@@ -35,6 +35,7 @@ interface Motivo { id: string; nome: string }
 interface ProfileOption { id: string; nome: string; user_id: string }
 
 const columns = [
+  { key: 'pendente', label: 'Pendente', bg: 'bg-amber-600', cardBg: 'bg-amber-600' },
   { key: 'thor', label: 'THOR', bg: 'bg-red-600', cardBg: 'bg-red-600' },
   { key: 'aguardando_resposta', label: 'Aguardando Resposta', bg: 'bg-purple-600', cardBg: 'bg-purple-600' },
   { key: 'retorno_interno', label: 'Retorno Interno Romplas', bg: 'bg-blue-600', cardBg: 'bg-blue-600' },
@@ -49,7 +50,7 @@ const columns = [
 ];
 
 const statusToEtapa: Record<string, string> = {
-  pendente: 'thor',
+  pendente: 'pendente',
   aberto: 'thor',
   em_progresso: 'aguardando_resposta',
   fechado: 'completo',

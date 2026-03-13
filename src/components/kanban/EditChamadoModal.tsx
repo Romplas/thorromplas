@@ -290,10 +290,10 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       } as any).eq('id', chamado.id);
       if (error) throw error;
 
-      // Representante editando PENDENTE/ABERTO+THOR: não criar nova etapa no histórico
+      // Representante editando PENDENTE+PENDENTE: não criar nova etapa no histórico
       const skipHistory = role === 'representante'
-        && (chamado.status?.toLowerCase() === 'aberto' || chamado.status?.toLowerCase() === 'pendente')
-        && (chamado.etapa || 'thor').toLowerCase() === 'thor';
+        && chamado.status?.toLowerCase() === 'pendente'
+        && (chamado.etapa || 'pendente').toLowerCase() === 'pendente';
 
       if (!skipHistory) {
         const { error: histError } = await supabase.from('chamado_historico').insert({

@@ -181,7 +181,7 @@ export default function Dashboard() {
 
   const lastTicket = chamados[0];
   const last5 = chamados.slice(0, 5);
-  const pendentesAtivacao = chamados.filter(c => c.etapa === 'THOR' && c.status === 'pendente');
+  const pendentesAtivacao = chamados.filter(c => c.status === 'pendente');
 
   // Chart data
   const barData = useMemo(() => [

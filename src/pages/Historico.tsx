@@ -62,6 +62,7 @@ const statusLabels: Record<string, string> = {
 };
 
 const etapaLabelsMap: Record<string, string> = {
+  pendente: 'Pendente',
   thor: 'THOR',
   aguardando_resposta: 'Aguardando Resposta',
   retorno_interno: 'Retorno Interno Romplas',
@@ -76,6 +77,7 @@ const etapaLabelsMap: Record<string, string> = {
 };
 
 const etapaColors: Record<string, string> = {
+  pendente: 'bg-amber-600',
   thor: 'bg-red-600',
   aguardando_resposta: 'bg-purple-600',
   retorno_interno: 'bg-blue-600',

@@ -287,17 +287,21 @@ export default function NovoChamado() {
     fetchData();
   }, []);
 
-  // Load existing open/THOR chamados from DB
+  // Load chamados Pendente+Pendente (representante vê apenas os seus)
   const loadExistingTickets = async () => {
     setLoadingTickets(true);
     try {
-      const { data, error } = await supabase
+      let q = supabase
         .from('chamados')
         .select('*')
-        .in('status', ['pendente', 'aberto'])
-        .eq('etapa', 'thor')
+        .eq('status', 'pendente')
+        .eq('etapa', 'pendente')
         .order('created_at', { ascending: false })
         .limit(100);
+      if (role === 'representante' && selectedRepresentante) {
+        q = q.eq('representante_id', selectedRepresentante);
+      }
+      const { data, error } = await q;
       if (error) throw error;
       if (data && data.length > 0) {
         // Resolve names for loaded chamados
@@ -381,7 +385,6 @@ export default function NovoChamado() {
   useEffect(() => {
     loadExistingTickets();
 
-    // Realtime subscription for chamados changes from any user
     const channel = supabase
       .channel('novo-chamado-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chamados' }, () => {
@@ -392,7 +395,8 @@ export default function NovoChamado() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role, selectedRepresentante]);
 
   // Auto-fill supervisor/representante based on logged-in user role
   useEffect(() => {
@@ -541,6 +545,7 @@ export default function NovoChamado() {
       const submotivoNome = getName(filteredSubmotivos, selectedSubmotivo);
 
       const initialStatus = role === 'representante' ? 'pendente' : 'aberto';
+      const initialEtapa = role === 'representante' ? 'pendente' : 'thor';
       const { data, error } = await supabase.from('chamados').insert({
         cliente_id: selectedCliente,
         cliente_nome: clienteObj?.nome || '',
@@ -548,7 +553,7 @@ export default function NovoChamado() {
         submotivo: submotivoNome || null,
         descricao: buildDescricao(isNegociacao) || null,
         status: initialStatus,
-        etapa: 'thor',
+        etapa: initialEtapa,
         supervisor_id: selectedSupervisor || null,
         representante_id: selectedRepresentante || null,
         prioridade: 'Média',
@@ -587,7 +592,7 @@ export default function NovoChamado() {
       const novoChamado: ChamadoCriado = {
         id: data.id,
         status: initialStatus,
-        etapa: 'THOR',
+        etapa: initialEtapa.toUpperCase(),
         supervisor: getName(supervisores, selectedSupervisor),
         representante: getName(representantes, selectedRepresentante),
         cliente: clienteObj?.nome || '',
@@ -1327,15 +1332,15 @@ export default function NovoChamado() {
             </div>
           </div>
 
-          {/* Chamados Criados - only show status=aberto & etapa=THOR */}
-          {(chamadosCriados.filter(c => (c.status === 'pendente' || c.status === 'aberto') && c.etapa?.toLowerCase() === 'thor').length) > 0 && (
+          {/* Chamados Criados - status=pendente & etapa=Pendente (representante) */}
+          {(chamadosCriados.filter(c => c.status === 'pendente' && c.etapa?.toLowerCase() === 'pendente').length) > 0 && (
             <div className="mt-6 space-y-4">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
                 <h2 className="text-sm font-semibold">Tickets Criados</h2>
-                <Badge variant="secondary" className="ml-1">{chamadosCriados.filter(c => (c.status === 'pendente' || c.status === 'aberto') && c.etapa?.toLowerCase() === 'thor').length}</Badge>
+                <Badge variant="secondary" className="ml-1">{chamadosCriados.filter(c => c.status === 'pendente' && c.etapa?.toLowerCase() === 'pendente').length}</Badge>
               </div>
-              {chamadosCriados.filter(c => (c.status === 'pendente' || c.status === 'aberto') && c.etapa?.toLowerCase() === 'thor').map(c => (
+              {chamadosCriados.filter(c => c.status === 'pendente' && c.etapa?.toLowerCase() === 'pendente').map(c => (
                 <ChamadoCard
                   key={c.id}
                   chamado={c}

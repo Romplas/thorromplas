@@ -114,7 +114,8 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const canEdit = (chamado.status === 'pendente' || chamado.status === 'aberto') && chamado.etapa?.toLowerCase() === 'thor';
+  // Representante só pode editar quando Status = Pendente E Etapa = Pendente
+  const canEdit = chamado.status === 'pendente' && chamado.etapa?.toLowerCase() === 'pendente';
 
   // Load anexos from Supabase Storage
   useEffect(() => {
@@ -209,10 +210,10 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
 
       if (error) throw error;
 
-      // Representante editando solicitação ABERTO+THOR: não criar nova etapa no histórico
+      // Representante editando solicitação PENDENTE+PENDENTE: não criar nova etapa no histórico
       const skipHistory = role === 'representante'
-        && (chamado.status?.toLowerCase() === 'aberto' || chamado.status?.toLowerCase() === 'pendente')
-        && chamado.etapa?.toLowerCase() === 'thor';
+        && chamado.status?.toLowerCase() === 'pendente'
+        && chamado.etapa?.toLowerCase() === 'pendente';
 
       if (!skipHistory) {
         const changeParts: string[] = [];
@@ -330,7 +331,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
               </>
             ) : (
               <>
-                <Button variant="outline" size="sm" onClick={handleEdit} disabled={!canEdit} title={!canEdit ? 'Edição disponível apenas com Status Pendente/Aberto e Etapa THOR' : ''}>
+                <Button variant="outline" size="sm" onClick={handleEdit} disabled={!canEdit} title={!canEdit ? 'Edição disponível apenas com Status Ticket = Pendente e Etapa Ticket = Pendente' : ''}>
                   <Pencil className="h-4 w-4 mr-1.5" />Editar
                 </Button>
                 {canEdit && (
