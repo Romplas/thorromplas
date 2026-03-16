@@ -96,6 +96,8 @@ export default function NovoChamado() {
   // Structured description fields (for Negociação)
   interface ProdutoItem { codProduto: string; produto: string; preco: string; metros: string }
   const [produtos, setProdutos] = useState<ProdutoItem[]>([{ codProduto: '', produto: '', preco: '', metros: '' }]);
+  interface PrazoEntregaItem { prazo: string; tipoEntrega: string }
+  const [prazosEntrega, setPrazosEntrega] = useState<PrazoEntregaItem[]>([{ prazo: '', tipoEntrega: '' }]);
   const [prazo, setPrazo] = useState('');
   const [tipoEntrega, setTipoEntrega] = useState('');
   const [descricaoTexto, setDescricaoTexto] = useState('');
@@ -220,7 +222,10 @@ export default function NovoChamado() {
     const prodLines = produtos.map((p, i) => 
       `Produto ${i + 1}: Cód: ${p.codProduto}, Produto: ${p.produto}, Preço: ${p.preco}, Metros: ${p.metros}`
     ).join('\n');
-    const structured = `${prodLines}\nPrazo: ${prazo}\nTipo de Entrega: ${tipoEntrega}`;
+    const prazoLines = prazosEntrega.map((pe, i) =>
+      `Prazo ${prazosEntrega.length > 1 ? i + 1 : ''}: ${pe.prazo}, Tipo de Entrega: ${pe.tipoEntrega}`
+    ).join('\n');
+    const structured = `${prodLines}\n${prazoLines}`;
     return descricaoTexto ? `${structured}\n\nObservações: ${descricaoTexto}` : structured;
   };
 
@@ -359,9 +364,9 @@ export default function NovoChamado() {
     }
   };
 
-  // Carregar catálogo de produtos quando motivo for Negociação ou RNC
+  // Carregar catálogo de produtos quando motivo for Negociação, RNC ou Atualizar Tabela
   useEffect(() => {
-    if (!isNegociacao && !isRNC) return;
+    if (!isNegociacao && !isRNC && !isAtualizarTabela) return;
     const load = async () => {
       const all: { cod_produto: string; produto: string }[] = [];
       let offset = 0;
@@ -380,7 +385,7 @@ export default function NovoChamado() {
       setCatalogoProdutos(all);
     };
     load();
-  }, [isNegociacao, isRNC]);
+  }, [isNegociacao, isRNC, isAtualizarTabela]);
 
   useEffect(() => {
     loadExistingTickets();
@@ -522,11 +527,11 @@ export default function NovoChamado() {
         toast.error('Preencha todos os campos de produto na descrição.');
         return;
       }
-      if (!prazo) {
+      if (!prazo && prazosEntrega.every(pe => !pe.prazo)) {
         toast.error('Informe o prazo na descrição.');
         return;
       }
-      if (!tipoEntrega) {
+      if (!tipoEntrega && prazosEntrega.every(pe => !pe.tipoEntrega)) {
         toast.error('Selecione o tipo de entrega na descrição.');
         return;
       }
@@ -667,6 +672,7 @@ export default function NovoChamado() {
       setGestor('');
       setStatusAgendamento('');
       setProdutos([{ codProduto: '', produto: '', preco: '', metros: '' }]);
+      setPrazosEntrega([{ prazo: '', tipoEntrega: '' }]);
       setPrazo('');
       setTipoEntrega('');
       setDescricaoTexto('');
@@ -704,6 +710,7 @@ export default function NovoChamado() {
     setGestor('');
     setStatusAgendamento('');
     setProdutos([{ codProduto: '', produto: '', preco: '', metros: '' }]);
+    setPrazosEntrega([{ prazo: '', tipoEntrega: '' }]);
     setPrazo('');
     setTipoEntrega('');
     setDescricaoTexto('');
@@ -941,33 +948,66 @@ export default function NovoChamado() {
                       />
                     </div>
                     {/* Produtos */}
-                    {tabelaProdutos.map((prod, i) => (
+                    {tabelaProdutos.map((prod, i) => {
+                      const opcoesCodTab = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.cod_produto }));
+                      const opcoesProdutoTab = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.produto }));
+                      const handleSelectTabelaProduto = (cod: string) => {
+                        const item = catalogoProdutos.find(x => x.cod_produto === cod);
+                        if (item) {
+                          const updated = [...tabelaProdutos];
+                          updated[i] = { ...updated[i], codProduto: item.cod_produto, produto: item.produto };
+                          setTabelaProdutos(updated);
+                        }
+                      };
+                      return (
                       <div key={i} className="grid grid-cols-2 md:grid-cols-3 gap-2 items-end">
                         <div>
                           <Label className="text-[10px] text-muted-foreground">Cód Produto *</Label>
-                          <Input
-                            className="h-8 text-xs border-destructive/50"
-                            placeholder="Código"
-                            value={prod.codProduto}
-                            onChange={e => {
-                              const updated = [...tabelaProdutos];
-                              updated[i] = { ...updated[i], codProduto: e.target.value };
-                              setTabelaProdutos(updated);
-                            }}
-                          />
+                          {catalogoProdutos.length > 0 ? (
+                            <SearchableSelect
+                              options={opcoesCodTab}
+                              value={prod.codProduto}
+                              onValueChange={handleSelectTabelaProduto}
+                              placeholder="Pesquisar código"
+                              searchPlaceholder="Pesquisar por código..."
+                              className="h-8 text-xs border-destructive/50"
+                            />
+                          ) : (
+                            <Input
+                              className="h-8 text-xs border-destructive/50"
+                              placeholder="Código"
+                              value={prod.codProduto}
+                              onChange={e => {
+                                const updated = [...tabelaProdutos];
+                                updated[i] = { ...updated[i], codProduto: e.target.value };
+                                setTabelaProdutos(updated);
+                              }}
+                            />
+                          )}
                         </div>
                         <div>
                           <Label className="text-[10px] text-muted-foreground">Produto *</Label>
-                          <Input
-                            className="h-8 text-xs border-destructive/50"
-                            placeholder="Produto"
-                            value={prod.produto}
-                            onChange={e => {
-                              const updated = [...tabelaProdutos];
-                              updated[i] = { ...updated[i], produto: e.target.value };
-                              setTabelaProdutos(updated);
-                            }}
-                          />
+                          {catalogoProdutos.length > 0 ? (
+                            <SearchableSelect
+                              options={opcoesProdutoTab}
+                              value={prod.codProduto}
+                              onValueChange={handleSelectTabelaProduto}
+                              placeholder="Pesquisar produto"
+                              searchPlaceholder="Pesquisar por produto..."
+                              className="h-8 text-xs border-destructive/50"
+                            />
+                          ) : (
+                            <Input
+                              className="h-8 text-xs border-destructive/50"
+                              placeholder="Produto"
+                              value={prod.produto}
+                              onChange={e => {
+                                const updated = [...tabelaProdutos];
+                                updated[i] = { ...updated[i], produto: e.target.value };
+                                setTabelaProdutos(updated);
+                              }}
+                            />
+                          )}
                         </div>
                         <div className="flex gap-1 items-end">
                           <div className="flex-1">
@@ -994,7 +1034,8 @@ export default function NovoChamado() {
                           )}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                     <Button
                       type="button"
                       variant="outline"
@@ -1130,26 +1171,59 @@ export default function NovoChamado() {
                     </Button>
 
                     {/* Prazo e Tipo de Entrega */}
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-                      <div>
-                        <Label className="text-[10px] text-muted-foreground">Prazo *</Label>
-                        <Input
-                          className="h-8 text-xs border-destructive/50"
-                          placeholder="Ex: 30 dias"
-                          value={prazo}
-                          onChange={e => setPrazo(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] text-muted-foreground">Tipo de Entrega *</Label>
-                        <Select value={tipoEntrega} onValueChange={setTipoEntrega}>
-                          <SelectTrigger className="h-8 text-xs border-destructive/50"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Imediata">Imediata</SelectItem>
-                            <SelectItem value="Programada">Programada</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="space-y-2 pt-2 border-t">
+                      {prazosEntrega.map((pe, i) => (
+                        <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Prazo *</Label>
+                            <Input
+                              className="h-8 text-xs border-destructive/50"
+                              placeholder="Ex: 30 dias"
+                              value={pe.prazo}
+                              onChange={e => {
+                                const updated = [...prazosEntrega];
+                                updated[i] = { ...updated[i], prazo: e.target.value };
+                                setPrazosEntrega(updated);
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Tipo de Entrega *</Label>
+                            <Select value={pe.tipoEntrega} onValueChange={v => {
+                              const updated = [...prazosEntrega];
+                              updated[i] = { ...updated[i], tipoEntrega: v };
+                              setPrazosEntrega(updated);
+                            }}>
+                              <SelectTrigger className="h-8 text-xs border-destructive/50"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Imediata">Imediata</SelectItem>
+                                <SelectItem value="Programada">Programada</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex gap-1 pb-0.5">
+                            {i === prazosEntrega.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => setPrazosEntrega(prev => [...prev, { prazo: '', tipoEntrega: '' }])}
+                                className="h-8 w-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded"
+                                title="Adicionar prazo/entrega"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                            )}
+                            {prazosEntrega.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => setPrazosEntrega(prev => prev.filter((_, idx) => idx !== i))}
+                                className="h-8 w-8 flex items-center justify-center text-destructive hover:bg-destructive/10 rounded"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
 
                     {/* Descrição livre abaixo dos campos estruturados */}
