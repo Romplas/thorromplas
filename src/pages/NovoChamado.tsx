@@ -948,33 +948,66 @@ export default function NovoChamado() {
                       />
                     </div>
                     {/* Produtos */}
-                    {tabelaProdutos.map((prod, i) => (
+                    {tabelaProdutos.map((prod, i) => {
+                      const opcoesCodTab = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.cod_produto }));
+                      const opcoesProdutoTab = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.produto }));
+                      const handleSelectTabelaProduto = (cod: string) => {
+                        const item = catalogoProdutos.find(x => x.cod_produto === cod);
+                        if (item) {
+                          const updated = [...tabelaProdutos];
+                          updated[i] = { ...updated[i], codProduto: item.cod_produto, produto: item.produto };
+                          setTabelaProdutos(updated);
+                        }
+                      };
+                      return (
                       <div key={i} className="grid grid-cols-2 md:grid-cols-3 gap-2 items-end">
                         <div>
                           <Label className="text-[10px] text-muted-foreground">Cód Produto *</Label>
-                          <Input
-                            className="h-8 text-xs border-destructive/50"
-                            placeholder="Código"
-                            value={prod.codProduto}
-                            onChange={e => {
-                              const updated = [...tabelaProdutos];
-                              updated[i] = { ...updated[i], codProduto: e.target.value };
-                              setTabelaProdutos(updated);
-                            }}
-                          />
+                          {catalogoProdutos.length > 0 ? (
+                            <SearchableSelect
+                              options={opcoesCodTab}
+                              value={prod.codProduto}
+                              onValueChange={handleSelectTabelaProduto}
+                              placeholder="Pesquisar código"
+                              searchPlaceholder="Pesquisar por código..."
+                              className="h-8 text-xs border-destructive/50"
+                            />
+                          ) : (
+                            <Input
+                              className="h-8 text-xs border-destructive/50"
+                              placeholder="Código"
+                              value={prod.codProduto}
+                              onChange={e => {
+                                const updated = [...tabelaProdutos];
+                                updated[i] = { ...updated[i], codProduto: e.target.value };
+                                setTabelaProdutos(updated);
+                              }}
+                            />
+                          )}
                         </div>
                         <div>
                           <Label className="text-[10px] text-muted-foreground">Produto *</Label>
-                          <Input
-                            className="h-8 text-xs border-destructive/50"
-                            placeholder="Produto"
-                            value={prod.produto}
-                            onChange={e => {
-                              const updated = [...tabelaProdutos];
-                              updated[i] = { ...updated[i], produto: e.target.value };
-                              setTabelaProdutos(updated);
-                            }}
-                          />
+                          {catalogoProdutos.length > 0 ? (
+                            <SearchableSelect
+                              options={opcoesProdutoTab}
+                              value={prod.codProduto}
+                              onValueChange={handleSelectTabelaProduto}
+                              placeholder="Pesquisar produto"
+                              searchPlaceholder="Pesquisar por produto..."
+                              className="h-8 text-xs border-destructive/50"
+                            />
+                          ) : (
+                            <Input
+                              className="h-8 text-xs border-destructive/50"
+                              placeholder="Produto"
+                              value={prod.produto}
+                              onChange={e => {
+                                const updated = [...tabelaProdutos];
+                                updated[i] = { ...updated[i], produto: e.target.value };
+                                setTabelaProdutos(updated);
+                              }}
+                            />
+                          )}
                         </div>
                         <div className="flex gap-1 items-end">
                           <div className="flex-1">
@@ -1001,7 +1034,8 @@ export default function NovoChamado() {
                           )}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                     <Button
                       type="button"
                       variant="outline"
