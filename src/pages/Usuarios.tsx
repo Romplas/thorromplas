@@ -42,6 +42,7 @@ const roleLabels: Record<UserRole, string> = {
 
 export default function Usuarios() {
   const [users, setUsers] = useState<ProfileWithRole[]>([]);
+  const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
   const [supervisores, setSupervisores] = useState<{ id: string; nome: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<ProfileWithRole | null>(null);
@@ -269,6 +270,29 @@ export default function Usuarios() {
         )}
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-3 items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          <span className="font-medium">Filtros:</span>
+        </div>
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">Tipo de usuário</Label>
+            <Select value={roleFilter} onValueChange={(val) => setRoleFilter(val as UserRole | 'all')}>
+              <SelectTrigger className="h-9 w-48">
+                <SelectValue placeholder="Todos os tipos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="gestor">Gestor</SelectItem>
+                <SelectItem value="supervisor">Supervisora</SelectItem>
+                <SelectItem value="representante">Representante</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-card border rounded-lg overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -286,10 +310,12 @@ export default function Usuarios() {
           <tbody>
             {loading ? (
               <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Carregando...</td></tr>
-            ) : users.length === 0 ? (
+            ) : users.filter(u => roleFilter === 'all' || u.role === roleFilter).length === 0 ? (
               <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Nenhum usuário encontrado</td></tr>
             ) : (
-              users.map((user) => (
+              users
+                .filter(u => roleFilter === 'all' || u.role === roleFilter)
+                .map((user) => (
                 <tr key={user.id} className="border-b hover:bg-muted/20">
                   <td className="p-4"><Checkbox /></td>
                   <td className="p-4 font-medium text-primary">{user.nome}</td>
