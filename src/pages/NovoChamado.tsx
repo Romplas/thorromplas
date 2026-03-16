@@ -527,11 +527,11 @@ export default function NovoChamado() {
         toast.error('Preencha todos os campos de produto na descrição.');
         return;
       }
-      if (!prazo) {
+      if (!prazo && prazosEntrega.every(pe => !pe.prazo)) {
         toast.error('Informe o prazo na descrição.');
         return;
       }
-      if (!tipoEntrega) {
+      if (!tipoEntrega && prazosEntrega.every(pe => !pe.tipoEntrega)) {
         toast.error('Selecione o tipo de entrega na descrição.');
         return;
       }
