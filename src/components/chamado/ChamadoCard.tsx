@@ -116,6 +116,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
 
   // Representante só pode editar quando Status = Pendente E Etapa = Pendente
   const canEdit = chamado.status === 'pendente' && chamado.etapa?.toLowerCase() === 'pendente';
+  const isAdmin = role === 'admin';
 
   // Load anexos from Supabase Storage
   useEffect(() => {
@@ -344,13 +345,28 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>Excluir Chamado #{chamado.id}?</AlertDialogTitle>
-                        <AlertDialogDescription>Esta ação não pode ser desfeita. O chamado será removido permanentemente.</AlertDialogDescription>
+                        <AlertDialogDescription>
+                          Esta ação não pode ser desfeita. O chamado será removido permanentemente do sistema.
+                        </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                          Excluir
-                        </AlertDialogAction>
+                        {isAdmin && (
+                          <AlertDialogAction
+                            onClick={handleDelete}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Excluir Solicitação
+                          </AlertDialogAction>
+                        )}
+                        {!isAdmin && (
+                          <AlertDialogAction
+                            onClick={handleDelete}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Excluir
+                          </AlertDialogAction>
+                        )}
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
