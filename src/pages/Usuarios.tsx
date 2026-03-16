@@ -203,6 +203,63 @@ export default function Usuarios() {
     setSaving(false);
   };
 
+  const filteredUsers = users.filter(u => roleFilter === 'all' || u.role === roleFilter);
+
+  const handleExportPdf = () => {
+    if (!canManage || filteredUsers.length === 0) return;
+    const printWin = window.open('', '_blank');
+    if (!printWin) return;
+    const rows = filteredUsers.map((u, idx) => {
+      const tipo = u.role ? roleLabels[u.role] : '';
+      const supervisora = u.supervisora || '';
+      return `<tr>
+        <td>${idx + 1}</td>
+        <td>${u.nome || ''}</td>
+        <td>${u.email || ''}</td>
+        <td>${u.usuario || ''}</td>
+        <td>${tipo}</td>
+        <td>${supervisora}</td>
+      </tr>`;
+    }).join('');
+    printWin.document.write(`
+      <html>
+        <head>
+          <title>Usuários filtrados</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 16px; font-size: 12px; }
+            h2 { text-align: center; margin-bottom: 12px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #444; padding: 4px 6px; text-align: left; }
+            th { background: #1d4ed8; color: #fff; font-size: 11px; }
+            tr:nth-child(even) { background: #f9fafb; }
+            @page { size: landscape; margin: 12mm; }
+          </style>
+        </head>
+        <body>
+          <h2>Relatório de Usuários</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Usuário</th>
+                <th>Tipo</th>
+                <th>Supervisora</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWin.document.close();
+    printWin.focus();
+    setTimeout(() => printWin.print(), 500);
+  };
+
   const renderFormFields = (isCreate: boolean) => (
     <div className="space-y-4 py-6">
       <div className="space-y-2">
@@ -274,7 +331,7 @@ export default function Usuarios() {
         <div className="text-sm text-muted-foreground">
           <span className="font-medium">Filtros:</span>
         </div>
-        <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex flex-wrap gap-3 items-center flex-1">
           <div className="space-y-1">
             <Label className="text-xs uppercase text-muted-foreground">Tipo de usuário</Label>
             <Select value={roleFilter} onValueChange={(val) => setRoleFilter(val as UserRole | 'all')}>
@@ -290,6 +347,18 @@ export default function Usuarios() {
               </SelectContent>
             </Select>
           </div>
+          {canManage && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="ml-auto"
+              onClick={handleExportPdf}
+              disabled={filteredUsers.length === 0}
+            >
+              Exportar PDF
+            </Button>
+          )}
         </div>
       </div>
 
@@ -310,12 +379,10 @@ export default function Usuarios() {
           <tbody>
             {loading ? (
               <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Carregando...</td></tr>
-            ) : users.filter(u => roleFilter === 'all' || u.role === roleFilter).length === 0 ? (
+            ) : filteredUsers.length === 0 ? (
               <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Nenhum usuário encontrado</td></tr>
             ) : (
-              users
-                .filter(u => roleFilter === 'all' || u.role === roleFilter)
-                .map((user) => (
+            filteredUsers.map((user) => (
                 <tr key={user.id} className="border-b hover:bg-muted/20">
                   <td className="p-4"><Checkbox /></td>
                   <td className="p-4 font-medium text-primary">{user.nome}</td>
