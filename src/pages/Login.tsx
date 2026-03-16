@@ -18,6 +18,7 @@ export default function Login() {
   const [nome, setNome] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -82,6 +83,42 @@ export default function Login() {
       toast({ title: 'Erro ao cadastrar', variant: 'destructive' });
     }
     setLoading(false);
+  };
+
+  const handleResetPassword = async () => {
+    if (!usuario) {
+      toast({ title: 'Informe o usuário para redefinir a senha', variant: 'destructive' });
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const { data: emailResult, error: lookupError } = await supabase.rpc('get_email_by_username', {
+        _username: usuario
+      });
+
+      if (lookupError || !emailResult) {
+        toast({ title: 'Usuário não encontrado', variant: 'destructive' });
+        setResetLoading(false);
+        return;
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(emailResult as string, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+
+      if (error) {
+        toast({ title: 'Erro ao enviar email', description: error.message, variant: 'destructive' });
+      } else {
+        toast({
+          title: 'Verifique seu email',
+          description: 'Enviamos um link para redefinir sua senha.'
+        });
+      }
+    } catch {
+      toast({ title: 'Erro ao solicitar redefinição de senha', variant: 'destructive' });
+    }
+    setResetLoading(false);
   };
 
   return (
@@ -170,6 +207,16 @@ export default function Login() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleResetPassword}
+                  className="text-xs text-primary hover:underline disabled:opacity-50"
+                  disabled={resetLoading}
+                >
+                  {resetLoading ? 'Enviando...' : 'Esqueci minha senha'}
+                </button>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Entrando...' : 'Entrar'}

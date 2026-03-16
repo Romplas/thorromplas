@@ -18,6 +18,7 @@ import ImportClientes from "./pages/ImportClientes";
 import Configuracoes from "./pages/Configuracoes";
 import MeuPerfil from "./pages/MeuPerfil";
 import NotFound from "./pages/NotFound";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/novo-chamado" element={<ProtectedRoute><NovoChamado /></ProtectedRoute>} />
