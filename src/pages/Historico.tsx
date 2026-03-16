@@ -178,6 +178,23 @@ export default function Historico() {
   const [representanteNome, setRepresentanteNome] = useState('');
   const [gestorNome, setGestorNome] = useState('');
 
+  const handleResetFilters = () => {
+    const d = new Date();
+    const start = new Date(d.getFullYear(), d.getMonth(), 1);
+    const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    setFilterSupervisor('todos');
+    setFilterRepresentante('todos');
+    setFilterMotivo('todos');
+    setFilterSubmotivo('todos');
+    setFilterCliente('todos');
+    setFilterStatus('todos');
+    setFilterEtapa('todos');
+    setFilterGestor('todos');
+    setFilterDateStart(start);
+    setFilterDateEnd(end);
+    setSelectedTicketId('todos');
+  };
+
   useEffect(() => {
     fetchData();
 
@@ -805,6 +822,17 @@ export default function Historico() {
                       ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex-1 flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={handleResetFilters}
+                >
+                  Limpar filtros
+                </Button>
               </div>
             </div>
           </div>
