@@ -60,9 +60,9 @@ serve(async (req) => {
     if (tipo) {
       await supabaseAdmin
         .from("user_roles")
-        .upsert({ user_id, role: tipo }, { onConflict: "user_id,role" });
+        .upsert({ user_id, role: tipo }, { onConflict: "user_id" });
 
-      // Remove old roles
+      // Remove old roles, garantindo apenas um papel por usuário
       await supabaseAdmin
         .from("user_roles")
         .delete()
