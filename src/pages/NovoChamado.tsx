@@ -406,15 +406,24 @@ export default function NovoChamado() {
   // Auto-fill supervisor/representante based on logged-in user role
   useEffect(() => {
     if (!profile || !role) return;
+    const profileNomeLower = (profile.nome || '').toLowerCase();
+    const profileSupervisoraLower = (profile.supervisora || '').toLowerCase();
+
     if (role === 'supervisor') {
       // Find supervisor record matching profile name
-      const sup = supervisores.find(s => s.nome === profile.supervisora || s.nome === profile.nome);
+      const sup = supervisores.find(
+        (s) =>
+          s.nome.toLowerCase() === profileSupervisoraLower ||
+          s.nome.toLowerCase() === profileNomeLower
+      );
       if (sup && selectedSupervisor !== sup.id) {
         setSelectedSupervisor(sup.id);
       }
     } else if (role === 'representante') {
       // Find representante matching profile name
-      const rep = representantes.find(r => r.nome === profile.nome);
+      const rep = representantes.find(
+        (r) => r.nome.toLowerCase() === profileNomeLower
+      );
       if (rep && selectedRepresentante !== rep.id) {
         // Find linked supervisor
         const link = srLinks.find(sr => sr.representante_id === rep.id);
