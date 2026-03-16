@@ -96,6 +96,8 @@ export default function NovoChamado() {
   // Structured description fields (for Negociação)
   interface ProdutoItem { codProduto: string; produto: string; preco: string; metros: string }
   const [produtos, setProdutos] = useState<ProdutoItem[]>([{ codProduto: '', produto: '', preco: '', metros: '' }]);
+  interface PrazoEntregaItem { prazo: string; tipoEntrega: string }
+  const [prazosEntrega, setPrazosEntrega] = useState<PrazoEntregaItem[]>([{ prazo: '', tipoEntrega: '' }]);
   const [prazo, setPrazo] = useState('');
   const [tipoEntrega, setTipoEntrega] = useState('');
   const [descricaoTexto, setDescricaoTexto] = useState('');
