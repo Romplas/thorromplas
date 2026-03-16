@@ -140,6 +140,7 @@ export default function Historico() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTicketId, setDeleteTicketId] = useState<number | null>(null);
   const [deleteMotivo, setDeleteMotivo] = useState('');
+  const [selectedTicketIds, setSelectedTicketIds] = useState<number[]>([]);
   // Filters
   const [filterSupervisor, setFilterSupervisor] = useState('todos');
   const [filterRepresentante, setFilterRepresentante] = useState('todos');
@@ -567,6 +568,7 @@ export default function Historico() {
 
   const handleClearSelection = () => {
     setSelectedEntryId(null);
+    setSelectedTicketIds([]);
   };
 
   const handleEditClick = () => {
@@ -581,26 +583,29 @@ export default function Historico() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteTicketId || !deleteMotivo.trim()) {
+    if (!deleteMotivo.trim()) {
       toast.error('Informe o motivo da exclusão');
       return;
     }
+    const idsToDelete = deleteTicketId ? [deleteTicketId] : selectedTicketIds;
+    if (!idsToDelete.length) {
+      toast.error('Nenhum ticket selecionado para exclusão');
+      return;
+    }
     try {
-      // Clean up storage attachments
-      const { data: files } = await supabase.storage.from('chamado-anexos').list(String(deleteTicketId));
-      if (files && files.length > 0) {
-        await supabase.storage.from('chamado-anexos').remove(files.map(f => `${deleteTicketId}/${f.name}`));
+      for (const id of idsToDelete) {
+        const { data: files } = await supabase.storage.from('chamado-anexos').list(String(id));
+        if (files && files.length > 0) {
+          await supabase.storage.from('chamado-anexos').remove(files.map(f => `${id}/${f.name}`));
+        }
+        await supabase.from('chamado_historico').delete().eq('chamado_id', id);
+        const { error } = await supabase.from('chamados').delete().eq('id', id);
+        if (error) throw error;
       }
-
-      // Delete history (cascade would handle it, but explicit for safety)
-      await supabase.from('chamado_historico').delete().eq('chamado_id', deleteTicketId);
-
-      // Delete the chamado itself
-      const { error } = await supabase.from('chamados').delete().eq('id', deleteTicketId);
-      if (error) throw error;
-      toast.success(`Ticket #${deleteTicketId} excluído definitivamente`);
+      toast.success(idsToDelete.length === 1 ? `Ticket #${idsToDelete[0]} excluído definitivamente` : `${idsToDelete.length} tickets excluídos definitivamente`);
       setDeleteDialogOpen(false);
       setSelectedEntryId(null);
+      setSelectedTicketIds([]);
       fetchData();
     } catch (err: any) {
       toast.error('Erro ao excluir: ' + (err.message || 'Erro desconhecido'));
@@ -809,6 +814,26 @@ export default function Historico() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Left: History cards */}
           <div className="space-y-3 max-h-[calc(100vh-240px)] overflow-y-auto pr-1">
+            {role === 'admin' && selectedTicketIds.length > 0 && (
+              <div className="flex items-center justify-between gap-2 mb-2 px-2 py-1.5 bg-destructive/10 border border-destructive/40 rounded">
+                <span className="text-xs text-destructive font-medium">
+                  {selectedTicketIds.length} ticket(s) selecionado(s) para exclusão em massa
+                </span>
+                <Button
+                  variant="destructive"
+                  size="xs"
+                  className="h-7 px-3 text-xs"
+                  onClick={() => {
+                    setDeleteTicketId(null);
+                    setDeleteMotivo('');
+                    setDeleteDialogOpen(true);
+                  }}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Excluir selecionados
+                </Button>
+              </div>
+            )}
             {loading ? (
               <p className="text-sm text-muted-foreground text-center py-8">Carregando histórico...</p>
             ) : filtered.length === 0 ? (
@@ -868,6 +893,22 @@ export default function Historico() {
                               <p className="text-yellow-200 font-semibold">TicketID Criado em: {chamado ? formatDateTime(chamado.created_at) : '—'}</p>
                             </div>
                             <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                              {role === 'admin' && (
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 cursor-pointer"
+                                  checked={selectedTicketIds.includes(entry.chamado_id)}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTicketIds((prev) =>
+                                      e.target.checked
+                                        ? Array.from(new Set([...prev, entry.chamado_id]))
+                                        : prev.filter(id => id !== entry.chamado_id)
+                                    );
+                                  }}
+                                  title="Selecionar para exclusão em massa"
+                                />
+                              )}
                               <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedEntryId(entry.id); setSelectedTicketId(String(entry.chamado_id)); setEditModalOpen(true); }} aria-label="Editar"><Pencil className="h-5 w-5" /></button>
                               <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => handleDeleteRequest(entry.chamado_id, e)} aria-label="Excluir"><Trash2 className="h-5 w-5" /></button>
                             </div>
