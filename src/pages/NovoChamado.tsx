@@ -222,7 +222,10 @@ export default function NovoChamado() {
     const prodLines = produtos.map((p, i) => 
       `Produto ${i + 1}: Cód: ${p.codProduto}, Produto: ${p.produto}, Preço: ${p.preco}, Metros: ${p.metros}`
     ).join('\n');
-    const structured = `${prodLines}\nPrazo: ${prazo}\nTipo de Entrega: ${tipoEntrega}`;
+    const prazoLines = prazosEntrega.map((pe, i) =>
+      `Prazo ${prazosEntrega.length > 1 ? i + 1 : ''}: ${pe.prazo}, Tipo de Entrega: ${pe.tipoEntrega}`
+    ).join('\n');
+    const structured = `${prodLines}\n${prazoLines}`;
     return descricaoTexto ? `${structured}\n\nObservações: ${descricaoTexto}` : structured;
   };
 
