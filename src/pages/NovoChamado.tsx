@@ -710,6 +710,7 @@ export default function NovoChamado() {
     setGestor('');
     setStatusAgendamento('');
     setProdutos([{ codProduto: '', produto: '', preco: '', metros: '' }]);
+    setPrazosEntrega([{ prazo: '', tipoEntrega: '' }]);
     setPrazo('');
     setTipoEntrega('');
     setDescricaoTexto('');
