@@ -364,9 +364,9 @@ export default function NovoChamado() {
     }
   };
 
-  // Carregar catálogo de produtos quando motivo for Negociação ou RNC
+  // Carregar catálogo de produtos quando motivo for Negociação, RNC ou Atualizar Tabela
   useEffect(() => {
-    if (!isNegociacao && !isRNC) return;
+    if (!isNegociacao && !isRNC && !isAtualizarTabela) return;
     const load = async () => {
       const all: { cod_produto: string; produto: string }[] = [];
       let offset = 0;
@@ -385,7 +385,7 @@ export default function NovoChamado() {
       setCatalogoProdutos(all);
     };
     load();
-  }, [isNegociacao, isRNC]);
+  }, [isNegociacao, isRNC, isAtualizarTabela]);
 
   useEffect(() => {
     loadExistingTickets();
