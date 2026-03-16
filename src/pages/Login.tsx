@@ -174,10 +174,10 @@ export default function Login() {
               Entrar
             </button>
             <button
-              className={`flex-1 py-2 text-sm font-medium transition-colors ${
-              tab === 'cadastrar' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'}`
-              }
-              onClick={() => setTab('cadastrar')}>
+              className={`flex-1 py-2 text-sm font-medium transition-colors bg-card text-muted-foreground cursor-not-allowed opacity-60`}
+              type="button"
+              disabled
+            >
               
               Cadastrar
             </button>
@@ -221,35 +221,7 @@ export default function Login() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Entrando...' : 'Entrar'}
               </Button>
-            </form> :
-
-          <form onSubmit={handleSignup} className="space-y-4">
-              <div>
-                <Label htmlFor="nome">Nome</Label>
-                <Input id="nome" placeholder="Seu nome" value={nome} onChange={(e) => setNome(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="signup-email">Email</Label>
-                <Input id="signup-email" type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="signup-usuario">Usuário</Label>
-                <Input id="signup-usuario" placeholder="seu.usuario" value={usuario} onChange={(e) => setUsuario(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="signup-senha">Senha</Label>
-                <div className="relative">
-                  <Input id="signup-senha" type={showPassword ? 'text' : 'password'} placeholder="••••••" value={senha} onChange={(e) => setSenha(e.target.value)} />
-                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword(!showPassword)}>
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Cadastrando...' : 'Cadastrar'}
-              </Button>
-            </form>
-          }
+            </form> : null}
         </div>
       </div>
     </div>);
