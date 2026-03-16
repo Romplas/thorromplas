@@ -1137,26 +1137,59 @@ export default function NovoChamado() {
                     </Button>
 
                     {/* Prazo e Tipo de Entrega */}
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-                      <div>
-                        <Label className="text-[10px] text-muted-foreground">Prazo *</Label>
-                        <Input
-                          className="h-8 text-xs border-destructive/50"
-                          placeholder="Ex: 30 dias"
-                          value={prazo}
-                          onChange={e => setPrazo(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] text-muted-foreground">Tipo de Entrega *</Label>
-                        <Select value={tipoEntrega} onValueChange={setTipoEntrega}>
-                          <SelectTrigger className="h-8 text-xs border-destructive/50"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Imediata">Imediata</SelectItem>
-                            <SelectItem value="Programada">Programada</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="space-y-2 pt-2 border-t">
+                      {prazosEntrega.map((pe, i) => (
+                        <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Prazo *</Label>
+                            <Input
+                              className="h-8 text-xs border-destructive/50"
+                              placeholder="Ex: 30 dias"
+                              value={pe.prazo}
+                              onChange={e => {
+                                const updated = [...prazosEntrega];
+                                updated[i] = { ...updated[i], prazo: e.target.value };
+                                setPrazosEntrega(updated);
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Tipo de Entrega *</Label>
+                            <Select value={pe.tipoEntrega} onValueChange={v => {
+                              const updated = [...prazosEntrega];
+                              updated[i] = { ...updated[i], tipoEntrega: v };
+                              setPrazosEntrega(updated);
+                            }}>
+                              <SelectTrigger className="h-8 text-xs border-destructive/50"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Imediata">Imediata</SelectItem>
+                                <SelectItem value="Programada">Programada</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex gap-1 pb-0.5">
+                            {i === prazosEntrega.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => setPrazosEntrega(prev => [...prev, { prazo: '', tipoEntrega: '' }])}
+                                className="h-8 w-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded"
+                                title="Adicionar prazo/entrega"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                            )}
+                            {prazosEntrega.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => setPrazosEntrega(prev => prev.filter((_, idx) => idx !== i))}
+                                className="h-8 w-8 flex items-center justify-center text-destructive hover:bg-destructive/10 rounded"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
 
                     {/* Descrição livre abaixo dos campos estruturados */}
