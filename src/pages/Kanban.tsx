@@ -34,6 +34,11 @@ interface Cliente { id: string; nome: string; representante_id: string | null }
 interface Motivo { id: string; nome: string }
 interface ProfileOption { id: string; nome: string; user_id: string }
 
+// Normaliza nomes/usuários para comparação robusta
+const normalizeIdentifier = (value: string | null | undefined) =>
+  (value || '')
+    .toLowerCase()
+    .replace(/[\s\.\-_/]+/g, '');
 const columns = [
   { key: 'pendente', label: 'Pendente', bg: 'bg-amber-600', cardBg: 'bg-amber-600' },
   { key: 'thor', label: 'THOR', bg: 'bg-red-600', cardBg: 'bg-red-600' },
@@ -215,10 +220,10 @@ export default function Kanban() {
           visibleChamados = [];
         }
       } else if (role === 'representante' && profile && repRes.data) {
-        // Para representantes, vinculamos usando primeiro o campo "usuario"
-        // do profile (ex.: "M S REPRES.") e, se vazio, caímos para "nome".
-        const profileIdentifier = (profile.usuario || profile.nome || '').toLowerCase();
-        const myRep = repRes.data.find((r: any) => (r.nome || '').toLowerCase() === profileIdentifier);
+        // Para representantes, usamos comparação normalizada para lidar com
+        // variações de espaços/pontuação no nome (ex.: "MM REPRES." vs "MM REPRES").
+        const profileIdentifier = normalizeIdentifier(profile.usuario || profile.nome || '');
+        const myRep = repRes.data.find((r: any) => normalizeIdentifier(r.nome) === profileIdentifier);
         if (myRep) {
           visibleChamados = mapped.filter(c => c.representante_id === myRep.id);
         } else {
@@ -244,9 +249,9 @@ export default function Kanban() {
           setRoleFilterApplied(true);
         }
       } else if (role === 'representante' && repRes.data) {
-        // Mesmo critério de vínculo: preferimos "usuario" e, se não existir, usamos "nome".
-        const profileIdentifier = (profile.usuario || profile.nome || '').toLowerCase();
-        const myRep = repRes.data.find((r: any) => (r.nome || '').toLowerCase() === profileIdentifier);
+        // Mesmo critério de vínculo com comparação normalizada.
+        const profileIdentifier = normalizeIdentifier(profile.usuario || profile.nome || '');
+        const myRep = repRes.data.find((r: any) => normalizeIdentifier(r.nome) === profileIdentifier);
         if (myRep) {
           // Find supervisor linked to this representante
           const link = (srRes.data || []).find(sr => sr.representante_id === myRep.id);

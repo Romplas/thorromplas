@@ -57,6 +57,12 @@ const statusShortLabels: Record<string, string> = {
   Finalizado: 'Final.',
 };
 
+// Normaliza nomes/usuários para comparação robusta (ignora espaços e pontuação simples)
+const normalizeIdentifier = (value: string | null | undefined) =>
+  (value || '')
+    .toLowerCase()
+    .replace(/[\s\.\-_/]+/g, '');
+
 export default function Dashboard() {
   const { profile, role } = useAuth();
   const navigate = useNavigate();
@@ -124,13 +130,17 @@ export default function Dashboard() {
   useEffect(() => {
     if (!profile || !isRepresentante) return;
     const fetchRepId = async () => {
-      const identifier = (profile.usuario || profile.nome || '').toLowerCase();
-      const { data } = await supabase
-        .from('representantes')
-        .select('id, nome')
-        .ilike('nome', identifier)
-        .maybeSingle();
-      if (data) setRepresentanteId(data.id);
+      try {
+        const identifier = normalizeIdentifier(profile.usuario || profile.nome || '');
+        const { data, error } = await supabase
+          .from('representantes')
+          .select('id, nome');
+        if (error || !data) return;
+        const rep = data.find((r: any) => normalizeIdentifier(r.nome) === identifier);
+        if (rep) setRepresentanteId(rep.id);
+      } catch {
+        // Em caso de erro, apenas não define representanteId para não quebrar a tela
+      }
     };
     fetchRepId();
   }, [profile, isRepresentante]);

@@ -59,6 +59,12 @@ interface Submotivo { id: string; nome: string; motivo_id: string }
 interface Representante { id: string; nome: string }
 interface SupervisorRepresentante { supervisor_id: string; representante_id: string }
 
+// Normaliza nomes/usuários para comparação robusta entre perfil e representantes
+const normalizeIdentifier = (value: string | null | undefined) =>
+  (value || '')
+    .toLowerCase()
+    .replace(/[\s\.\-_/]+/g, '');
+
 const statusLabels: Record<string, string> = {
   pendente: 'Pendente',
   aberto: 'Aberto',
@@ -256,10 +262,10 @@ export default function Historico() {
         visibleChamados = [];
       }
     } else if (role === 'representante' && profile && repRes.data) {
-      // Para representantes, fazemos o vínculo usando primeiro o campo "usuario"
-      // do profile (ex.: "M S REPRES.") e, se não existir, caímos para o "nome".
-      const profileIdentifier = (profile.usuario || profile.nome || '').toLowerCase();
-      const myRep = repRes.data.find((r: any) => (r.nome || '').toLowerCase() === profileIdentifier);
+      // Para representantes, fazemos o vínculo usando comparação normalizada
+      // para tolerar pequenas diferenças de espaços/pontuação no nome.
+      const profileIdentifier = normalizeIdentifier(profile.usuario || profile.nome || '');
+      const myRep = repRes.data.find((r: any) => normalizeIdentifier(r.nome) === profileIdentifier);
       if (myRep) {
         visibleChamados = visibleChamados.filter(c => c.representante_id === myRep.id);
       } else {
@@ -295,10 +301,9 @@ export default function Historico() {
           setRoleFilterApplied(true);
         }
       } else if (role === 'representante' && repRes.data) {
-        // Mesmo critério de vínculo: preferimos "usuario" e,
-        // se não existir, usamos "nome" do profile.
-        const profileIdentifier = (profile.usuario || profile.nome || '').toLowerCase();
-        const myRep = repRes.data.find((r: any) => (r.nome || '').toLowerCase() === profileIdentifier);
+        // Mesmo critério de vínculo com comparação normalizada.
+        const profileIdentifier = normalizeIdentifier(profile.usuario || profile.nome || '');
+        const myRep = repRes.data.find((r: any) => normalizeIdentifier(r.nome) === profileIdentifier);
         if (myRep) {
           const link = (srRes.data || []).find(sr => sr.representante_id === myRep.id);
           if (link) setFilterSupervisor(link.supervisor_id);

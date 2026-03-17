@@ -292,6 +292,12 @@ export default function NovoChamado() {
     fetchData();
   }, []);
 
+  // Helper para normalizar nomes/usuários (tolerante a espaços e pontuação)
+  const normalizeIdentifier = (value: string | null | undefined) =>
+    (value || '')
+      .toLowerCase()
+      .replace(/[\s\.\-_/]+/g, '');
+
   // Load chamados Pendente+Pendente (cada representante vê apenas os seus)
   const loadExistingTickets = async () => {
     setLoadingTickets(true);
@@ -300,9 +306,9 @@ export default function NovoChamado() {
       // equivalente ao usuário logado (ex.: GREICE -> "M S REPRES.").
       let enforcedRepresentanteId: string | null = null;
       if (role === 'representante' && profile && representantes.length > 0) {
-        const profileIdentifier = (profile.usuario || profile.nome || '').toLowerCase();
+        const profileIdentifier = normalizeIdentifier(profile.usuario || profile.nome || '');
         const rep = representantes.find(
-          (r) => (r.nome || '').toLowerCase() === profileIdentifier
+          (r) => normalizeIdentifier(r.nome) === profileIdentifier
         );
         if (rep) enforcedRepresentanteId = rep.id;
       }
@@ -435,11 +441,11 @@ export default function NovoChamado() {
         setSelectedSupervisor(sup.id);
       }
     } else if (role === 'representante') {
-      // Representante: usamos primeiro o campo "usuario" (ex.: "M S REPRES.")
-      // e, se não existir, caímos para o nome do perfil.
-      const profileIdentifier = (profile.usuario || profile.nome || '').toLowerCase();
+      // Representante: usamos comparação normalizada para tolerar pequenas
+      // diferenças de espaços/pontuação entre Usuário (login) e nome em representantes.
+      const profileIdentifier = normalizeIdentifier(profile.usuario || profile.nome || '');
       const rep = representantes.find(
-        (r) => (r.nome || '').toLowerCase() === profileIdentifier
+        (r) => normalizeIdentifier(r.nome) === profileIdentifier
       );
       if (rep && selectedRepresentante !== rep.id) {
         // Find linked supervisor
