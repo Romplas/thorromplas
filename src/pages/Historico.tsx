@@ -640,8 +640,8 @@ export default function Historico() {
       return;
     }
 
-    // Supervisor: delete only the selected history entry
-    if (role === 'supervisor' && deleteEntryId) {
+    // Gestor, Supervisor, Representante: delete only the selected history entry
+    if (role !== 'admin' && deleteEntryId) {
       try {
         await supabase.from('chamado_historico').delete().eq('id', deleteEntryId);
         toast.success('Etapa excluída com sucesso');
