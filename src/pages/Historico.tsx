@@ -626,13 +626,14 @@ export default function Historico() {
 
   const handleDeleteRequest = (ticketId: number, e?: React.MouseEvent, entryId?: string) => {
     if (e) e.stopPropagation();
-    if (role === 'supervisor') {
-      // Supervisor can only delete the selected history entry
-      setDeleteEntryId(entryId || selectedEntryId || null);
-      setDeleteTicketId(ticketId);
-    } else {
+    if (role === 'admin') {
+      // Admin: delete entire ticket
       setDeleteTicketId(ticketId);
       setDeleteEntryId(null);
+    } else {
+      // Gestor, Supervisor, Representante: delete only the history entry
+      setDeleteEntryId(entryId || selectedEntryId || null);
+      setDeleteTicketId(ticketId);
     }
     setDeleteMotivo('');
     setDeleteDialogOpen(true);
@@ -644,8 +645,8 @@ export default function Historico() {
       return;
     }
 
-    // Supervisor: delete only the selected history entry
-    if (role === 'supervisor' && deleteEntryId) {
+    // Gestor, Supervisor, Representante: delete only the selected history entry
+    if (role !== 'admin' && deleteEntryId) {
       try {
         await supabase.from('chamado_historico').delete().eq('id', deleteEntryId);
         toast.success('Etapa excluída com sucesso');
@@ -1072,15 +1073,15 @@ export default function Historico() {
                       Book
                     </Button>
                   )}
-                  {role === 'supervisor' ? (
+                  {role === 'admin' ? (
+                    <Button variant="destructive" size="sm" className="gap-1.5 justify-start" onClick={() => handleDeleteRequest(selectedChamado.id)}>
+                      <Trash2 className="h-4 w-4" />
+                      Excluir Ticket
+                    </Button>
+                  ) : (
                     <Button variant="destructive" size="sm" className="gap-1.5 justify-start" onClick={() => handleDeleteRequest(selectedChamado.id, undefined, selectedEntryId || undefined)}>
                       <Trash2 className="h-4 w-4" />
                       Excluir Etapa
-                    </Button>
-                  ) : (
-                    <Button variant="destructive" size="sm" className="gap-1.5 justify-start" onClick={() => handleDeleteRequest(selectedChamado.id)}>
-                      <Trash2 className="h-4 w-4" />
-                      Excluir
                     </Button>
                   )}
                   <Button variant="outline" size="sm" className="gap-1.5 justify-start" onClick={handleClearSelection}>
