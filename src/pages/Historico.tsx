@@ -717,7 +717,10 @@ export default function Historico() {
 
   const getAnexoUrl = (path: string) => {
     const { data } = supabase.storage.from('chamado-anexos').getPublicUrl(path);
-    return data.publicUrl;
+    let url = data.publicUrl;
+    // Adiciona parâmetro para forçar download no Supabase
+    url += url.includes('?') ? '&download=1' : '?download=1';
+    return url;
   };
 
   const handleAnexoView = (anexo: { nome: string; path: string }) => {

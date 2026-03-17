@@ -76,7 +76,10 @@ const ACCEPT_STRING = Object.keys(ACCEPTED_TYPES).join(',');
 
 function getFileUrl(path: string): string {
   const { data } = supabase.storage.from('chamado-anexos').getPublicUrl(path);
-  return data.publicUrl;
+  let url = data.publicUrl;
+  // Adiciona parâmetro para forçar download no Supabase
+  url += url.includes('?') ? '&download=1' : '?download=1';
+  return url;
 }
 
 export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved, profileMap }: Props) {

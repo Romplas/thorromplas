@@ -86,7 +86,10 @@ function formatDateBR(dateStr: string): string {
 
 function getFileUrl(path: string): string {
   const { data } = supabase.storage.from('chamado-anexos').getPublicUrl(path);
-  return data.publicUrl;
+  let url = data.publicUrl;
+  // Adiciona parâmetro para forçar download no Supabase
+  url += url.includes('?') ? '&download=1' : '?download=1';
+  return url;
 }
 
 function isPreviewable(nome: string): boolean {
