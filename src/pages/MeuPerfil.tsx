@@ -85,14 +85,16 @@ export default function MeuPerfil() {
     if (!user?.id || !profile) return;
     setSaving(true);
     try {
+      // Apenas administradores podem alterar "usuario" e "supervisora".
+      const canEditVinculos = role === 'admin';
       const { error } = await supabase
         .from('profiles')
         .update({
           nome: formData.nome,
           email: formData.email,
-          usuario: formData.usuario || null,
+          usuario: canEditVinculos ? (formData.usuario || null) : profile.usuario || null,
           telefone: formData.telefone || null,
-          supervisora: formData.supervisora || null,
+          supervisora: canEditVinculos ? (formData.supervisora || null) : profile.supervisora || null,
         })
         .eq('user_id', user.id);
       if (error) throw error;
@@ -191,6 +193,7 @@ export default function MeuPerfil() {
                   value={formData.usuario}
                   onChange={(e) => setFormData((p) => ({ ...p, usuario: e.target.value }))}
                   placeholder="seu.usuario"
+                  disabled={role !== 'admin'}
                 />
               </div>
               <div className="space-y-2">
@@ -208,6 +211,7 @@ export default function MeuPerfil() {
                   <Select
                     value={formData.supervisora || 'none'}
                     onValueChange={(val) => setFormData((p) => ({ ...p, supervisora: val === 'none' ? '' : val }))}
+                    disabled={role !== 'admin'}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a supervisora" />

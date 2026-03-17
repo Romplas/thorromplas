@@ -17,9 +17,10 @@ export function PWAUpdatePrompt() {
   } = useRegisterSW({
     onRegisteredSW(swUrl, r) {
       if (r) {
+        // Verifica por nova versão com mais frequência (a cada 5 minutos)
         setInterval(() => {
           r.update();
-        }, 60 * 60 * 1000); // check every hour
+        }, 5 * 60 * 1000);
       }
     },
   });
