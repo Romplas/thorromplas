@@ -1068,15 +1068,16 @@ export default function Historico() {
                       Book
                     </Button>
                   )}
-                  {role === 'supervisor' ? (
+                  {role === 'admin' ? (
+                    <Button variant="destructive" size="sm" className="gap-1.5 justify-start" onClick={() => handleDeleteRequest(selectedChamado.id)}>
+                      <Trash2 className="h-4 w-4" />
+                      Excluir Ticket
+                    </Button>
+                  ) : (
                     <Button variant="destructive" size="sm" className="gap-1.5 justify-start" onClick={() => handleDeleteRequest(selectedChamado.id, undefined, selectedEntryId || undefined)}>
                       <Trash2 className="h-4 w-4" />
                       Excluir Etapa
                     </Button>
-                  ) : (
-                    <Button variant="destructive" size="sm" className="gap-1.5 justify-start" onClick={() => handleDeleteRequest(selectedChamado.id)}>
-                      <Trash2 className="h-4 w-4" />
-                      Excluir
                     </Button>
                   )}
                   <Button variant="outline" size="sm" className="gap-1.5 justify-start" onClick={handleClearSelection}>
