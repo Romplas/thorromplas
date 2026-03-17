@@ -131,7 +131,7 @@ export default function ImportClientes() {
 
     try {
       setProdutoStatus('parsing');
-      setProdutoMessage('Lendo planilha...');
+      setProdutoMessage('Lendo planilha de produtos...');
       setProdutoProgress(20);
 
       const data = await produtoFile.arrayBuffer();
@@ -151,8 +151,22 @@ export default function ImportClientes() {
         return;
       }
 
-      setProdutoProgress(50);
+      // Etapa 1: limpar todos os produtos atuais antes de importar
+      setProdutoProgress(40);
       setProdutoStatus('importing');
+      setProdutoMessage('Apagando produtos existentes...');
+
+      // Apaga todas as linhas da tabela de produtos.
+      // Usamos uma condição sempre verdadeira (id IS NOT NULL) para evitar
+      // problemas de cast de tipo (como comparar UUID com string vazia).
+      const { error: deleteError } = await supabase
+        .from('produtos')
+        .delete()
+        .not('id', 'is', null);
+      if (deleteError) throw new Error(deleteError.message);
+
+      // Etapa 2: inserir nova lista de produtos
+      setProdutoProgress(60);
       setProdutoMessage(`Importando ${validRows.length} produtos...`);
 
       const inserts = validRows.map((r) => ({
@@ -166,7 +180,7 @@ export default function ImportClientes() {
         const batch = inserts.slice(i, i + chunkSize);
         const { error } = await supabase
           .from('produtos')
-          .upsert(batch, { onConflict: 'cod_produto' });
+          .insert(batch);
         if (error) throw new Error(error.message);
         insertedCount += batch.length;
       }
