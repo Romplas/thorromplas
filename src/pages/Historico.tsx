@@ -1078,7 +1078,6 @@ export default function Historico() {
                       <Trash2 className="h-4 w-4" />
                       Excluir Etapa
                     </Button>
-                    </Button>
                   )}
                   <Button variant="outline" size="sm" className="gap-1.5 justify-start" onClick={handleClearSelection}>
                     <Eraser className="h-4 w-4" />
