@@ -203,7 +203,27 @@ export default function Kanban() {
           : 'N/A',
         gestor_nome: c.gestor_id ? pMap.get(c.gestor_id) || profileByUserIdMap.get(c.gestor_id) || '' : '',
       }));
-      setChamados(mapped);
+
+      // Enforce data visibility by role
+      let visibleChamados = mapped;
+      if (role === 'supervisor' && profile && supRes.data) {
+        const mySup = supRes.data.find(s => s.nome.toLowerCase() === profile.nome.toLowerCase());
+        if (mySup) {
+          const myRepIds = new Set((srRes.data || []).filter(sr => sr.supervisor_id === mySup.id).map(sr => sr.representante_id));
+          visibleChamados = mapped.filter(c => c.supervisor_id === mySup.id || (c.representante_id && myRepIds.has(c.representante_id)));
+        } else {
+          visibleChamados = [];
+        }
+      } else if (role === 'representante' && profile && repRes.data) {
+        const myRep = repRes.data.find(r => r.nome.toLowerCase() === profile.nome.toLowerCase());
+        if (myRep) {
+          visibleChamados = mapped.filter(c => c.representante_id === myRep.id);
+        } else {
+          visibleChamados = [];
+        }
+      }
+
+      setChamados(visibleChamados);
     }
 
     if (supRes.data) setSupervisores(supRes.data);
