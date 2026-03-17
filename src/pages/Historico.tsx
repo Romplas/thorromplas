@@ -139,6 +139,7 @@ export default function Historico() {
   const [previewName, setPreviewName] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTicketId, setDeleteTicketId] = useState<number | null>(null);
+  const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
   const [deleteMotivo, setDeleteMotivo] = useState('');
   const [selectedTicketIds, setSelectedTicketIds] = useState<number[]>([]);
   // Filters
