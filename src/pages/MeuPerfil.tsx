@@ -211,7 +211,7 @@ export default function MeuPerfil() {
                   <Select
                     value={formData.supervisora || 'none'}
                     onValueChange={(val) => setFormData((p) => ({ ...p, supervisora: val === 'none' ? '' : val }))}
-                    disabled={role !== 'admin'}
+                    disabled={role as string !== 'admin'}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a supervisora" />
