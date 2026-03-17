@@ -963,7 +963,7 @@ export default function Historico() {
                                 />
                               )}
                               <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedEntryId(entry.id); setSelectedTicketId(String(entry.chamado_id)); setEditModalOpen(true); }} aria-label="Editar"><Pencil className="h-5 w-5" /></button>
-                              <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => handleDeleteRequest(entry.chamado_id, e)} aria-label="Excluir"><Trash2 className="h-5 w-5" /></button>
+                              <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => handleDeleteRequest(entry.chamado_id, e, entry.id)} aria-label="Excluir"><Trash2 className="h-5 w-5" /></button>
                             </div>
                           </div>
                         </div>
