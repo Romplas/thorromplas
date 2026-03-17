@@ -256,7 +256,10 @@ export default function Historico() {
         visibleChamados = [];
       }
     } else if (role === 'representante' && profile && repRes.data) {
-      const myRep = repRes.data.find(r => r.nome.toLowerCase() === profile.nome.toLowerCase());
+      // Para representantes, fazemos o vínculo usando primeiro o campo "usuario"
+      // do profile (ex.: "M S REPRES.") e, se não existir, caímos para o "nome".
+      const profileIdentifier = (profile.usuario || profile.nome || '').toLowerCase();
+      const myRep = repRes.data.find((r: any) => (r.nome || '').toLowerCase() === profileIdentifier);
       if (myRep) {
         visibleChamados = visibleChamados.filter(c => c.representante_id === myRep.id);
       } else {
@@ -292,7 +295,10 @@ export default function Historico() {
           setRoleFilterApplied(true);
         }
       } else if (role === 'representante' && repRes.data) {
-        const myRep = repRes.data.find(r => r.nome.toLowerCase() === profile.nome.toLowerCase());
+        // Mesmo critério de vínculo: preferimos "usuario" e,
+        // se não existir, usamos "nome" do profile.
+        const profileIdentifier = (profile.usuario || profile.nome || '').toLowerCase();
+        const myRep = repRes.data.find((r: any) => (r.nome || '').toLowerCase() === profileIdentifier);
         if (myRep) {
           const link = (srRes.data || []).find(sr => sr.representante_id === myRep.id);
           if (link) setFilterSupervisor(link.supervisor_id);
