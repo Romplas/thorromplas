@@ -123,7 +123,7 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
 }
 
 export default function Historico() {
-  const { role, profile } = useAuth();
+  const { role, profile, loading: authLoading } = useAuth();
   const [searchParams] = useSearchParams();
   const ticketIdParam = searchParams.get('ticketId');
 
@@ -203,6 +203,9 @@ export default function Historico() {
   };
 
   useEffect(() => {
+    // Aguarda autenticação carregar para aplicar filtros corretos por papel
+    if (authLoading) return;
+
     fetchData();
 
     const channel = supabase
@@ -219,7 +222,7 @@ export default function Historico() {
       supabase.removeChannel(channel);
       supabase.removeChannel(chamadosChannel);
     };
-  }, []);
+  }, [authLoading, role, profile]);
 
   const fetchData = async () => {
     setLoading(true);
