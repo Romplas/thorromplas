@@ -67,7 +67,7 @@ function getTicketColumn(c: ChamadoWithNames): string {
 }
 
 export default function Kanban() {
-  const { role, profile } = useAuth();
+  const { role, profile, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [chamados, setChamados] = useState<ChamadoWithNames[]>([]);
@@ -134,6 +134,9 @@ export default function Kanban() {
     : allClientes;
 
   useEffect(() => {
+    // Aguarda autenticação carregar para aplicar filtros corretos por papel
+    if (authLoading) return;
+
     fetchData();
 
     // Realtime subscription for chamados
@@ -164,7 +167,7 @@ export default function Kanban() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [authLoading, role, profile]);
 
   const fetchData = async () => {
     setLoading(true);
