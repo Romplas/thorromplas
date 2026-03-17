@@ -593,9 +593,16 @@ export default function Historico() {
     if (selectedChamado) setEditModalOpen(true);
   };
 
-  const handleDeleteRequest = (ticketId: number, e?: React.MouseEvent) => {
+  const handleDeleteRequest = (ticketId: number, e?: React.MouseEvent, entryId?: string) => {
     if (e) e.stopPropagation();
-    setDeleteTicketId(ticketId);
+    if (role === 'supervisor') {
+      // Supervisor can only delete the selected history entry
+      setDeleteEntryId(entryId || selectedEntryId || null);
+      setDeleteTicketId(ticketId);
+    } else {
+      setDeleteTicketId(ticketId);
+      setDeleteEntryId(null);
+    }
     setDeleteMotivo('');
     setDeleteDialogOpen(true);
   };
@@ -605,6 +612,23 @@ export default function Historico() {
       toast.error('Informe o motivo da exclusão');
       return;
     }
+
+    // Supervisor: delete only the selected history entry
+    if (role === 'supervisor' && deleteEntryId) {
+      try {
+        await supabase.from('chamado_historico').delete().eq('id', deleteEntryId);
+        toast.success('Etapa excluída com sucesso');
+        setDeleteDialogOpen(false);
+        setSelectedEntryId(null);
+        setDeleteEntryId(null);
+        fetchData();
+      } catch (err: any) {
+        toast.error('Erro ao excluir: ' + (err.message || 'Erro desconhecido'));
+      }
+      return;
+    }
+
+    // Admin/Gestor: delete entire ticket(s)
     const idsToDelete = deleteTicketId ? [deleteTicketId] : selectedTicketIds;
     if (!idsToDelete.length) {
       toast.error('Nenhum ticket selecionado para exclusão');
