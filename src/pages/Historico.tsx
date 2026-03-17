@@ -849,7 +849,7 @@ export default function Historico() {
                 </span>
                 <Button
                   variant="destructive"
-                  size="xs"
+                  size="sm"
                   className="h-7 px-3 text-xs"
                   onClick={() => {
                     setDeleteTicketId(null);

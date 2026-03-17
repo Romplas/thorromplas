@@ -211,7 +211,9 @@ export default function Dashboard() {
           const repIdsUnderSup = new Set(
             srLinks.filter(sr => sr.supervisor_id === filterSupervisor).map(sr => sr.representante_id)
           );
-          filtered = filtered.filter((c: any) => repIdsUnderSup.has(c.representante_id));
+          filtered = filtered.filter((c: any) =>
+            c.supervisor_id === filterSupervisor || repIdsUnderSup.has(c.representante_id)
+          );
         }
         if (filterGestor !== 'todos') {
           filtered = filtered.filter((c: any) => c.gestor_id === filterGestor);
