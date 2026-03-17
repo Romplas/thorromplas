@@ -292,10 +292,21 @@ export default function NovoChamado() {
     fetchData();
   }, []);
 
-  // Load chamados Pendente+Pendente (representante vê apenas os seus)
+  // Load chamados Pendente+Pendente (cada representante vê apenas os seus)
   const loadExistingTickets = async () => {
     setLoadingTickets(true);
     try {
+      // Determina, de forma independente do filtro da tela, qual é o representante
+      // equivalente ao usuário logado (ex.: GREICE -> "M S REPRES.").
+      let enforcedRepresentanteId: string | null = null;
+      if (role === 'representante' && profile && representantes.length > 0) {
+        const profileIdentifier = (profile.usuario || profile.nome || '').toLowerCase();
+        const rep = representantes.find(
+          (r) => (r.nome || '').toLowerCase() === profileIdentifier
+        );
+        if (rep) enforcedRepresentanteId = rep.id;
+      }
+
       let q = supabase
         .from('chamados')
         .select('*')
@@ -303,9 +314,11 @@ export default function NovoChamado() {
         .eq('etapa', 'pendente')
         .order('created_at', { ascending: false })
         .limit(100);
-      // Sempre que um representante estiver selecionado (qualquer que seja o papel),
-      // limitamos os tickets a esse representante específico.
-      if (selectedRepresentante) {
+      // Regra de segurança: se for representante, SEMPRE filtra pelo representante
+      // vinculado ao usuário logado. Para outros papéis, usamos o filtro da tela.
+      if (enforcedRepresentanteId) {
+        q = q.eq('representante_id', enforcedRepresentanteId);
+      } else if (selectedRepresentante) {
         q = q.eq('representante_id', selectedRepresentante);
       }
       const { data, error } = await q;
