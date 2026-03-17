@@ -124,11 +124,12 @@ export default function Dashboard() {
   useEffect(() => {
     if (!profile || !isRepresentante) return;
     const fetchRepId = async () => {
+      const identifier = (profile.usuario || profile.nome || '').toLowerCase();
       const { data } = await supabase
         .from('representantes')
-        .select('id')
-        .ilike('nome', profile.nome)
-        .single();
+        .select('id, nome')
+        .ilike('nome', identifier)
+        .maybeSingle();
       if (data) setRepresentanteId(data.id);
     };
     fetchRepId();

@@ -420,9 +420,11 @@ export default function NovoChamado() {
         setSelectedSupervisor(sup.id);
       }
     } else if (role === 'representante') {
-      // Find representante matching profile name
+      // Representante: usamos primeiro o campo "usuario" (ex.: "M S REPRES.")
+      // e, se não existir, caímos para o nome do perfil.
+      const profileIdentifier = (profile.usuario || profile.nome || '').toLowerCase();
       const rep = representantes.find(
-        (r) => r.nome.toLowerCase() === profileNomeLower
+        (r) => (r.nome || '').toLowerCase() === profileIdentifier
       );
       if (rep && selectedRepresentante !== rep.id) {
         // Find linked supervisor

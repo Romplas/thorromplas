@@ -215,7 +215,10 @@ export default function Kanban() {
           visibleChamados = [];
         }
       } else if (role === 'representante' && profile && repRes.data) {
-        const myRep = repRes.data.find(r => r.nome.toLowerCase() === profile.nome.toLowerCase());
+        // Para representantes, vinculamos usando primeiro o campo "usuario"
+        // do profile (ex.: "M S REPRES.") e, se vazio, caímos para "nome".
+        const profileIdentifier = (profile.usuario || profile.nome || '').toLowerCase();
+        const myRep = repRes.data.find((r: any) => (r.nome || '').toLowerCase() === profileIdentifier);
         if (myRep) {
           visibleChamados = mapped.filter(c => c.representante_id === myRep.id);
         } else {
@@ -241,7 +244,9 @@ export default function Kanban() {
           setRoleFilterApplied(true);
         }
       } else if (role === 'representante' && repRes.data) {
-        const myRep = repRes.data.find(r => r.nome.toLowerCase() === profile.nome.toLowerCase());
+        // Mesmo critério de vínculo: preferimos "usuario" e, se não existir, usamos "nome".
+        const profileIdentifier = (profile.usuario || profile.nome || '').toLowerCase();
+        const myRep = repRes.data.find((r: any) => (r.nome || '').toLowerCase() === profileIdentifier);
         if (myRep) {
           // Find supervisor linked to this representante
           const link = (srRes.data || []).find(sr => sr.representante_id === myRep.id);
