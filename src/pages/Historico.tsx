@@ -717,9 +717,14 @@ export default function Historico() {
 
   const getAnexoUrl = (path: string) => {
     const { data } = supabase.storage.from('chamado-anexos').getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const getAnexoDownloadUrl = (path: string, fileName: string) => {
+    const { data } = supabase.storage.from('chamado-anexos').getPublicUrl(path);
     let url = data.publicUrl;
-    // Adiciona parâmetro para forçar download no Supabase
-    url += url.includes('?') ? '&download=1' : '?download=1';
+    const encoded = encodeURIComponent(fileName || 'arquivo');
+    url += url.includes('?') ? `&download=${encoded}` : `?download=${encoded}`;
     return url;
   };
 
@@ -735,7 +740,7 @@ export default function Historico() {
   };
 
   const handleAnexoDownload = (anexo: { nome: string; path: string }) => {
-    const url = getAnexoUrl(anexo.path);
+    const url = getAnexoDownloadUrl(anexo.path, anexo.nome);
     const a = document.createElement('a');
     a.href = url;
     a.download = anexo.nome;

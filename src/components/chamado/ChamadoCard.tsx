@@ -86,9 +86,14 @@ function formatDateBR(dateStr: string): string {
 
 function getFileUrl(path: string): string {
   const { data } = supabase.storage.from('chamado-anexos').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+function getDownloadUrl(path: string, fileName: string): string {
+  const { data } = supabase.storage.from('chamado-anexos').getPublicUrl(path);
   let url = data.publicUrl;
-  // Adiciona parâmetro para forçar download no Supabase
-  url += url.includes('?') ? '&download=1' : '?download=1';
+  const encoded = encodeURIComponent(fileName || 'arquivo');
+  url += url.includes('?') ? `&download=${encoded}` : `?download=${encoded}`;
   return url;
 }
 
@@ -284,7 +289,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
   };
 
   const handleDownload = (anexo: AnexoFile) => {
-    const url = getFileUrl(anexo.path);
+    const url = getDownloadUrl(anexo.path, anexo.nome);
     const a = document.createElement('a');
     a.href = url;
     a.download = anexo.nome;
