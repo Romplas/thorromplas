@@ -736,7 +736,7 @@ export default function Historico() {
     a.target = '_blank';
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
+    a.remove();
   };
 
   return (

@@ -288,9 +288,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
     a.target = '_blank';
     document.body.appendChild(a);
     a.click();
-    if (a.parentNode) {
-      a.parentNode.removeChild(a);
-    }
+    a.remove();
   };
 
   const statusColor = {

@@ -339,9 +339,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
     a.target = '_blank';
     document.body.appendChild(a);
     a.click();
-    if (a.parentNode) {
-      a.parentNode.removeChild(a);
-    }
+    a.remove();
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
