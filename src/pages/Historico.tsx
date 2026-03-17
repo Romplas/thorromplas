@@ -139,6 +139,7 @@ export default function Historico() {
   const [previewName, setPreviewName] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTicketId, setDeleteTicketId] = useState<number | null>(null);
+  const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
   const [deleteMotivo, setDeleteMotivo] = useState('');
   const [selectedTicketIds, setSelectedTicketIds] = useState<number[]>([]);
   // Filters
@@ -592,9 +593,16 @@ export default function Historico() {
     if (selectedChamado) setEditModalOpen(true);
   };
 
-  const handleDeleteRequest = (ticketId: number, e?: React.MouseEvent) => {
+  const handleDeleteRequest = (ticketId: number, e?: React.MouseEvent, entryId?: string) => {
     if (e) e.stopPropagation();
-    setDeleteTicketId(ticketId);
+    if (role === 'supervisor') {
+      // Supervisor can only delete the selected history entry
+      setDeleteEntryId(entryId || selectedEntryId || null);
+      setDeleteTicketId(ticketId);
+    } else {
+      setDeleteTicketId(ticketId);
+      setDeleteEntryId(null);
+    }
     setDeleteMotivo('');
     setDeleteDialogOpen(true);
   };
@@ -604,6 +612,23 @@ export default function Historico() {
       toast.error('Informe o motivo da exclusão');
       return;
     }
+
+    // Supervisor: delete only the selected history entry
+    if (role === 'supervisor' && deleteEntryId) {
+      try {
+        await supabase.from('chamado_historico').delete().eq('id', deleteEntryId);
+        toast.success('Etapa excluída com sucesso');
+        setDeleteDialogOpen(false);
+        setSelectedEntryId(null);
+        setDeleteEntryId(null);
+        fetchData();
+      } catch (err: any) {
+        toast.error('Erro ao excluir: ' + (err.message || 'Erro desconhecido'));
+      }
+      return;
+    }
+
+    // Admin/Gestor: delete entire ticket(s)
     const idsToDelete = deleteTicketId ? [deleteTicketId] : selectedTicketIds;
     if (!idsToDelete.length) {
       toast.error('Nenhum ticket selecionado para exclusão');
@@ -849,7 +874,7 @@ export default function Historico() {
                 </span>
                 <Button
                   variant="destructive"
-                  size="xs"
+                  size="sm"
                   className="h-7 px-3 text-xs"
                   onClick={() => {
                     setDeleteTicketId(null);
@@ -938,7 +963,7 @@ export default function Historico() {
                                 />
                               )}
                               <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedEntryId(entry.id); setSelectedTicketId(String(entry.chamado_id)); setEditModalOpen(true); }} aria-label="Editar"><Pencil className="h-5 w-5" /></button>
-                              <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => handleDeleteRequest(entry.chamado_id, e)} aria-label="Excluir"><Trash2 className="h-5 w-5" /></button>
+                              <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => handleDeleteRequest(entry.chamado_id, e, entry.id)} aria-label="Excluir"><Trash2 className="h-5 w-5" /></button>
                             </div>
                           </div>
                         </div>
@@ -1016,10 +1041,17 @@ export default function Historico() {
                       Book
                     </Button>
                   )}
-                  <Button variant="destructive" size="sm" className="gap-1.5 justify-start" onClick={() => handleDeleteRequest(selectedChamado.id)}>
-                    <Trash2 className="h-4 w-4" />
-                    Excluir
-                  </Button>
+                  {role === 'supervisor' ? (
+                    <Button variant="destructive" size="sm" className="gap-1.5 justify-start" onClick={() => handleDeleteRequest(selectedChamado.id, undefined, selectedEntryId || undefined)}>
+                      <Trash2 className="h-4 w-4" />
+                      Excluir Etapa
+                    </Button>
+                  ) : (
+                    <Button variant="destructive" size="sm" className="gap-1.5 justify-start" onClick={() => handleDeleteRequest(selectedChamado.id)}>
+                      <Trash2 className="h-4 w-4" />
+                      Excluir
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" className="gap-1.5 justify-start" onClick={handleClearSelection}>
                     <Eraser className="h-4 w-4" />
                     Limpar
@@ -1265,9 +1297,12 @@ export default function Historico() {
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogTitle>{role === 'supervisor' ? 'Confirmar exclusão da etapa' : 'Confirmar exclusão'}</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja excluir o chamado <strong>#{deleteTicketId}</strong>? Informe o motivo da exclusão abaixo. Esta ação não pode ser desfeita.
+                {role === 'supervisor' 
+                  ? <>Tem certeza que deseja excluir esta etapa do chamado <strong>#{deleteTicketId}</strong>? Informe o motivo da exclusão abaixo. Esta ação não pode ser desfeita.</>
+                  : <>Tem certeza que deseja excluir o chamado <strong>#{deleteTicketId}</strong>? Informe o motivo da exclusão abaixo. Esta ação não pode ser desfeita.</>
+                }
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-2 py-2">
