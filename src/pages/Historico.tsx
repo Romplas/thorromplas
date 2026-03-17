@@ -348,6 +348,10 @@ export default function Historico() {
   const isSupervisorLocked = role === 'supervisor' || role === 'representante';
   const isRepresentanteLocked = role === 'representante';
 
+  // Permissões de exclusão
+  const canDeleteEtapa = role === 'gestor' || role === 'supervisor';
+  const canDeleteTicket = role === 'admin';
+
   // Representantes filtered by selected supervisor
   const filteredRepresentantesForFilter = filterSupervisor !== 'todos'
     ? representantes.filter(r => srLinks.some(sr => sr.supervisor_id === filterSupervisor && sr.representante_id === r.id))
@@ -626,12 +630,15 @@ export default function Historico() {
 
   const handleDeleteRequest = (ticketId: number, e?: React.MouseEvent, entryId?: string) => {
     if (e) e.stopPropagation();
-    if (role === 'admin') {
+    // Somente admin, gestor e supervisor podem excluir
+    if (!canDeleteTicket && !canDeleteEtapa) return;
+
+    if (canDeleteTicket && !canDeleteEtapa) {
       // Admin: delete entire ticket
       setDeleteTicketId(ticketId);
       setDeleteEntryId(null);
     } else {
-      // Gestor, Supervisor, Representante: delete only the history entry
+      // Gestor / Supervisor: delete only the history entry
       setDeleteEntryId(entryId || selectedEntryId || null);
       setDeleteTicketId(ticketId);
     }
@@ -645,8 +652,8 @@ export default function Historico() {
       return;
     }
 
-    // Gestor, Supervisor, Representante: delete only the selected history entry
-    if (role !== 'admin' && deleteEntryId) {
+    // Gestor / Supervisor: delete only the selected history entry
+    if (!canDeleteTicket && canDeleteEtapa && deleteEntryId) {
       try {
         await supabase.from('chamado_historico').delete().eq('id', deleteEntryId);
         toast.success('Etapa excluída com sucesso');
@@ -660,7 +667,7 @@ export default function Historico() {
       return;
     }
 
-    // Admin/Gestor: delete entire ticket(s)
+    // Admin: delete entire ticket(s)
     const idsToDelete = deleteTicketId ? [deleteTicketId] : selectedTicketIds;
     if (!idsToDelete.length) {
       toast.error('Nenhum ticket selecionado para exclusão');
@@ -995,7 +1002,16 @@ export default function Historico() {
                                 />
                               )}
                               <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedEntryId(entry.id); setSelectedTicketId(String(entry.chamado_id)); setEditModalOpen(true); }} aria-label="Editar"><Pencil className="h-5 w-5" /></button>
-                              <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => handleDeleteRequest(entry.chamado_id, e, entry.id)} aria-label="Excluir"><Trash2 className="h-5 w-5" /></button>
+                              {(canDeleteTicket || canDeleteEtapa) && (
+                                <button
+                                  type="button"
+                                  className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer"
+                                  onClick={(e) => handleDeleteRequest(entry.chamado_id, e, entry.id)}
+                                  aria-label="Excluir"
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1073,16 +1089,28 @@ export default function Historico() {
                       Book
                     </Button>
                   )}
-                  {role === 'admin' ? (
-                    <Button variant="destructive" size="sm" className="gap-1.5 justify-start" onClick={() => handleDeleteRequest(selectedChamado.id)}>
-                      <Trash2 className="h-4 w-4" />
-                      Excluir Ticket
-                    </Button>
-                  ) : (
-                    <Button variant="destructive" size="sm" className="gap-1.5 justify-start" onClick={() => handleDeleteRequest(selectedChamado.id, undefined, selectedEntryId || undefined)}>
-                      <Trash2 className="h-4 w-4" />
-                      Excluir Etapa
-                    </Button>
+                  {(canDeleteTicket || canDeleteEtapa) && (
+                    canDeleteTicket && !canDeleteEtapa ? (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="gap-1.5 justify-start"
+                        onClick={() => handleDeleteRequest(selectedChamado.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Excluir Ticket
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="gap-1.5 justify-start"
+                        onClick={() => handleDeleteRequest(selectedChamado.id, undefined, selectedEntryId || undefined)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Excluir Etapa
+                      </Button>
+                    )
                   )}
                   <Button variant="outline" size="sm" className="gap-1.5 justify-start" onClick={handleClearSelection}>
                     <Eraser className="h-4 w-4" />
