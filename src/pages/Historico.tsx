@@ -621,13 +621,14 @@ export default function Historico() {
 
   const handleDeleteRequest = (ticketId: number, e?: React.MouseEvent, entryId?: string) => {
     if (e) e.stopPropagation();
-    if (role === 'supervisor') {
-      // Supervisor can only delete the selected history entry
-      setDeleteEntryId(entryId || selectedEntryId || null);
-      setDeleteTicketId(ticketId);
-    } else {
+    if (role === 'admin') {
+      // Admin: delete entire ticket
       setDeleteTicketId(ticketId);
       setDeleteEntryId(null);
+    } else {
+      // Gestor, Supervisor, Representante: delete only the history entry
+      setDeleteEntryId(entryId || selectedEntryId || null);
+      setDeleteTicketId(ticketId);
     }
     setDeleteMotivo('');
     setDeleteDialogOpen(true);
