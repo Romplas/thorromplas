@@ -285,7 +285,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
     const a = document.createElement('a');
     a.href = url;
     a.download = anexo.nome;
-    a.target = '_blank';
+    // Força download no mesmo contexto da aba
     document.body.appendChild(a);
     a.click();
     a.remove();

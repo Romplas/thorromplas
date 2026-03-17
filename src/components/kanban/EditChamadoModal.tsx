@@ -336,7 +336,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
     const a = document.createElement('a');
     a.href = url;
     a.download = anexo.nome;
-    a.target = '_blank';
+    // Força download no mesmo contexto da aba
     document.body.appendChild(a);
     a.click();
     a.remove();
