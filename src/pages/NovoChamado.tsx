@@ -303,7 +303,9 @@ export default function NovoChamado() {
         .eq('etapa', 'pendente')
         .order('created_at', { ascending: false })
         .limit(100);
-      if (role === 'representante' && selectedRepresentante) {
+      // Sempre que um representante estiver selecionado (qualquer que seja o papel),
+      // limitamos os tickets a esse representante específico.
+      if (selectedRepresentante) {
         q = q.eq('representante_id', selectedRepresentante);
       }
       const { data, error } = await q;
