@@ -1297,9 +1297,12 @@ export default function Historico() {
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogTitle>{role === 'supervisor' ? 'Confirmar exclusão da etapa' : 'Confirmar exclusão'}</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja excluir o chamado <strong>#{deleteTicketId}</strong>? Informe o motivo da exclusão abaixo. Esta ação não pode ser desfeita.
+                {role === 'supervisor' 
+                  ? <>Tem certeza que deseja excluir esta etapa do chamado <strong>#{deleteTicketId}</strong>? Informe o motivo da exclusão abaixo. Esta ação não pode ser desfeita.</>
+                  : <>Tem certeza que deseja excluir o chamado <strong>#{deleteTicketId}</strong>? Informe o motivo da exclusão abaixo. Esta ação não pode ser desfeita.</>
+                }
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-2 py-2">
