@@ -61,7 +61,13 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="nav-header h-12 flex items-center justify-between px-4 sm:px-6 shadow-md">
+      <header
+        className="nav-header flex items-center justify-between px-4 sm:px-6 shadow-md"
+        style={{
+          paddingTop: 'env(safe-area-inset-top)',
+          height: 'calc(3rem + env(safe-area-inset-top))',
+        }}
+      >
         <div className="flex items-center gap-4 sm:gap-8">
           <div className="flex items-center gap-2 font-bold text-lg cursor-pointer shrink-0" onClick={() => navigate('/')}>
             <img src={logoThor} alt="THOR" className="h-7 w-7 rounded" />
@@ -78,7 +84,10 @@ export default function Layout({ children }: LayoutProps) {
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="w-full max-w-[280px] p-0 nav-header border-0 bg-primary">
-                <nav className="flex flex-col pt-14 px-4 pb-4">
+                <nav
+                  className="flex flex-col px-4 pb-4"
+                  style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top))' }}
+                >
                   {navItems.map((item) => (
                     <NavLink
                       key={item.to}

@@ -57,6 +57,8 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+const NOVO_CHAMADO_DRAFT_KEY = 'thorromplas:novo-chamado-draft';
+
 export default function NovoChamado() {
   const navigate = useNavigate();
   const { profile, role } = useAuth();
@@ -173,6 +175,111 @@ export default function NovoChamado() {
   const [amostrasForm, setAmostrasForm] = useState<AmostrasFullFormData>({ ...defaultAmostrasFullForm });
   const [bookForm, setBookForm] = useState<BookFullFormData>({ ...defaultBookFullForm });
   const [specialFormFilled, setSpecialFormFilled] = useState(false);
+
+  // ---------- Draft persistence (localStorage) ----------
+  // Carrega rascunho salvo ao montar
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(NOVO_CHAMADO_DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (draft.selectedMotivo) setSelectedMotivo(draft.selectedMotivo);
+      if (draft.selectedSubmotivo) setSelectedSubmotivo(draft.selectedSubmotivo);
+      if (draft.selectedSupervisor) setSelectedSupervisor(draft.selectedSupervisor);
+      if (draft.selectedRepresentante) setSelectedRepresentante(draft.selectedRepresentante);
+      if (draft.selectedCodigoCliente) setSelectedCodigoCliente(draft.selectedCodigoCliente);
+      if (draft.selectedCliente) setSelectedCliente(draft.selectedCliente);
+      if (draft.selectedRede) setSelectedRede(draft.selectedRede);
+      if (draft.dataContato) setDataContato(draft.dataContato);
+      if (draft.dataRetorno) setDataRetorno(draft.dataRetorno);
+      if (draft.metrosTotais) setMetrosTotais(draft.metrosTotais);
+      if (draft.negociadoCom) setNegociadoCom(draft.negociadoCom);
+      if (draft.nfe) setNfe(draft.nfe);
+      if (draft.tipoSolicitacao) setTipoSolicitacao(draft.tipoSolicitacao);
+      if (draft.gestor) setGestor(draft.gestor);
+      if (draft.statusAgendamento) setStatusAgendamento(draft.statusAgendamento);
+      if (draft.produtos) setProdutos(draft.produtos);
+      if (draft.prazosEntrega) setPrazosEntrega(draft.prazosEntrega);
+      if (draft.prazo) setPrazo(draft.prazo);
+      if (draft.tipoEntrega) setTipoEntrega(draft.tipoEntrega);
+      if (draft.descricaoTexto) setDescricaoTexto(draft.descricaoTexto);
+      if (draft.qualTabela) setQualTabela(draft.qualTabela);
+      if (draft.tabelaProdutos) setTabelaProdutos(draft.tabelaProdutos);
+      if (draft.sdForm) setSdForm(draft.sdForm);
+      if (draft.rncForm) setRncForm(draft.rncForm);
+      if (draft.amostrasForm) setAmostrasForm(draft.amostrasForm);
+      if (draft.bookForm) setBookForm(draft.bookForm);
+      if (typeof draft.specialFormFilled === 'boolean') setSpecialFormFilled(draft.specialFormFilled);
+    } catch {
+      // ignore corrupted drafts
+    }
+  }, []);
+
+  // Salva rascunho sempre que campos principais mudarem (texto / seleções)
+  useEffect(() => {
+    const draft = {
+      selectedMotivo,
+      selectedSubmotivo,
+      selectedSupervisor,
+      selectedRepresentante,
+      selectedCodigoCliente,
+      selectedCliente,
+      selectedRede,
+      dataContato,
+      dataRetorno,
+      metrosTotais,
+      negociadoCom,
+      nfe,
+      tipoSolicitacao,
+      gestor,
+      statusAgendamento,
+      produtos,
+      prazosEntrega,
+      prazo,
+      tipoEntrega,
+      descricaoTexto,
+      qualTabela,
+      tabelaProdutos,
+      sdForm,
+      rncForm,
+      amostrasForm,
+      bookForm,
+      specialFormFilled,
+    };
+    try {
+      localStorage.setItem(NOVO_CHAMADO_DRAFT_KEY, JSON.stringify(draft));
+    } catch {
+      // ignore quota / serialization errors
+    }
+  }, [
+    selectedMotivo,
+    selectedSubmotivo,
+    selectedSupervisor,
+    selectedRepresentante,
+    selectedCodigoCliente,
+    selectedCliente,
+    selectedRede,
+    dataContato,
+    dataRetorno,
+    metrosTotais,
+    negociadoCom,
+    nfe,
+    tipoSolicitacao,
+    gestor,
+    statusAgendamento,
+    produtos,
+    prazosEntrega,
+    prazo,
+    tipoEntrega,
+    descricaoTexto,
+    qualTabela,
+    tabelaProdutos,
+    sdForm,
+    rncForm,
+    amostrasForm,
+    bookForm,
+    specialFormFilled,
+  ]);
 
   const buildSpecialDescricao = () => {
     if (isSD) {
@@ -717,6 +824,13 @@ export default function NovoChamado() {
       setSpecialFormFilled(false);
       setAnexos([]);
       setFileErrors([]);
+
+      // Limpa rascunho do localStorage após criação bem-sucedida
+      try {
+        localStorage.removeItem(NOVO_CHAMADO_DRAFT_KEY);
+      } catch {
+        // ignore
+      }
     } catch (err: any) {
       console.error(err);
       toast.error('Erro ao criar chamado: ' + (err.message || 'Erro desconhecido'));
