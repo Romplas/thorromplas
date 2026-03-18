@@ -146,6 +146,7 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
   };
 
   const [catalogoProdutos, setCatalogoProdutos] = useState<ProdutoCatalogo[]>([]);
+  const [finalidadeTouched, setFinalidadeTouched] = useState(false);
   useEffect(() => {
     if (!open) return;
     const load = async () => {
@@ -339,6 +340,7 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
   const handleConfirmWithPdf = async () => {
     if (!form.amostraTipo) { toast.error('Selecione o tipo de amostra.'); return; }
     if (!form.amostraQuantidade) { toast.error('Selecione a quantidade.'); return; }
+    if (!form.finalidade?.trim()) { setFinalidadeTouched(true); toast.error('Informe a finalidade das amostras.'); return; }
 
     const pdfBlob = await generatePdf();
     const cleanName = (clienteNome || 'amostras').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -349,6 +351,7 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
   const handleConfirmOnly = () => {
     if (!form.amostraTipo) { toast.error('Selecione o tipo de amostra.'); return; }
     if (!form.amostraQuantidade) { toast.error('Selecione a quantidade.'); return; }
+    if (!form.finalidade?.trim()) { setFinalidadeTouched(true); toast.error('Informe a finalidade das amostras.'); return; }
     onConfirm(form);
   };
 
@@ -586,13 +589,22 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
 
             {/* ── Finalidade / Comentários ── */}
             <div className="rounded-lg border p-4 space-y-3">
-              <h3 className="text-sm font-bold">Finalidade das Amostras / Comentários do Representante</h3>
+              <h3 className="text-sm font-bold">
+                Finalidade das Amostras / Comentários do Representante <span className="text-destructive">*</span>
+              </h3>
               <Textarea
-                className="text-xs"
+                className={`text-xs ${finalidadeTouched && !form.finalidade?.trim() ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 rows={3}
                 value={form.finalidade}
-                onChange={e => setForm(p => ({ ...p, finalidade: e.target.value }))}
+                onChange={e => {
+                  if (!finalidadeTouched) setFinalidadeTouched(true);
+                  setForm(p => ({ ...p, finalidade: e.target.value }));
+                }}
+                onBlur={() => setFinalidadeTouched(true)}
               />
+              {finalidadeTouched && !form.finalidade?.trim() && (
+                <p className="text-[11px] text-destructive font-medium">Campo obrigatório.</p>
+              )}
             </div>
 
             {/* ── Utilização ── */}
