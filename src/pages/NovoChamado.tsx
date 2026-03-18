@@ -62,6 +62,7 @@ const NOVO_CHAMADO_DRAFT_KEY = 'thorromplas:novo-chamado-draft';
 export default function NovoChamado() {
   const navigate = useNavigate();
   const { profile, role } = useAuth();
+  const draftKey = profile?.id ? `${NOVO_CHAMADO_DRAFT_KEY}:${profile.id}` : null;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [motivos, setMotivos] = useState<Motivo[]>([]);
   const [submotivos, setSubmotivos] = useState<Submotivo[]>([]);
@@ -180,7 +181,8 @@ export default function NovoChamado() {
   // Carrega rascunho salvo ao montar
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(NOVO_CHAMADO_DRAFT_KEY);
+      if (!draftKey) return;
+      const raw = localStorage.getItem(draftKey);
       if (!raw) return;
       const draft = JSON.parse(raw);
       if (draft.selectedMotivo) setSelectedMotivo(draft.selectedMotivo);
@@ -213,10 +215,11 @@ export default function NovoChamado() {
     } catch {
       // ignore corrupted drafts
     }
-  }, []);
+  }, [draftKey]);
 
   // Salva rascunho sempre que campos principais mudarem (texto / seleções)
   useEffect(() => {
+    if (!draftKey) return;
     const draft = {
       selectedMotivo,
       selectedSubmotivo,
@@ -247,7 +250,7 @@ export default function NovoChamado() {
       specialFormFilled,
     };
     try {
-      localStorage.setItem(NOVO_CHAMADO_DRAFT_KEY, JSON.stringify(draft));
+      localStorage.setItem(draftKey, JSON.stringify(draft));
     } catch {
       // ignore quota / serialization errors
     }
@@ -420,6 +423,31 @@ export default function NovoChamado() {
         if (rep) enforcedRepresentanteId = rep.id;
       }
 
+      let enforcedSupervisorId: string | null = null;
+      if (role === 'supervisor' && profile && supervisores.length > 0) {
+        const profileSupervisoraLower = (profile.supervisora || '').toLowerCase();
+        const profileNomeLower = (profile.nome || '').toLowerCase();
+        const sup = supervisores.find(
+          (s) =>
+            s.nome.toLowerCase() === profileSupervisoraLower ||
+            s.nome.toLowerCase() === profileNomeLower
+        );
+        if (sup) enforcedSupervisorId = sup.id;
+      }
+
+      // Segurança: se não conseguiu resolver qual representante/supervisor é o usuário,
+      // não busque chamados para evitar mostrar dados de terceiros.
+      if (role === 'representante' && !enforcedRepresentanteId) {
+        setChamadosCriados([]);
+        setLoadingTickets(false);
+        return;
+      }
+      if (role === 'supervisor' && !enforcedSupervisorId) {
+        setChamadosCriados([]);
+        setLoadingTickets(false);
+        return;
+      }
+
       let q = supabase
         .from('chamados')
         .select('*')
@@ -429,8 +457,10 @@ export default function NovoChamado() {
         .limit(100);
       // Regra de segurança: se for representante, SEMPRE filtra pelo representante
       // vinculado ao usuário logado. Para outros papéis, usamos o filtro da tela.
-      if (enforcedRepresentanteId) {
+      if (role === 'representante' && enforcedRepresentanteId) {
         q = q.eq('representante_id', enforcedRepresentanteId);
+      } else if (role === 'supervisor' && enforcedSupervisorId) {
+        q = q.eq('supervisor_id', enforcedSupervisorId);
       } else if (selectedRepresentante) {
         q = q.eq('representante_id', selectedRepresentante);
       }
@@ -529,7 +559,7 @@ export default function NovoChamado() {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role, selectedRepresentante]);
+  }, [role, selectedRepresentante, selectedSupervisor, profile, representantes.length, supervisores.length]);
 
   // Auto-fill supervisor/representante based on logged-in user role
   useEffect(() => {
@@ -827,7 +857,7 @@ export default function NovoChamado() {
 
       // Limpa rascunho do localStorage após criação bem-sucedida
       try {
-        localStorage.removeItem(NOVO_CHAMADO_DRAFT_KEY);
+        if (draftKey) localStorage.removeItem(draftKey);
       } catch {
         // ignore
       }
