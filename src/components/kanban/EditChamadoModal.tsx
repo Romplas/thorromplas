@@ -88,9 +88,12 @@ function getDownloadUrl(path: string, fileName: string): string {
 }
 
 export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved, profileMap }: Props) {
-  const { role } = useAuth();
+  const { role, profile } = useAuth();
   const canUpload = role === 'admin' || role === 'gestor' || role === 'supervisor';
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const DRAFT_PREFIX = 'thorromplas:edit-chamado-draft';
+  const draftKey = chamado && profile?.id ? `${DRAFT_PREFIX}:${profile.id}:${chamado.id}` : null;
   const [descricao, setDescricao] = useState('');
   const [status, setStatus] = useState('');
   const [etapa, setEtapa] = useState('');
@@ -141,17 +144,82 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   }, []);
 
   useEffect(() => {
-    if (chamado && open) {
+    if (!chamado || !open) return;
+
+    // Carrega rascunho (se existir) para não sobrescrever o que o usuário digitou.
+    let loadedDraft: any = null;
+    if (draftKey) {
+      try {
+        const raw = localStorage.getItem(draftKey);
+        if (raw) loadedDraft = JSON.parse(raw);
+      } catch {
+        // ignore malformed drafts
+      }
+    }
+
+    const hasDraft = !!loadedDraft;
+
+    if (hasDraft) {
+      setDescricao(loadedDraft.descricao ?? chamado.descricao ?? '');
+      setStatus(loadedDraft.status ?? chamado.status);
+      setEtapa(loadedDraft.etapa ?? chamado.etapa ?? 'thor');
+      setGestorId(loadedDraft.gestorId ?? chamado.gestor_id ?? 'none');
+      setMetrosTotais(loadedDraft.metrosTotais ?? '');
+      setNegociadoCom(loadedDraft.negociadoCom ?? '');
+      setNfe(loadedDraft.nfe ?? '');
+      setTipoSolicitacao(loadedDraft.tipoSolicitacao ?? '');
+      setStatusAgendamento(loadedDraft.statusAgendamento ?? '');
+    } else {
       setDescricao(chamado.descricao || '');
       setStatus(chamado.status);
       setEtapa(chamado.etapa || 'thor');
       setGestorId(chamado.gestor_id || 'none');
-      loadAnexos(chamado.id);
-      resolveNames(chamado);
-      // Load extra fields
+    }
+
+    loadAnexos(chamado.id);
+    resolveNames(chamado);
+
+    // Só sobrescreve campos extras com o backend se não houver rascunho.
+    if (!hasDraft) {
       loadExtraFields(chamado.id);
     }
-  }, [chamado, open]);
+  }, [chamado, open, draftKey]);
+
+  // Persistência do rascunho enquanto o usuário está editando.
+  useEffect(() => {
+    if (!open || !draftKey) return;
+    const draft = {
+      descricao,
+      status,
+      etapa,
+      gestorId,
+      metrosTotais,
+      negociadoCom,
+      nfe,
+      tipoSolicitacao,
+      statusAgendamento,
+    };
+    const t = window.setTimeout(() => {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+      } catch {
+        // ignore quota/serialization issues
+      }
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [
+    open,
+    draftKey,
+    descricao,
+    status,
+    etapa,
+    gestorId,
+    metrosTotais,
+    negociadoCom,
+    nfe,
+    tipoSolicitacao,
+    statusAgendamento,
+  ]);
 
   const loadExtraFields = async (chamadoId: number) => {
     const { data } = await supabase
@@ -317,6 +385,15 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       toast.success(`Ticket ${chamado.id} atualizado!`);
       onSaved();
       onOpenChange(false);
+
+      // Limpa rascunho após salvar com sucesso
+      if (draftKey) {
+        try {
+          localStorage.removeItem(draftKey);
+        } catch {
+          // ignore
+        }
+      }
     } catch (err: any) {
       toast.error('Erro ao salvar: ' + (err.message || 'Erro desconhecido'));
     } finally {
