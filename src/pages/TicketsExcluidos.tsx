@@ -126,7 +126,7 @@ export default function TicketsExcluidos() {
   const fetchData = async () => {
     setLoading(true);
     const [excluidosRes, profilesRes, supRes, motivosRes, submotivosRes, repRes, etapasRes, srRes] = await Promise.all([
-      supabase.from('chamados_excluidos').select('*').order('deleted_at', { ascending: false }),
+      (supabase as any).from('chamados_excluidos').select('*').order('deleted_at', { ascending: false }),
       supabase.from('profiles').select('id, nome, user_id'),
       supabase.from('supervisores').select('id, nome').eq('status', 'ativo').order('nome'),
       supabase.from('motivos').select('id, nome').order('nome'),
