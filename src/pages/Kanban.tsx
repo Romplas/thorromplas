@@ -115,8 +115,8 @@ export default function Kanban() {
   const [filterGestor, setFilterGestor] = useState('todos');
 
   const handleClearFilters = () => {
-    if (!isRestricted) setFilterSupervisor('todos');
-    if (role !== 'representante') setFilterRepresentante('todos');
+    setFilterSupervisor('todos');
+    setFilterRepresentante('todos');
     setFilterCliente('todos');
     setFilterTicketId('todos');
     setFilterMotivo('todos');
@@ -281,6 +281,7 @@ export default function Kanban() {
     setFilterCliente('todos');
     setFilterTicketId('todos');
     setFilterMotivo('todos');
+    setFilterGestor('todos');
   };
 
   const handleRepresentanteChange = (value: string) => {
@@ -288,6 +289,7 @@ export default function Kanban() {
     setFilterCliente('todos');
     setFilterTicketId('todos');
     setFilterMotivo('todos');
+    setFilterGestor('todos');
   };
 
   const handleDelete = async (id: number, motivo: string) => {
@@ -392,35 +394,17 @@ export default function Kanban() {
     return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Build a map: representante_id (from representantes table) -> list of supervisor_ids
-  // chamados have supervisor_id & representante_id referencing profiles, but filter uses supervisores/representantes tables
-  // We need to filter by cliente_nome matching clientes table
-  // Pre-filter chamados by supervisor+representante to derive dropdown options
-  const chamadosForDropdowns = chamados.filter((c) => {
+  // Filtros individuais: cada filtro ativo restringe. Todos aplicados em AND.
+  // Gestor/Supervisor: ao filtrar só por gestor (ou qualquer outro), traz todos os matching.
+  const filteredChamados = chamados.filter((c) => {
     if (filterSupervisor !== 'todos') {
-      // Filter directly by supervisor_id on chamado
-      if (c.supervisor_id === filterSupervisor) {
-        // Direct match on supervisor_id
-      } else {
-        // Also check via representante link
-        const repIdsForSupervisor = srLinks
-          .filter(sr => sr.supervisor_id === filterSupervisor)
-          .map(sr => sr.representante_id);
-        if (!c.representante_id || !repIdsForSupervisor.includes(c.representante_id)) return false;
-      }
+      const repIdsForSupervisor = srLinks
+        .filter(sr => sr.supervisor_id === filterSupervisor)
+        .map(sr => sr.representante_id);
+      const matchSup = c.supervisor_id === filterSupervisor || (c.representante_id && repIdsForSupervisor.includes(c.representante_id));
+      if (!matchSup) return false;
     }
-    if (filterRepresentante !== 'todos') {
-      if (c.representante_id !== filterRepresentante) return false;
-    }
-    return true;
-  });
-
-  // Derived dropdown options from filtered chamados
-  const ticketIdOptions = chamadosForDropdowns.map(c => String(c.id));
-  const clienteOptions = [...new Set(chamadosForDropdowns.map(c => c.cliente_nome).filter(Boolean))].sort();
-  const motivoOptions = [...new Set(chamadosForDropdowns.map(c => c.motivo).filter(Boolean))].sort();
-
-  const filteredChamados = chamadosForDropdowns.filter((c) => {
+    if (filterRepresentante !== 'todos' && c.representante_id !== filterRepresentante) return false;
     if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
     if (filterTicketId !== 'todos' && String(c.id) !== filterTicketId) return false;
     if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
@@ -428,7 +412,12 @@ export default function Kanban() {
     return true;
   });
 
-  const isRestricted = role === 'supervisor' || role === 'representante';
+  // Opções dos dropdowns: valores distintos do conjunto filtrado
+  const ticketIdOptions = [...new Set(filteredChamados.map(c => String(c.id)))];
+  const clienteOptions = [...new Set(filteredChamados.map(c => c.cliente_nome).filter(Boolean))].sort();
+  const motivoOptions = [...new Set(filteredChamados.map(c => c.motivo).filter(Boolean))].sort();
+
+  const isSupervisorSelectDisabled = role === 'supervisor' || role === 'representante'; // Supervisor vê apenas seus chamados
   const roleLabel = profile?.nome || (role === 'admin' ? 'Administrador' : role === 'gestor' ? 'Gestor' : role === 'supervisor' ? 'Supervisor' : 'Representante');
 
   return (
@@ -445,7 +434,7 @@ export default function Kanban() {
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mb-4 bg-card rounded-lg p-3 shadow-sm border">
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Supervisor</span>
-            <Select value={filterSupervisor} onValueChange={handleSupervisorChange} disabled={isRestricted}>
+            <Select value={filterSupervisor} onValueChange={handleSupervisorChange} disabled={isSupervisorSelectDisabled}>
               <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>

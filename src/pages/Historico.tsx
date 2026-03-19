@@ -354,7 +354,7 @@ export default function Historico() {
     resolve();
   }, [selectedEntryId, selectedTicketId, chamados, profileMap]);
 
-  // Role-based base filtering
+  // Role-based: supervisor e representante veem apenas seus chamados
   const isSupervisorLocked = role === 'supervisor' || role === 'representante';
   const isRepresentanteLocked = role === 'representante';
 
@@ -367,25 +367,19 @@ export default function Historico() {
     ? representantes.filter(r => srLinks.some(sr => sr.supervisor_id === filterSupervisor && sr.representante_id === r.id))
     : representantes;
 
-  // Filter chamados
+  // Filtros individuais: cada filtro ativo restringe. Todos aplicados em AND.
+  // Gestor/Supervisor: ao filtrar só por gestor (ou qualquer outro), traz todos os matching.
   const filteredChamadoIds = new Set(
     chamados
       .filter(c => {
         if (filterSupervisor !== 'todos') {
-          // Direct match on supervisor_id
-          if (c.supervisor_id === filterSupervisor) {
-            // Match - now check representante if needed
-          } else {
-            // Also check via representante link
-            const repIdsForSupervisor = srLinks
-              .filter(sr => sr.supervisor_id === filterSupervisor)
-              .map(sr => sr.representante_id);
-            if (!c.representante_id || !repIdsForSupervisor.includes(c.representante_id)) return false;
-          }
-          if (filterRepresentante !== 'todos' && c.representante_id !== filterRepresentante) return false;
-        } else if (filterRepresentante !== 'todos') {
-          if (c.representante_id !== filterRepresentante) return false;
+          const repIdsForSupervisor = srLinks
+            .filter(sr => sr.supervisor_id === filterSupervisor)
+            .map(sr => sr.representante_id);
+          const matchSup = c.supervisor_id === filterSupervisor || (c.representante_id && repIdsForSupervisor.includes(c.representante_id));
+          if (!matchSup) return false;
         }
+        if (filterRepresentante !== 'todos' && c.representante_id !== filterRepresentante) return false;
         if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
         if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
         if (filterSubmotivo !== 'todos' && c.submotivo !== filterSubmotivo) return false;
@@ -539,7 +533,8 @@ export default function Historico() {
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   })();
 
-  const uniqueClientes = [...new Set(chamados.map(c => c.cliente_nome).filter(Boolean))].sort();
+  const filteredChamadosForOptions = chamados.filter(c => filteredChamadoIds.has(c.id));
+  const uniqueClientes = [...new Set(filteredChamadosForOptions.map(c => c.cliente_nome).filter(Boolean))].sort();
 
   const filteredSubmotivos = filterMotivo !== 'todos'
     ? submotivos.filter(s => {
@@ -831,7 +826,7 @@ export default function Historico() {
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">TicketID</span>
                 <SearchableSelect
-                  options={[{ value: 'todos', label: 'Todos' }, ...chamados.map(c => ({ value: String(c.id), label: String(c.id) }))]}
+                  options={[{ value: 'todos', label: 'Todos' }, ...filteredChamadosForOptions.map(c => ({ value: String(c.id), label: String(c.id) }))]}
                   value={selectedTicketId}
                   onValueChange={(v) => { setSelectedTicketId(v); setSelectedEntryId(null); }}
                   placeholder="Todos"
