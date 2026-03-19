@@ -147,7 +147,6 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   useEffect(() => {
     if (!chamado || !open) return;
 
-    // Sempre busca os dados mais recentes do ticket no banco para exibir a última atualização
     const loadLatestChamado = async () => {
       const { data: freshChamado, error } = await supabase
         .from('chamados')
@@ -156,7 +155,6 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
         .maybeSingle();
 
       if (error || !freshChamado) {
-        // Fallback para o chamado recebido via prop
         setDescricao(chamado.descricao || '');
         setStatus(chamado.status);
         setEtapa(chamado.etapa || 'thor');
@@ -168,52 +166,22 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       }
 
       const raw = freshChamado as any;
-
-      // Verifica se existe rascunho não salvo - prioriza o trabalho do usuário
-      let restoredFromDraft = false;
-      if (draftKey) {
-        try {
-          const draftRaw = localStorage.getItem(draftKey);
-          if (draftRaw) {
-            const draft = JSON.parse(draftRaw);
-            setDescricao((draft.descricao != null && draft.descricao !== '') ? draft.descricao : (raw.descricao || ''));
-            setStatus(draft.status ?? raw.status ?? '');
-            setEtapa(draft.etapa ?? raw.etapa ?? 'thor');
-            setGestorId(draft.gestorId ?? raw.gestor_id ?? 'none');
-            setMetrosTotais(draft.metrosTotais ?? raw.metros_totais ?? '');
-            setNegociadoCom(draft.negociadoCom ?? raw.negociado_com ?? '');
-            setNfe(draft.nfe ?? raw.nfe ?? '');
-            setTipoSolicitacao(draft.tipoSolicitacao ?? raw.tipo_solicitacao ?? '');
-            setStatusAgendamento(draft.statusAgendamento ?? raw.status_agendamento ?? '');
-            restoredFromDraft = true;
-          }
-        } catch {
-          // rascunho corrompido - usa dados do banco
-        }
-      }
-
-      if (!restoredFromDraft) {
-        setDescricao(raw.descricao || '');
-        setStatus(raw.status || '');
-        setEtapa(raw.etapa || 'thor');
-        setGestorId(raw.gestor_id || 'none');
-        setMetrosTotais(raw.metros_totais || '');
-        setNegociadoCom(raw.negociado_com || '');
-        setNfe(raw.nfe || '');
-        setTipoSolicitacao(raw.tipo_solicitacao || '');
-        setStatusAgendamento(raw.status_agendamento || '');
-      }
+      setDescricao(raw.descricao || '');
+      setStatus(raw.status || '');
+      setEtapa(raw.etapa || 'thor');
+      setGestorId(raw.gestor_id || 'none');
+      setMetrosTotais(raw.metros_totais || '');
+      setNegociadoCom(raw.negociado_com || '');
+      setNfe(raw.nfe || '');
+      setTipoSolicitacao(raw.tipo_solicitacao || '');
+      setStatusAgendamento(raw.status_agendamento || '');
 
       resolveNames({ ...chamado, ...raw });
       loadAnexos(chamado.id);
-
-      if (restoredFromDraft) {
-        toast.info('Rascunho restaurado. Suas alterações anteriores foram recuperadas.');
-      }
     };
 
     loadLatestChamado();
-  }, [chamado, open, draftKey]);
+  }, [chamado, open]);
 
   // Mantém ref atualizada para flush em beforeunload/close
   draftStateRef.current = { descricao, status, etapa, gestorId, metrosTotais, negociadoCom, nfe, tipoSolicitacao, statusAgendamento };
