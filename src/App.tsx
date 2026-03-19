@@ -14,8 +14,8 @@ import NovoChamado from "./pages/NovoChamado";
 import Historico from "./pages/Historico";
 import Usuarios from "./pages/Usuarios";
 import Kanban from "./pages/Kanban";
-import ImportClientes from "./pages/ImportClientes";
 import Configuracoes from "./pages/Configuracoes";
+import TicketsExcluidos from "./pages/TicketsExcluidos";
 import MeuPerfil from "./pages/MeuPerfil";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
@@ -40,8 +40,9 @@ const App = () => (
             <Route path="/historico" element={<ProtectedRoute><Historico /></ProtectedRoute>} />
             <Route path="/usuarios" element={<ProtectedRoute allowedRoles={['admin', 'gestor']}><Usuarios /></ProtectedRoute>} />
             <Route path="/kanban" element={<ProtectedRoute allowedRoles={['admin', 'gestor', 'supervisor']}><Kanban /></ProtectedRoute>} />
-            <Route path="/import-clientes" element={<ProtectedRoute allowedRoles={['admin', 'gestor']}><ImportClientes /></ProtectedRoute>} />
+            <Route path="/import-clientes" element={<Navigate to="/configuracoes?tab=import" replace />} />
             <Route path="/configuracoes" element={<ProtectedRoute allowedRoles={['admin', 'gestor']}><Configuracoes /></ProtectedRoute>} />
+            <Route path="/tickets-excluidos" element={<ProtectedRoute allowedRoles={['admin']}><TicketsExcluidos /></ProtectedRoute>} />
             <Route path="/meu-perfil" element={<ProtectedRoute><MeuPerfil /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

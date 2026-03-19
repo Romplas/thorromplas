@@ -3,7 +3,6 @@ import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Loader2, Package } f
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import Layout from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 
@@ -22,7 +21,7 @@ interface ProdutoRow {
   produto: string;
 }
 
-export default function ImportClientes() {
+export default function ImportTab() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const produtoFileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -89,7 +88,6 @@ export default function ImportClientes() {
       setStatus('importing');
       setMessage(`Enviando ${rows.length} registros para importação...`);
 
-      // Send in chunks of 1000 to avoid payload limits
       const chunkSize = 1000;
       let totalResult = { supervisores: 0, representantes: 0, redes: 0, sr_links: 0, clientes: 0 };
 
@@ -151,21 +149,16 @@ export default function ImportClientes() {
         return;
       }
 
-      // Etapa 1: limpar todos os produtos atuais antes de importar
       setProdutoProgress(40);
       setProdutoStatus('importing');
       setProdutoMessage('Apagando produtos existentes...');
 
-      // Apaga todas as linhas da tabela de produtos.
-      // Usamos uma condição sempre verdadeira (id IS NOT NULL) para evitar
-      // problemas de cast de tipo (como comparar UUID com string vazia).
       const { error: deleteError } = await supabase
         .from('produtos')
         .delete()
         .not('id', 'is', null);
       if (deleteError) throw new Error(deleteError.message);
 
-      // Etapa 2: inserir nova lista de produtos
       setProdutoProgress(60);
       setProdutoMessage(`Importando ${validRows.length} produtos...`);
 
@@ -197,144 +190,142 @@ export default function ImportClientes() {
   };
 
   return (
-    <Layout>
-      <div className="max-w-2xl mx-auto p-4 sm:p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5" />
-              Importar Clientes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <p className="text-sm text-muted-foreground">
-              Selecione o arquivo XLSX com as colunas: CodSupervisor, Supervisor, CodRepresentante, Representantes, Rede, Codigo do Cliente, Cliente.
-            </p>
+    <div className="max-w-2xl space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5" />
+            Importar Clientes
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <p className="text-sm text-muted-foreground">
+            Selecione o arquivo XLSX com as colunas: CodSupervisor, Supervisor, CodRepresentante, Representantes, Rede, Codigo do Cliente, Cliente.
+          </p>
 
-            <div className="flex items-center gap-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                onChange={handleFileSelect}
-              />
-              <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="h-4 w-4 mr-2" />
-                Selecionar arquivo
-              </Button>
-              {file && <span className="text-sm text-muted-foreground">{file.name}</span>}
-            </div>
+          <div className="flex items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="h-4 w-4 mr-2" />
+              Selecionar arquivo
+            </Button>
+            {file && <span className="text-sm text-muted-foreground">{file.name}</span>}
+          </div>
 
-            {file && status !== 'importing' && status !== 'parsing' && (
-              <Button onClick={handleImport} disabled={!file}>
-                Iniciar Importação
-              </Button>
-            )}
+          {file && status !== 'importing' && status !== 'parsing' && (
+            <Button onClick={handleImport} disabled={!file}>
+              Iniciar Importação
+            </Button>
+          )}
 
-            {(status === 'parsing' || status === 'importing') && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">{message}</span>
-                </div>
-                <Progress value={progress} />
-              </div>
-            )}
-
-            {status === 'success' && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-green-600">
-                  <CheckCircle className="h-5 w-5" />
-                  <span className="font-medium">{message}</span>
-                </div>
-                {result && (
-                  <div className="bg-muted rounded-lg p-4 text-sm space-y-1">
-                    <p>Supervisores: {result.supervisores}</p>
-                    <p>Representantes: {result.representantes}</p>
-                    <p>Redes: {result.redes}</p>
-                    <p>Vínculos Sup-Rep: {result.sr_links}</p>
-                    <p>Clientes: {result.clientes}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {status === 'error' && (
-              <div className="flex items-center gap-2 text-destructive">
-                <AlertCircle className="h-5 w-5" />
+          {(status === 'parsing' || status === 'importing') && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm">{message}</span>
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Importar Produtos
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <p className="text-sm text-muted-foreground">
-              Selecione o arquivo XLSX com as colunas: <strong>codProduto</strong> e <strong>Produto</strong>.
-            </p>
-
-            <div className="flex items-center gap-3">
-              <input
-                ref={produtoFileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                onChange={handleProdutoFileSelect}
-              />
-              <Button variant="outline" onClick={() => produtoFileInputRef.current?.click()}>
-                <Upload className="h-4 w-4 mr-2" />
-                Selecionar arquivo
-              </Button>
-              {produtoFile && <span className="text-sm text-muted-foreground">{produtoFile.name}</span>}
+              <Progress value={progress} />
             </div>
+          )}
 
-            {produtoFile && produtoStatus !== 'importing' && produtoStatus !== 'parsing' && (
-              <Button onClick={handleProdutoImport} disabled={!produtoFile}>
-                Iniciar Importação de Produtos
-              </Button>
-            )}
-
-            {(produtoStatus === 'parsing' || produtoStatus === 'importing') && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">{produtoMessage}</span>
-                </div>
-                <Progress value={produtoProgress} />
+          {status === 'success' && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="h-5 w-5" />
+                <span className="font-medium">{message}</span>
               </div>
-            )}
-
-            {produtoStatus === 'success' && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-green-600">
-                  <CheckCircle className="h-5 w-5" />
-                  <span className="font-medium">{produtoMessage}</span>
+              {result && (
+                <div className="bg-muted rounded-lg p-4 text-sm space-y-1">
+                  <p>Supervisores: {result.supervisores}</p>
+                  <p>Representantes: {result.representantes}</p>
+                  <p>Redes: {result.redes}</p>
+                  <p>Vínculos Sup-Rep: {result.sr_links}</p>
+                  <p>Clientes: {result.clientes}</p>
                 </div>
-                {produtoResult != null && (
-                  <div className="bg-muted rounded-lg p-4 text-sm">
-                    <p>Produtos importados: {produtoResult}</p>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
+          )}
 
-            {produtoStatus === 'error' && (
-              <div className="flex items-center gap-2 text-destructive">
-                <AlertCircle className="h-5 w-5" />
+          {status === 'error' && (
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              <span className="text-sm">{message}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Importar Produtos
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <p className="text-sm text-muted-foreground">
+            Selecione o arquivo XLSX com as colunas: <strong>codProduto</strong> e <strong>Produto</strong>.
+          </p>
+
+          <div className="flex items-center gap-3">
+            <input
+              ref={produtoFileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleProdutoFileSelect}
+            />
+            <Button variant="outline" onClick={() => produtoFileInputRef.current?.click()}>
+              <Upload className="h-4 w-4 mr-2" />
+              Selecionar arquivo
+            </Button>
+            {produtoFile && <span className="text-sm text-muted-foreground">{produtoFile.name}</span>}
+          </div>
+
+          {produtoFile && produtoStatus !== 'importing' && produtoStatus !== 'parsing' && (
+            <Button onClick={handleProdutoImport} disabled={!produtoFile}>
+              Iniciar Importação de Produtos
+            </Button>
+          )}
+
+          {(produtoStatus === 'parsing' || produtoStatus === 'importing') && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm">{produtoMessage}</span>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </Layout>
+              <Progress value={produtoProgress} />
+            </div>
+          )}
+
+          {produtoStatus === 'success' && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="h-5 w-5" />
+                <span className="font-medium">{produtoMessage}</span>
+              </div>
+              {produtoResult != null && (
+                <div className="bg-muted rounded-lg p-4 text-sm">
+                  <p>Produtos importados: {produtoResult}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {produtoStatus === 'error' && (
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              <span className="text-sm">{produtoMessage}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

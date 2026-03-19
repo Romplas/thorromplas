@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, Clock, Users, LogOut, User, Columns3, Upload, Settings, RefreshCw, Menu } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Clock, Users, LogOut, User, Columns3, Settings, RefreshCw, Menu, Trash2 } from 'lucide-react';
 import logoThor from '@/assets/logo-thor.png';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -13,7 +13,7 @@ const allNavItems = [
   { to: '/novo-chamado', label: 'Novo Chamado', icon: PlusCircle, roles: ['admin', 'gestor', 'supervisor', 'representante'] },
   { to: '/historico', label: 'Histórico', icon: Clock, roles: ['admin', 'gestor', 'supervisor', 'representante'] },
   { to: '/usuarios', label: 'Usuários', icon: Users, roles: ['admin', 'gestor'] },
-  { to: '/import-clientes', label: 'Importar', icon: Upload, roles: ['admin', 'gestor'] },
+  { to: '/tickets-excluidos', label: 'Tickets Excluídos', icon: Trash2, roles: ['admin'] },
   { to: '/configuracoes', label: 'Configurações', icon: Settings, roles: ['admin', 'gestor'] },
 ];
 

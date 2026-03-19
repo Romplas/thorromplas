@@ -24,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { notifyChamadoUpdated, onChamadoUpdated } from '@/lib/chamadoEvents';
+import { backupChamadoBeforeDelete } from '@/lib/chamadoExcluido';
 
 interface HistoricoEntry {
   id: string;
@@ -357,8 +358,8 @@ export default function Historico() {
   const isSupervisorLocked = role === 'supervisor' || role === 'representante';
   const isRepresentanteLocked = role === 'representante';
 
-  // Permissões de exclusão
-  const canDeleteEtapa = role === 'gestor' || role === 'supervisor';
+  // Permissões de exclusão: apenas admin pode excluir. Supervisora/gestor NUNCA apagam etapas - sempre criam nova
+  const canDeleteEtapa = false; // Removido: edições sempre criam nova etapa, nunca apagam anterior
   const canDeleteTicket = role === 'admin';
 
   // Representantes filtered by selected supervisor
@@ -684,6 +685,7 @@ export default function Historico() {
     }
     try {
       for (const id of idsToDelete) {
+        await backupChamadoBeforeDelete(id, deleteMotivo.trim());
         const { data: files } = await supabase.storage.from('chamado-anexos').list(String(id));
         if (files && files.length > 0) {
           await supabase.storage.from('chamado-anexos').remove(files.map(f => `${id}/${f.name}`));

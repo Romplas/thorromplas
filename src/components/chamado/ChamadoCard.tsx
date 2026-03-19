@@ -269,6 +269,14 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
   const handleDelete = async () => {
     setDeleting(true);
     try {
+      const { backupChamadoBeforeDelete } = await import('@/lib/chamadoExcluido');
+      await backupChamadoBeforeDelete(chamado.id);
+
+      const { data: files } = await supabase.storage.from('chamado-anexos').list(String(chamado.id));
+      if (files && files.length > 0) {
+        await supabase.storage.from('chamado-anexos').remove(files.map(f => `${chamado.id}/${f.name}`));
+      }
+      await supabase.from('chamado_historico').delete().eq('chamado_id', chamado.id);
       const { error } = await supabase.from('chamados').delete().eq('id', chamado.id);
       if (error) throw error;
       notifyChamadoUpdated(chamado.id);

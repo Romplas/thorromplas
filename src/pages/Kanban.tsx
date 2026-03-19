@@ -292,13 +292,8 @@ export default function Kanban() {
 
   const handleDelete = async (id: number, motivo: string) => {
     try {
-      // Log before deleting
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      let userProfileId: string | null = null;
-      if (currentUser) {
-        const { data: prof } = await supabase.from('profiles').select('id').eq('user_id', currentUser.id).maybeSingle();
-        userProfileId = prof?.id || null;
-      }
+      const { backupChamadoBeforeDelete } = await import('@/lib/chamadoExcluido');
+      await backupChamadoBeforeDelete(id, motivo);
 
       // Clean up storage attachments
       const { data: files } = await supabase.storage.from('chamado-anexos').list(String(id));
