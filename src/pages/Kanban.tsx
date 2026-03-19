@@ -6,6 +6,7 @@ import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { notifyChamadoUpdated, onChamadoUpdated } from '@/lib/chamadoEvents';
 import EditChamadoModal from '@/components/kanban/EditChamadoModal';
 import DeleteConfirmDialog from '@/components/kanban/DeleteConfirmDialog';
 
@@ -164,8 +165,13 @@ export default function Kanban() {
       )
       .subscribe();
 
+    const unsubscribe = onChamadoUpdated(() => {
+      fetchData();
+    });
+
     return () => {
       supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [authLoading, role, profile]);
 
@@ -307,6 +313,7 @@ export default function Kanban() {
       const { error } = await supabase.from('chamados').delete().eq('id', id);
       if (error) throw error;
 
+      notifyChamadoUpdated(id);
       setChamados((prev) => prev.filter((c) => c.id !== id));
       toast({ title: `Chamado #${id} excluído definitivamente` });
     } catch (err: any) {

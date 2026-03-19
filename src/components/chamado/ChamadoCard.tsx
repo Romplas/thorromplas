@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { notifyChamadoUpdated } from '@/lib/chamadoEvents';
 
 export interface AnexoFile {
   nome: string;
@@ -255,6 +256,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
       }
 
       onUpdate(draft);
+      notifyChamadoUpdated(chamado.id);
       setEditing(false);
       toast.success(`Chamado #${chamado.id} atualizado!`);
     } catch (err: any) {
@@ -269,6 +271,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
     try {
       const { error } = await supabase.from('chamados').delete().eq('id', chamado.id);
       if (error) throw error;
+      notifyChamadoUpdated(chamado.id);
       toast.success(`Chamado #${chamado.id} excluído!`);
       onDelete?.(chamado.id);
     } catch (err: any) {

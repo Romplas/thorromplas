@@ -23,6 +23,7 @@ import EditChamadoModal from '@/components/kanban/EditChamadoModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { notifyChamadoUpdated, onChamadoUpdated } from '@/lib/chamadoEvents';
 
 interface HistoricoEntry {
   id: string;
@@ -218,9 +219,14 @@ export default function Historico() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chamados' }, () => fetchData())
       .subscribe();
 
+    const unsubscribe = onChamadoUpdated(() => {
+      fetchData();
+    });
+
     return () => {
       supabase.removeChannel(channel);
       supabase.removeChannel(chamadosChannel);
+      unsubscribe();
     };
   }, [authLoading, role, profile]);
 
@@ -685,6 +691,7 @@ export default function Historico() {
         await supabase.from('chamado_historico').delete().eq('chamado_id', id);
         const { error } = await supabase.from('chamados').delete().eq('id', id);
         if (error) throw error;
+        notifyChamadoUpdated(id);
       }
       toast.success(idsToDelete.length === 1 ? `Ticket #${idsToDelete[0]} excluído definitivamente` : `${idsToDelete.length} tickets excluídos definitivamente`);
       setDeleteDialogOpen(false);

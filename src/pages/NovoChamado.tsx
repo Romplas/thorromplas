@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { onChamadoUpdated } from '@/lib/chamadoEvents';
 import Layout from '@/components/Layout';
 import ChamadoCard, { type ChamadoCriado } from '@/components/chamado/ChamadoCard';
 
@@ -555,8 +556,13 @@ export default function NovoChamado() {
       })
       .subscribe();
 
+    const unsubscribe = onChamadoUpdated(() => {
+      loadExistingTickets();
+    });
+
     return () => {
       supabase.removeChannel(channel);
+      unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role, selectedRepresentante, selectedSupervisor, profile, representantes.length, supervisores.length]);

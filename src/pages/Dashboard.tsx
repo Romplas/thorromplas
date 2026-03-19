@@ -12,6 +12,7 @@ import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { onChamadoUpdated } from '@/lib/chamadoEvents';
 
 const statusLabels: Record<string, string> = {
   pendente: 'Pendente',
@@ -247,24 +248,29 @@ export default function Dashboard() {
     fetchChamados();
   }, [isRepresentante, representanteId, isSupervisor, supervisorId, repIdsDoSupervisor, isGestorOuAdmin, filterSupervisor, filterRepresentante, filterGestor, startDate, endDate, srLinks]);
 
-  // Realtime - re-fetch on chamados change
+  // Realtime + custom event - re-fetch on chamados change
   useEffect(() => {
+    const refetch = async () => {
+      let query = supabase.from('chamados').select('*').order('created_at', { ascending: false });
+      if (isRepresentante && representanteId) query = query.eq('representante_id', representanteId);
+      if (isSupervisor && supervisorId && repIdsDoSupervisor.size > 0) {
+        query = query.in('representante_id', Array.from(repIdsDoSupervisor));
+      }
+      const { data } = await query;
+      if (data) setChamados(data);
+    };
+
     const channel = supabase
       .channel('dashboard-chamados')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chamados' }, () => {
-        const refetch = async () => {
-          let query = supabase.from('chamados').select('*').order('created_at', { ascending: false });
-          if (isRepresentante && representanteId) query = query.eq('representante_id', representanteId);
-          if (isSupervisor && supervisorId && repIdsDoSupervisor.size > 0) {
-            query = query.in('representante_id', Array.from(repIdsDoSupervisor));
-          }
-          const { data } = await query;
-          if (data) setChamados(data);
-        };
-        refetch();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chamados' }, refetch)
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    const unsubscribe = onChamadoUpdated(refetch);
+
+    return () => {
+      supabase.removeChannel(channel);
+      unsubscribe();
+    };
   }, [isRepresentante, representanteId, isSupervisor, supervisorId, repIdsDoSupervisor]);
 
   // Compute stats: Pendentes = status pendente, Abertos = aberto, Em Progresso = em_progresso, Finalizados = fechado
