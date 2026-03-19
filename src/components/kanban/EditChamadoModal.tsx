@@ -178,7 +178,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
           const draftRaw = localStorage.getItem(draftKey);
           if (draftRaw) {
             const draft = JSON.parse(draftRaw);
-            setDescricao(draft.descricao ?? raw.descricao ?? '');
+            setDescricao((draft.descricao != null && draft.descricao !== '') ? draft.descricao : (raw.descricao || ''));
             setStatus(draft.status ?? raw.status ?? '');
             setEtapa(draft.etapa ?? raw.etapa ?? 'thor');
             setGestorId(draft.gestorId ?? raw.gestor_id ?? 'none');
