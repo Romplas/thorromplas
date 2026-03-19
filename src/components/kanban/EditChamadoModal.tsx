@@ -147,42 +147,50 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   useEffect(() => {
     if (!chamado || !open) return;
 
-    // Carrega rascunho (se existir) para não sobrescrever o que o usuário digitou.
-    let loadedDraft: any = null;
+    // Sempre busca os dados mais recentes do ticket no banco para exibir a última atualização
+    const loadLatestChamado = async () => {
+      const { data: freshChamado, error } = await supabase
+        .from('chamados')
+        .select('*')
+        .eq('id', chamado.id)
+        .maybeSingle();
+
+      if (error || !freshChamado) {
+        // Fallback para o chamado recebido via prop
+        setDescricao(chamado.descricao || '');
+        setStatus(chamado.status);
+        setEtapa(chamado.etapa || 'thor');
+        setGestorId(chamado.gestor_id || 'none');
+        loadExtraFields(chamado.id);
+        resolveNames(chamado);
+        loadAnexos(chamado.id);
+        return;
+      }
+
+      const raw = freshChamado as any;
+      setDescricao(raw.descricao || '');
+      setStatus(raw.status || '');
+      setEtapa(raw.etapa || 'thor');
+      setGestorId(raw.gestor_id || 'none');
+      setMetrosTotais(raw.metros_totais || '');
+      setNegociadoCom(raw.negociado_com || '');
+      setNfe(raw.nfe || '');
+      setTipoSolicitacao(raw.tipo_solicitacao || '');
+      setStatusAgendamento(raw.status_agendamento || '');
+
+      resolveNames({ ...chamado, ...raw });
+      loadAnexos(chamado.id);
+    };
+
+    loadLatestChamado();
+
+    // Limpa rascunho antigo ao abrir para evitar dados desatualizados
     if (draftKey) {
       try {
-        const raw = localStorage.getItem(draftKey);
-        if (raw) loadedDraft = JSON.parse(raw);
+        localStorage.removeItem(draftKey);
       } catch {
-        // ignore malformed drafts
+        // ignore
       }
-    }
-
-    const hasDraft = !!loadedDraft;
-
-    if (hasDraft) {
-      setDescricao(loadedDraft.descricao ?? chamado.descricao ?? '');
-      setStatus(loadedDraft.status ?? chamado.status);
-      setEtapa(loadedDraft.etapa ?? chamado.etapa ?? 'thor');
-      setGestorId(loadedDraft.gestorId ?? chamado.gestor_id ?? 'none');
-      setMetrosTotais(loadedDraft.metrosTotais ?? '');
-      setNegociadoCom(loadedDraft.negociadoCom ?? '');
-      setNfe(loadedDraft.nfe ?? '');
-      setTipoSolicitacao(loadedDraft.tipoSolicitacao ?? '');
-      setStatusAgendamento(loadedDraft.statusAgendamento ?? '');
-    } else {
-      setDescricao(chamado.descricao || '');
-      setStatus(chamado.status);
-      setEtapa(chamado.etapa || 'thor');
-      setGestorId(chamado.gestor_id || 'none');
-    }
-
-    loadAnexos(chamado.id);
-    resolveNames(chamado);
-
-    // Só sobrescreve campos extras com o backend se não houver rascunho.
-    if (!hasDraft) {
-      loadExtraFields(chamado.id);
     }
   }, [chamado, open, draftKey]);
 
