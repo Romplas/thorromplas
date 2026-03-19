@@ -224,7 +224,7 @@ export default function TicketsExcluidos() {
       let offset = 0;
       let hasMore = true;
       while (hasMore) {
-        const { data: chunk } = await supabase
+        const { data: chunk } = await (supabase as any)
           .from('chamado_historico_excluido')
           .select('id, acao, descricao, descricao_ticket, created_at, user_id')
           .eq('chamado_excluido_id', selectedId)
