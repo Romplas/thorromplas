@@ -451,10 +451,9 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
       toast.success(`Ticket ${chamado.id} atualizado!`);
       notifyChamadoUpdated(chamado.id);
-      onSaved();
-      onOpenChange(false);
 
-      // Limpa rascunho após salvar com sucesso
+      // Limpa rascunho ANTES de fechar o modal para evitar que o effect de close re-salve
+      savedSuccessRef.current = true;
       if (draftKey) {
         try {
           localStorage.removeItem(draftKey);
@@ -462,6 +461,9 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
           // ignore
         }
       }
+
+      onSaved();
+      onOpenChange(false);
     } catch (err: any) {
       toast.error('Erro ao salvar: ' + (err.message || 'Erro desconhecido'));
     } finally {
