@@ -350,15 +350,8 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       toast.success(`Ticket ${chamado.id} atualizado!`);
       notifyChamadoUpdated(chamado.id);
 
-      // Limpa rascunho ANTES de fechar o modal para evitar que o effect de close re-salve
-      savedSuccessRef.current = true;
-      if (draftKey) {
-        try {
-          localStorage.removeItem(draftKey);
-        } catch {
-          // ignore
-        }
-      }
+
+
 
       onSaved();
       onOpenChange(false);
