@@ -1271,6 +1271,7 @@ export default function Historico() {
             chamado={selectedChamado as any}
             onSaved={fetchData}
             profileMap={profileMap}
+            initialDescricao={selectedEntry ? selectedEntry.descricao_ticket : undefined}
           />
         )}
 

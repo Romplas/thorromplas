@@ -47,6 +47,8 @@ interface Props {
   chamado: ChamadoFull | null;
   onSaved: () => void;
   profileMap: Map<string, string>;
+  /** Quando informado (ex: ao abrir do Histórico), usa esta descrição em vez da atual do banco */
+  initialDescricao?: string | null;
 }
 
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
@@ -88,7 +90,7 @@ function getDownloadUrl(path: string, fileName: string): string {
   return url;
 }
 
-export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved, profileMap }: Props) {
+export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved, profileMap, initialDescricao }: Props) {
   const { role, profile } = useAuth();
   const canUpload = role === 'admin' || role === 'gestor' || role === 'supervisor';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -155,7 +157,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
         .maybeSingle();
 
       if (error || !freshChamado) {
-        setDescricao(chamado.descricao || '');
+        setDescricao(initialDescricao !== undefined ? (initialDescricao || '') : (chamado.descricao || ''));
         setStatus(chamado.status);
         setEtapa(chamado.etapa || 'thor');
         setGestorId(chamado.gestor_id || 'none');
@@ -166,7 +168,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       }
 
       const raw = freshChamado as any;
-      setDescricao(raw.descricao || '');
+      setDescricao(initialDescricao !== undefined ? (initialDescricao || '') : (raw.descricao || ''));
       setStatus(raw.status || '');
       setEtapa(raw.etapa || 'thor');
       setGestorId(raw.gestor_id || 'none');
@@ -181,7 +183,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
     };
 
     loadLatestChamado();
-  }, [chamado, open]);
+  }, [chamado, open, initialDescricao]);
 
 
 
