@@ -91,8 +91,9 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
   const removeProduto = (idx: number) => setForm(p => ({ ...p, produtos: p.produtos.filter((_, i) => i !== idx) }));
 
   const generateAndUploadPdf = async () => {
-    if (!form.cliente || !form.produtos[0]?.produto || !form.nfVenda || !form.descricaoNaoConformidade) {
-      toast.error('Preencha os campos obrigatórios (Cliente, Produto, NF Venda, Descrição).');
+    const temObjetivoRnc = form.objetivoAlertarEmpresa || form.objetivoDevParcial || form.objetivoDevTotal || form.objetivoNegociacao;
+    if (!form.cliente || !form.produtos[0]?.produto || !form.nfVenda || !form.descricaoNaoConformidade || !temObjetivoRnc) {
+      toast.error('Preencha os campos obrigatórios (Cliente, Produto, NF Venda, Descrição, Objetivo da RNC).');
       return;
     }
     setSaving(true);
@@ -235,7 +236,7 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
                 }
               };
               return (
-              <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
+              <div key={idx} className={`grid grid-cols-1 sm:grid-cols-2 gap-3 items-end ${form.objetivoNegociacao ? 'lg:grid-cols-[1fr_2.5fr_1fr_auto]' : 'lg:grid-cols-[1fr_1fr_1fr_auto]'}`}>
                 <div>
                   <Label className="text-xs text-muted-foreground">Cód.</Label>
                   {catalogoProdutos.length > 0 ? (
@@ -281,13 +282,16 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
 
           <div className="border rounded-lg p-3 space-y-2">
             <Label className="text-xs font-semibold">NF Venda / Descrição</Label>
-            <div><Label className="text-xs text-muted-foreground">Número da Nota Fiscal de Venda *</Label><Input className="mt-1 h-9 text-sm" value={form.nfVenda} onChange={e => setForm(p => ({ ...p, nfVenda: e.target.value }))} /></div>
+            <div>
+              <Label className="text-xs text-muted-foreground text-destructive font-semibold">* Número da Nota Fiscal de Venda</Label>
+              <Input className="mt-1 h-9 text-sm border-destructive/50" value={form.nfVenda} onChange={e => setForm(p => ({ ...p, nfVenda: e.target.value }))} />
+            </div>
             <div><Label className="text-xs text-muted-foreground">Descrição da Não Conformidade *</Label><Textarea className="mt-1 min-h-[80px] text-sm resize-none" value={form.descricaoNaoConformidade} onChange={e => setForm(p => ({ ...p, descricaoNaoConformidade: e.target.value }))} /></div>
           </div>
 
           {/* Objetivo */}
-          <div className="border rounded-lg p-3 space-y-2">
-            <Label className="text-xs font-semibold">Objetivo da RNC:</Label>
+          <div className={`border rounded-lg p-3 space-y-2 ${!(form.objetivoAlertarEmpresa || form.objetivoDevParcial || form.objetivoDevTotal || form.objetivoNegociacao) ? 'border-destructive/50' : ''}`}>
+            <Label className="text-xs font-semibold text-destructive">* Objetivo da RNC:</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <label className="flex items-center gap-1.5 text-xs"><Checkbox checked={form.objetivoAlertarEmpresa} onCheckedChange={v => setForm(p => ({ ...p, objetivoAlertarEmpresa: !!v }))} /> Alertar a Empresa</label>
               <label className="flex items-center gap-1.5 text-xs"><Checkbox checked={form.objetivoDevParcial} onCheckedChange={v => setForm(p => ({ ...p, objetivoDevParcial: !!v }))} /> Devolução Parcial</label>

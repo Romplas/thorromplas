@@ -1240,7 +1240,7 @@ export default function NovoChamado() {
                     </div>
                   </div>
                 ) : isNegociacao ? (
-                  <div className="mt-1 border border-destructive/50 rounded-lg p-4 space-y-3">
+                  <div className="mt-1 border border-destructive/50 rounded-lg p-4 space-y-3 overflow-hidden">
                     {/* Produtos */}
                     {produtos.map((prod, i) => {
                       const opcoesCod = catalogoProdutos.map(p => ({ value: p.cod_produto, label: p.cod_produto }));
@@ -1254,7 +1254,7 @@ export default function NovoChamado() {
                         }
                       };
                       return (
-                      <div key={i} className="grid grid-cols-2 md:grid-cols-4 gap-2 items-end">
+                      <div key={i} className={`grid gap-2 items-end min-w-0 ${isNegociacao ? 'grid-cols-2 md:grid-cols-[minmax(70px,1fr)_minmax(160px,2fr)_minmax(95px,1.2fr)_minmax(85px,1.2fr)]' : 'grid-cols-2 md:grid-cols-4'}`}>
                         <div>
                           <Label className="text-[10px] text-muted-foreground">Cód Produto *</Label>
                           {catalogoProdutos.length > 0 ? (
@@ -1288,11 +1288,11 @@ export default function NovoChamado() {
                               onValueChange={handleSelectProduto}
                               placeholder="Pesquisar ou selecionar produto"
                               searchPlaceholder="Pesquisar por produto ou código..."
-                              className="h-8 text-xs border-destructive/50"
+                              className="h-8 text-xs border-destructive/50 w-full"
                             />
                           ) : (
                             <Input
-                              className="h-8 text-xs border-destructive/50"
+                              className="h-8 text-xs border-destructive/50 w-full"
                               placeholder="Produto"
                               value={prod.produto}
                               onChange={e => {
@@ -1303,10 +1303,10 @@ export default function NovoChamado() {
                             />
                           )}
                         </div>
-                        <div>
+                        <div className="min-w-[95px]">
                           <Label className="text-[10px] text-muted-foreground">Preço *</Label>
                           <Input
-                            className="h-8 text-xs border-destructive/50"
+                            className="h-8 text-xs border-destructive/50 w-full min-w-0"
                             placeholder="R$ 0,00"
                             value={prod.preco}
                             onChange={e => {
@@ -1316,11 +1316,11 @@ export default function NovoChamado() {
                             }}
                           />
                         </div>
-                        <div className="flex gap-1 items-end">
-                          <div className="flex-1">
+                        <div className="flex gap-1 items-end min-w-[85px]">
+                          <div className="flex-1 min-w-0">
                             <Label className="text-[10px] text-muted-foreground">Metros *</Label>
                             <Input
-                              className="h-8 text-xs border-destructive/50"
+                              className="h-8 text-xs border-destructive/50 w-full min-w-0"
                               placeholder="Metros"
                               value={prod.metros}
                               onChange={e => {
@@ -1355,11 +1355,11 @@ export default function NovoChamado() {
                     {/* Prazo e Tipo de Entrega */}
                     <div className="space-y-2 pt-2 border-t">
                       {prazosEntrega.map((pe, i) => (
-                        <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
-                          <div>
+                        <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end min-w-0">
+                          <div className="min-w-0">
                             <Label className="text-[10px] text-muted-foreground">Prazo *</Label>
                             <Input
-                              className="h-8 text-xs border-destructive/50"
+                              className="h-8 text-xs border-destructive/50 w-full min-w-0"
                               placeholder="Ex: 30 dias"
                               value={pe.prazo}
                               onChange={e => {
@@ -1369,14 +1369,14 @@ export default function NovoChamado() {
                               }}
                             />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <Label className="text-[10px] text-muted-foreground">Tipo de Entrega *</Label>
                             <Select value={pe.tipoEntrega} onValueChange={v => {
                               const updated = [...prazosEntrega];
                               updated[i] = { ...updated[i], tipoEntrega: v };
                               setPrazosEntrega(updated);
                             }}>
-                              <SelectTrigger className="h-8 text-xs border-destructive/50"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                              <SelectTrigger className="h-8 text-xs border-destructive/50 min-w-0 w-full"><SelectValue placeholder="Selecione" /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="Imediata">Imediata</SelectItem>
                                 <SelectItem value="Programada">Programada</SelectItem>
@@ -2157,7 +2157,10 @@ export default function NovoChamado() {
             </div>
 
             {/* NF Venda */}
-            <div><Label className="text-xs">Número da Nota Fiscal de Venda *</Label><Input className="mt-1" value={rncForm.nfVenda} onChange={e => setRncForm(p => ({ ...p, nfVenda: e.target.value }))} /></div>
+            <div>
+              <Label className="text-xs font-semibold text-destructive">* Número da Nota Fiscal de Venda</Label>
+              <Input className="mt-1 border-destructive/50" value={rncForm.nfVenda} onChange={e => setRncForm(p => ({ ...p, nfVenda: e.target.value }))} />
+            </div>
 
             {/* Descrição da Não Conformidade */}
             <div>
@@ -2166,8 +2169,8 @@ export default function NovoChamado() {
             </div>
 
             {/* Objetivo da RNC */}
-            <div className="border rounded-lg p-3 space-y-2">
-              <Label className="text-xs font-semibold text-center block">OBJETIVO DA RNC</Label>
+            <div className={`border rounded-lg p-3 space-y-2 ${!(rncForm.objetivoAlertarEmpresa || rncForm.objetivoDevParcial || rncForm.objetivoDevTotal || rncForm.objetivoNegociacao) ? 'border-destructive/50' : ''}`}>
+              <Label className="text-xs font-semibold text-center block text-destructive">* OBJETIVO DA RNC</Label>
               <div className="grid grid-cols-2 gap-2">
                 <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={rncForm.objetivoAlertarEmpresa} onChange={e => setRncForm(p => ({ ...p, objetivoAlertarEmpresa: e.target.checked }))} /> ALERTAR A EMPRESA (ROMPLAS)</label>
                 <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={rncForm.objetivoDevParcial} onChange={e => setRncForm(p => ({ ...p, objetivoDevParcial: e.target.checked }))} /> DEVOLUÇÃO PARCIAL</label>
@@ -2223,8 +2226,9 @@ export default function NovoChamado() {
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowRNCForm(false)}>Cancelar</Button>
             <Button variant="secondary" onClick={async () => {
-              if (!rncForm.cliente || !rncForm.produtos[0]?.produto || !rncForm.nfVenda || !rncForm.descricaoNaoConformidade) {
-                toast.error('Preencha os campos obrigatórios (Cliente, Produto, NF Venda, Descrição).');
+              const temObjetivoRnc = rncForm.objetivoAlertarEmpresa || rncForm.objetivoDevParcial || rncForm.objetivoDevTotal || rncForm.objetivoNegociacao;
+              if (!rncForm.cliente || !rncForm.produtos[0]?.produto || !rncForm.nfVenda || !rncForm.descricaoNaoConformidade || !temObjetivoRnc) {
+                toast.error('Preencha os campos obrigatórios (Cliente, Produto, NF Venda, Descrição, Objetivo da RNC).');
                 return;
               }
               const doc = new jsPDF();
@@ -2331,7 +2335,11 @@ export default function NovoChamado() {
               <FileText className="h-4 w-4 mr-1.5" /> Confirmar e Anexar PDF
             </Button>
             <Button onClick={() => {
-              if (!rncForm.cliente || !rncForm.produtos[0]?.produto || !rncForm.nfVenda || !rncForm.descricaoNaoConformidade) { toast.error('Preencha os campos obrigatórios.'); return; }
+              const temObjetivoRnc = rncForm.objetivoAlertarEmpresa || rncForm.objetivoDevParcial || rncForm.objetivoDevTotal || rncForm.objetivoNegociacao;
+              if (!rncForm.cliente || !rncForm.produtos[0]?.produto || !rncForm.nfVenda || !rncForm.descricaoNaoConformidade || !temObjetivoRnc) {
+                toast.error('Preencha os campos obrigatórios (Cliente, Produto, NF Venda, Descrição, Objetivo da RNC).');
+                return;
+              }
               setSpecialFormFilled(true); setShowRNCForm(false);
             }}>Confirmar</Button>
           </DialogFooter>
