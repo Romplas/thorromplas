@@ -985,7 +985,7 @@ export default function Historico() {
                         <div className="w-full md:w-[65%] flex flex-col">
                           {/* Description box */}
                           <div className="bg-white/15 text-white px-3 py-2 mx-2 mt-2 rounded text-[11px] min-h-[60px]">
-                            <p className="font-semibold">Descrição : {chamado?.descricao ?? entry.descricao_ticket ?? '—'}</p>
+                            <p className="font-semibold">Descrição : {entry.descricao_ticket ?? '—'}</p>
                           </div>
 
                           {/* Bottom status row */}
@@ -1075,7 +1075,7 @@ export default function Historico() {
                 <div className="space-y-1">
                   <Label className="text-[11px] font-semibold text-muted-foreground">Descrição</Label>
                   <div className="px-3 py-2 border border-border rounded-md bg-muted/40 text-sm min-h-[100px] whitespace-pre-wrap">
-                    {selectedChamado.descricao ?? selectedEntry?.descricao_ticket ?? '—'}
+                    {selectedEntry?.descricao_ticket ?? '—'}
                   </div>
                 </div>
 
@@ -1176,7 +1176,7 @@ export default function Historico() {
                 <td>${repNome}</td><td>${supNome}</td><td>${etapa}</td><td>${chamado?.motivo || '—'}</td>
                 <td>${chamado?.submotivo || '—'}</td><td>${status}</td><td>${gestor}</td>
                 <td>${entry.user_nome || '—'}</td><td>${entry.acao}</td>
-                <td style="max-width:280px;word-wrap:break-word;white-space:pre-wrap">${(chamado?.descricao ?? entry.descricao_ticket ?? '—').replace(/</g, '&lt;')}</td>
+                <td style="max-width:280px;word-wrap:break-word;white-space:pre-wrap">${(entry.descricao_ticket ?? '—').replace(/</g, '&lt;')}</td>
                 <td>${formatDateTime(entry.created_at)}</td>
               </tr>`;
             }).join('');
@@ -1256,7 +1256,7 @@ export default function Historico() {
                           <td className="px-2 py-1.5">{gestor}</td>
                           <td className="px-2 py-1.5">{entry.user_nome || '—'}</td>
                           <td className="px-2 py-1.5">{entry.acao}</td>
-                          <td className="px-2 py-1.5 whitespace-pre-wrap break-words max-w-[300px]">{chamado?.descricao ?? entry.descricao_ticket ?? '—'}</td>
+                          <td className="px-2 py-1.5 whitespace-pre-wrap break-words max-w-[300px]">{entry.descricao_ticket ?? '—'}</td>
                           <td className="px-2 py-1.5 whitespace-nowrap">{formatDateTime(entry.created_at)}</td>
                         </tr>
                       );
