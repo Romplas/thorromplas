@@ -96,6 +96,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   const DRAFT_PREFIX = 'thorromplas:edit-chamado-draft';
   const draftKey = chamado && profile?.id ? `${DRAFT_PREFIX}:${profile.id}:${chamado.id}` : null;
   const prevOpenRef = useRef(false);
+  const savedSuccessRef = useRef(false);
   const draftStateRef = useRef({ descricao: '', status: '', etapa: '', gestorId: '', metrosTotais: '', negociadoCom: '', nfe: '', tipoSolicitacao: '', statusAgendamento: '' });
   const [descricao, setDescricao] = useState('');
   const [status, setStatus] = useState('');
@@ -261,6 +262,11 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
     const wasOpen = prevOpenRef.current;
     prevOpenRef.current = open;
     if (wasOpen && !open && draftKey) {
+      // Se salvou com sucesso, não re-salvar rascunho
+      if (savedSuccessRef.current) {
+        savedSuccessRef.current = false;
+        return;
+      }
       const d = draftStateRef.current;
       const draft = { descricao: d.descricao, status: d.status, etapa: d.etapa, gestorId: d.gestorId, metrosTotais: d.metrosTotais, negociadoCom: d.negociadoCom, nfe: d.nfe, tipoSolicitacao: d.tipoSolicitacao, statusAgendamento: d.statusAgendamento };
       try {
@@ -275,6 +281,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   useEffect(() => {
     if (!open || !draftKey) return;
     const handler = () => {
+      if (savedSuccessRef.current) return;
       const d = draftStateRef.current;
       const draft = { descricao: d.descricao, status: d.status, etapa: d.etapa, gestorId: d.gestorId, metrosTotais: d.metrosTotais, negociadoCom: d.negociadoCom, nfe: d.nfe, tipoSolicitacao: d.tipoSolicitacao, statusAgendamento: d.statusAgendamento };
       try {
@@ -450,10 +457,9 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
       toast.success(`Ticket ${chamado.id} atualizado!`);
       notifyChamadoUpdated(chamado.id);
-      onSaved();
-      onOpenChange(false);
 
-      // Limpa rascunho após salvar com sucesso
+      // Limpa rascunho ANTES de fechar o modal para evitar que o effect de close re-salve
+      savedSuccessRef.current = true;
       if (draftKey) {
         try {
           localStorage.removeItem(draftKey);
@@ -461,6 +467,9 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
           // ignore
         }
       }
+
+      onSaved();
+      onOpenChange(false);
     } catch (err: any) {
       toast.error('Erro ao salvar: ' + (err.message || 'Erro desconhecido'));
     } finally {
