@@ -281,6 +281,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   useEffect(() => {
     if (!open || !draftKey) return;
     const handler = () => {
+      if (savedSuccessRef.current) return;
       const d = draftStateRef.current;
       const draft = { descricao: d.descricao, status: d.status, etapa: d.etapa, gestorId: d.gestorId, metrosTotais: d.metrosTotais, negociadoCom: d.negociadoCom, nfe: d.nfe, tipoSolicitacao: d.tipoSolicitacao, statusAgendamento: d.statusAgendamento };
       try {
