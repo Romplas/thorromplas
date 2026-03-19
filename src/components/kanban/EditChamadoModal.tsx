@@ -262,6 +262,11 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
     const wasOpen = prevOpenRef.current;
     prevOpenRef.current = open;
     if (wasOpen && !open && draftKey) {
+      // Se salvou com sucesso, não re-salvar rascunho
+      if (savedSuccessRef.current) {
+        savedSuccessRef.current = false;
+        return;
+      }
       const d = draftStateRef.current;
       const draft = { descricao: d.descricao, status: d.status, etapa: d.etapa, gestorId: d.gestorId, metrosTotais: d.metrosTotais, negociadoCom: d.negociadoCom, nfe: d.nfe, tipoSolicitacao: d.tipoSolicitacao, statusAgendamento: d.statusAgendamento };
       try {
