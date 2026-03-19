@@ -59,6 +59,47 @@ export type Database = {
           },
         ]
       }
+      chamado_historico_excluido: {
+        Row: {
+          acao: string
+          chamado_excluido_id: string
+          chamado_id_original: number
+          created_at: string
+          descricao: string | null
+          descricao_ticket: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          chamado_excluido_id: string
+          chamado_id_original: number
+          created_at: string
+          descricao?: string | null
+          descricao_ticket?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          chamado_excluido_id?: string
+          chamado_id_original?: number
+          created_at?: string
+          descricao?: string | null
+          descricao_ticket?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chamado_historico_excluido_chamado_excluido_id_fkey"
+            columns: ["chamado_excluido_id"]
+            isOneToOne: false
+            referencedRelation: "chamados_excluidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chamados: {
         Row: {
           atualizado_por: string | null
@@ -158,6 +199,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      chamados_excluidos: {
+        Row: {
+          dados: Json
+          deleted_at: string
+          deleted_by: string | null
+          id: string
+          id_original: number
+          motivo_exclusao: string | null
+        }
+        Insert: {
+          dados: Json
+          deleted_at?: string
+          deleted_by?: string | null
+          id?: string
+          id_original: number
+          motivo_exclusao?: string | null
+        }
+        Update: {
+          dados?: Json
+          deleted_at?: string
+          deleted_by?: string | null
+          id?: string
+          id_original?: number
+          motivo_exclusao?: string | null
+        }
+        Relationships: []
       }
       clientes: {
         Row: {
