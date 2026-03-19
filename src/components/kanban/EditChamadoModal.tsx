@@ -183,81 +183,8 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
     loadLatestChamado();
   }, [chamado, open]);
 
-  // Mantém ref atualizada para flush em beforeunload/close
-  draftStateRef.current = { descricao, status, etapa, gestorId, metrosTotais, negociadoCom, nfe, tipoSolicitacao, statusAgendamento };
 
-  // Persistência do rascunho enquanto o usuário está editando.
-  useEffect(() => {
-    if (!open || !draftKey) return;
-    const draft = {
-      descricao,
-      status,
-      etapa,
-      gestorId,
-      metrosTotais,
-      negociadoCom,
-      nfe,
-      tipoSolicitacao,
-      statusAgendamento,
-    };
-    const t = window.setTimeout(() => {
-      try {
-        localStorage.setItem(draftKey, JSON.stringify(draft));
-      } catch {
-        // ignore quota/serialization issues
-      }
-    }, 300);
-    return () => window.clearTimeout(t);
-  }, [
-    open,
-    draftKey,
-    descricao,
-    status,
-    etapa,
-    gestorId,
-    metrosTotais,
-    negociadoCom,
-    nfe,
-    tipoSolicitacao,
-    statusAgendamento,
-  ]);
 
-  // Salva rascunho imediatamente ao fechar o modal (evita perda dos últimos ~300ms)
-  useEffect(() => {
-    const wasOpen = prevOpenRef.current;
-    prevOpenRef.current = open;
-    if (wasOpen && !open && draftKey) {
-      // Se salvou com sucesso, não re-salvar rascunho
-      if (savedSuccessRef.current) {
-        savedSuccessRef.current = false;
-        return;
-      }
-      const d = draftStateRef.current;
-      const draft = { descricao: d.descricao, status: d.status, etapa: d.etapa, gestorId: d.gestorId, metrosTotais: d.metrosTotais, negociadoCom: d.negociadoCom, nfe: d.nfe, tipoSolicitacao: d.tipoSolicitacao, statusAgendamento: d.statusAgendamento };
-      try {
-        localStorage.setItem(draftKey, JSON.stringify(draft));
-      } catch {
-        // ignore
-      }
-    }
-  }, [open, draftKey]);
-
-  // beforeunload: salva rascunho ao fechar aba/atualizar (ex: atualização PWA)
-  useEffect(() => {
-    if (!open || !draftKey) return;
-    const handler = () => {
-      if (savedSuccessRef.current) return;
-      const d = draftStateRef.current;
-      const draft = { descricao: d.descricao, status: d.status, etapa: d.etapa, gestorId: d.gestorId, metrosTotais: d.metrosTotais, negociadoCom: d.negociadoCom, nfe: d.nfe, tipoSolicitacao: d.tipoSolicitacao, statusAgendamento: d.statusAgendamento };
-      try {
-        localStorage.setItem(draftKey, JSON.stringify(draft));
-      } catch {
-        // ignore
-      }
-    };
-    window.addEventListener('beforeunload', handler);
-    return () => window.removeEventListener('beforeunload', handler);
-  }, [open, draftKey]);
 
   const loadExtraFields = async (chamadoId: number) => {
     const { data } = await supabase
