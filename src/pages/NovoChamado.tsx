@@ -65,6 +65,7 @@ export default function NovoChamado() {
   const { profile, role } = useAuth();
   const draftKey = profile?.id ? `${NOVO_CHAMADO_DRAFT_KEY}:${profile.id}` : null;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const draftStateRef = useRef<Record<string, unknown>>({});
   const [motivos, setMotivos] = useState<Motivo[]>([]);
   const [submotivos, setSubmotivos] = useState<Submotivo[]>([]);
   const [selectedMotivo, setSelectedMotivo] = useState<string>('');
@@ -178,6 +179,16 @@ export default function NovoChamado() {
   const [bookForm, setBookForm] = useState<BookFullFormData>({ ...defaultBookFullForm });
   const [specialFormFilled, setSpecialFormFilled] = useState(false);
 
+  // Ref com estado atual para flush síncrono em beforeunload
+  const anexosMetaForRef = anexos.map(f => ({ name: f.name, size: f.size, type: f.type }));
+  draftStateRef.current = {
+    selectedMotivo, selectedSubmotivo, selectedSupervisor, selectedRepresentante,
+    selectedCodigoCliente, selectedCliente, selectedRede, dataContato, dataRetorno,
+    metrosTotais, negociadoCom, nfe, tipoSolicitacao, gestor, statusAgendamento,
+    produtos, prazosEntrega, prazo, tipoEntrega, descricaoTexto, qualTabela, tabelaProdutos,
+    sdForm, rncForm, amostrasForm, bookForm, specialFormFilled, anexosMeta: anexosMetaForRef,
+  };
+
   // ---------- Draft persistence (localStorage) ----------
   // Carrega rascunho salvo ao montar
   useEffect(() => {
@@ -213,14 +224,18 @@ export default function NovoChamado() {
       if (draft.amostrasForm) setAmostrasForm(draft.amostrasForm);
       if (draft.bookForm) setBookForm(draft.bookForm);
       if (typeof draft.specialFormFilled === 'boolean') setSpecialFormFilled(draft.specialFormFilled);
+      if (Array.isArray(draft.anexosMeta) && draft.anexosMeta.length > 0) {
+        toast.info(`Você tinha ${draft.anexosMeta.length} arquivo(s) no rascunho anterior. Por favor, anexe novamente.`);
+      }
     } catch {
       // ignore corrupted drafts
     }
   }, [draftKey]);
 
-  // Salva rascunho sempre que campos principais mudarem (texto / seleções)
+  // Salva rascunho sempre que campos principais mudarem (texto / seleções / anexos metadata)
   useEffect(() => {
     if (!draftKey) return;
+    const anexosMeta = anexos.map(f => ({ name: f.name, size: f.size, type: f.type }));
     const draft = {
       selectedMotivo,
       selectedSubmotivo,
@@ -249,6 +264,7 @@ export default function NovoChamado() {
       amostrasForm,
       bookForm,
       specialFormFilled,
+      anexosMeta,
     };
     try {
       localStorage.setItem(draftKey, JSON.stringify(draft));
@@ -283,7 +299,25 @@ export default function NovoChamado() {
     amostrasForm,
     bookForm,
     specialFormFilled,
+    anexos,
   ]);
+
+  // beforeunload: garante que o rascunho seja salvo ao fechar aba/atualizar (ex: atualização PWA)
+  useEffect(() => {
+    if (!draftKey) return;
+    const handler = () => {
+      const d = draftStateRef.current;
+      if (Object.keys(d).length > 0) {
+        try {
+          localStorage.setItem(draftKey, JSON.stringify(d));
+        } catch {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [draftKey]);
 
   const buildSpecialDescricao = () => {
     if (isSD) {

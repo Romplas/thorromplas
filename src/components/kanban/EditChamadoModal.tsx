@@ -95,6 +95,8 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
   const DRAFT_PREFIX = 'thorromplas:edit-chamado-draft';
   const draftKey = chamado && profile?.id ? `${DRAFT_PREFIX}:${profile.id}:${chamado.id}` : null;
+  const prevOpenRef = useRef(false);
+  const draftStateRef = useRef({ descricao: '', status: '', etapa: '', gestorId: '', metrosTotais: '', negociadoCom: '', nfe: '', tipoSolicitacao: '', statusAgendamento: '' });
   const [descricao, setDescricao] = useState('');
   const [status, setStatus] = useState('');
   const [etapa, setEtapa] = useState('');
@@ -168,31 +170,55 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       }
 
       const raw = freshChamado as any;
-      setDescricao(raw.descricao || '');
-      setStatus(raw.status || '');
-      setEtapa(raw.etapa || 'thor');
-      setGestorId(raw.gestor_id || 'none');
-      setMetrosTotais(raw.metros_totais || '');
-      setNegociadoCom(raw.negociado_com || '');
-      setNfe(raw.nfe || '');
-      setTipoSolicitacao(raw.tipo_solicitacao || '');
-      setStatusAgendamento(raw.status_agendamento || '');
+
+      // Verifica se existe rascunho não salvo - prioriza o trabalho do usuário
+      let restoredFromDraft = false;
+      if (draftKey) {
+        try {
+          const draftRaw = localStorage.getItem(draftKey);
+          if (draftRaw) {
+            const draft = JSON.parse(draftRaw);
+            setDescricao(draft.descricao ?? raw.descricao ?? '');
+            setStatus(draft.status ?? raw.status ?? '');
+            setEtapa(draft.etapa ?? raw.etapa ?? 'thor');
+            setGestorId(draft.gestorId ?? raw.gestor_id ?? 'none');
+            setMetrosTotais(draft.metrosTotais ?? raw.metros_totais ?? '');
+            setNegociadoCom(draft.negociadoCom ?? raw.negociado_com ?? '');
+            setNfe(draft.nfe ?? raw.nfe ?? '');
+            setTipoSolicitacao(draft.tipoSolicitacao ?? raw.tipo_solicitacao ?? '');
+            setStatusAgendamento(draft.statusAgendamento ?? raw.status_agendamento ?? '');
+            restoredFromDraft = true;
+          }
+        } catch {
+          // rascunho corrompido - usa dados do banco
+        }
+      }
+
+      if (!restoredFromDraft) {
+        setDescricao(raw.descricao || '');
+        setStatus(raw.status || '');
+        setEtapa(raw.etapa || 'thor');
+        setGestorId(raw.gestor_id || 'none');
+        setMetrosTotais(raw.metros_totais || '');
+        setNegociadoCom(raw.negociado_com || '');
+        setNfe(raw.nfe || '');
+        setTipoSolicitacao(raw.tipo_solicitacao || '');
+        setStatusAgendamento(raw.status_agendamento || '');
+      }
 
       resolveNames({ ...chamado, ...raw });
       loadAnexos(chamado.id);
+
+      if (restoredFromDraft) {
+        toast.info('Rascunho restaurado. Suas alterações anteriores foram recuperadas.');
+      }
     };
 
     loadLatestChamado();
-
-    // Limpa rascunho antigo ao abrir para evitar dados desatualizados
-    if (draftKey) {
-      try {
-        localStorage.removeItem(draftKey);
-      } catch {
-        // ignore
-      }
-    }
   }, [chamado, open, draftKey]);
+
+  // Mantém ref atualizada para flush em beforeunload/close
+  draftStateRef.current = { descricao, status, etapa, gestorId, metrosTotais, negociadoCom, nfe, tipoSolicitacao, statusAgendamento };
 
   // Persistência do rascunho enquanto o usuário está editando.
   useEffect(() => {
@@ -229,6 +255,37 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
     tipoSolicitacao,
     statusAgendamento,
   ]);
+
+  // Salva rascunho imediatamente ao fechar o modal (evita perda dos últimos ~300ms)
+  useEffect(() => {
+    const wasOpen = prevOpenRef.current;
+    prevOpenRef.current = open;
+    if (wasOpen && !open && draftKey) {
+      const d = draftStateRef.current;
+      const draft = { descricao: d.descricao, status: d.status, etapa: d.etapa, gestorId: d.gestorId, metrosTotais: d.metrosTotais, negociadoCom: d.negociadoCom, nfe: d.nfe, tipoSolicitacao: d.tipoSolicitacao, statusAgendamento: d.statusAgendamento };
+      try {
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+      } catch {
+        // ignore
+      }
+    }
+  }, [open, draftKey]);
+
+  // beforeunload: salva rascunho ao fechar aba/atualizar (ex: atualização PWA)
+  useEffect(() => {
+    if (!open || !draftKey) return;
+    const handler = () => {
+      const d = draftStateRef.current;
+      const draft = { descricao: d.descricao, status: d.status, etapa: d.etapa, gestorId: d.gestorId, metrosTotais: d.metrosTotais, negociadoCom: d.negociadoCom, nfe: d.nfe, tipoSolicitacao: d.tipoSolicitacao, statusAgendamento: d.statusAgendamento };
+      try {
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [open, draftKey]);
 
   const loadExtraFields = async (chamadoId: number) => {
     const { data } = await supabase
