@@ -93,11 +93,8 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   const canUpload = role === 'admin' || role === 'gestor' || role === 'supervisor';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const DRAFT_PREFIX = 'thorromplas:edit-chamado-draft';
-  const draftKey = chamado && profile?.id ? `${DRAFT_PREFIX}:${profile.id}:${chamado.id}` : null;
-  const prevOpenRef = useRef(false);
-  const savedSuccessRef = useRef(false);
-  const draftStateRef = useRef({ descricao: '', status: '', etapa: '', gestorId: '', metrosTotais: '', negociadoCom: '', nfe: '', tipoSolicitacao: '', statusAgendamento: '' });
+
+
   const [descricao, setDescricao] = useState('');
   const [status, setStatus] = useState('');
   const [etapa, setEtapa] = useState('');
