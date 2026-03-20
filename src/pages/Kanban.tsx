@@ -62,6 +62,28 @@ const statusToEtapa: Record<string, string> = {
   fechado: 'completo',
 };
 
+const KANBAN_FILTERS_KEY = 'thor-kanban-filters';
+
+function loadPersistedFilters(): Record<string, string> | null {
+  try {
+    const raw = localStorage.getItem(KANBAN_FILTERS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, string>;
+    if (parsed && typeof parsed === 'object') return parsed;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function savePersistedFilters(filters: Record<string, string>) {
+  try {
+    localStorage.setItem(KANBAN_FILTERS_KEY, JSON.stringify(filters));
+  } catch {
+    /* ignore */
+  }
+}
+
 function getTicketColumn(c: ChamadoWithNames): string {
   if (c.etapa) return c.etapa.toLowerCase();
   return statusToEtapa[c.status] || 'thor';
@@ -98,6 +120,20 @@ export default function Kanban() {
     }
   }, [chamados, editOpen, editTicket]);
 
+  // Persist filters for admin, gestor, supervisor when they change
+  useEffect(() => {
+    if (role === 'admin' || role === 'gestor' || role === 'supervisor') {
+      savePersistedFilters({
+        supervisor: filterSupervisor,
+        representante: filterRepresentante,
+        cliente: filterCliente,
+        ticketId: filterTicketId,
+        motivo: filterMotivo,
+        gestor: filterGestor,
+      });
+    }
+  }, [role, filterSupervisor, filterRepresentante, filterCliente, filterTicketId, filterMotivo, filterGestor]);
+
   // Reference data
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
   const [representantes, setRepresentantes] = useState<Representante[]>([]);
@@ -121,6 +157,13 @@ export default function Kanban() {
     setFilterTicketId('todos');
     setFilterMotivo('todos');
     setFilterGestor('todos');
+    if (role === 'admin' || role === 'gestor' || role === 'supervisor') {
+      try {
+        localStorage.removeItem(KANBAN_FILTERS_KEY);
+      } catch {
+        /* ignore */
+      }
+    }
   };
 
   // Derived filtered lists for cascading
@@ -251,18 +294,29 @@ export default function Kanban() {
 
     // Auto-set filters based on role
     if (!roleFilterApplied && profile) {
-      if (role === 'supervisor' && supRes.data) {
+      const canPersist = role === 'admin' || role === 'gestor' || role === 'supervisor';
+      if (canPersist) {
+        const persisted = loadPersistedFilters();
+        if (persisted) {
+          setFilterSupervisor(persisted.supervisor ?? 'todos');
+          setFilterRepresentante(persisted.representante ?? 'todos');
+          setFilterCliente(persisted.cliente ?? 'todos');
+          setFilterTicketId(persisted.ticketId ?? 'todos');
+          setFilterMotivo(persisted.motivo ?? 'todos');
+          setFilterGestor(persisted.gestor ?? 'todos');
+          setRoleFilterApplied(true);
+        }
+      }
+      if (!roleFilterApplied && role === 'supervisor' && supRes.data) {
         const mySupervisor = supRes.data.find(s => s.nome.toLowerCase() === profile.nome.toLowerCase());
         if (mySupervisor) {
           setFilterSupervisor(mySupervisor.id);
           setRoleFilterApplied(true);
         }
-      } else if (role === 'representante' && repRes.data) {
-        // Mesmo critério de vínculo com comparação normalizada.
+      } else if (!roleFilterApplied && role === 'representante' && repRes.data) {
         const profileIdentifier = normalizeIdentifier(profile.usuario || profile.nome || '');
         const myRep = repRes.data.find((r: any) => normalizeIdentifier(r.nome) === profileIdentifier);
         if (myRep) {
-          // Find supervisor linked to this representante
           const link = (srRes.data || []).find(sr => sr.representante_id === myRep.id);
           if (link) setFilterSupervisor(link.supervisor_id);
           setFilterRepresentante(myRep.id);
