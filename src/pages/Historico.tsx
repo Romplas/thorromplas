@@ -501,6 +501,22 @@ export default function Historico() {
     return { entryEtapaMap: etapaMap, entryStatusMap: statusMap };
   })();
 
+  const latestEntryIdByChamado = (() => {
+    const byChamado = new Map<number, HistoricoEntry[]>();
+    historico.forEach(h => {
+      if (!byChamado.has(h.chamado_id)) byChamado.set(h.chamado_id, []);
+      byChamado.get(h.chamado_id)!.push(h);
+    });
+    const map = new Map<number, string>();
+    byChamado.forEach((entries, chamadoId) => {
+      const latest = entries.reduce((a, b) =>
+        new Date(a.created_at).getTime() > new Date(b.created_at).getTime() ? a : b
+      );
+      map.set(chamadoId, latest.id);
+    });
+    return map;
+  })();
+
   const filtered = (() => {
     const seenIds = new Set<string>();
     return historico
@@ -1016,7 +1032,7 @@ export default function Historico() {
                                   title="Selecionar para exclusão em massa"
                                 />
                               )}
-                              <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedEntryId(entry.id); setSelectedTicketId(String(entry.chamado_id)); setEditModalOpen(true); }} aria-label={role === 'representante' && (entryStatus?.toLowerCase() === 'fechado' || chamado?.status?.toLowerCase() === 'fechado') ? 'Visualizar' : 'Editar'}><Pencil className="h-5 w-5" /></button>
+                              <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedEntryId(entry.id); setSelectedTicketId(String(entry.chamado_id)); setEditModalOpen(true); }} aria-label={role === 'representante' && (entryStatus?.toLowerCase() === 'fechado' || chamado?.status?.toLowerCase() === 'fechado' || latestEntryIdByChamado.get(entry.chamado_id) !== entry.id || chamado?.status?.toLowerCase() !== 'em_progresso') ? 'Visualizar' : 'Editar'}><Pencil className="h-5 w-5" /></button>
                               {(canDeleteTicket || canDeleteEtapa) && (
                                 <button
                                   type="button"
@@ -1078,7 +1094,12 @@ export default function Historico() {
                 <div className="flex flex-col gap-2 pt-2">
                   <Button variant="default" size="sm" className="gap-1.5 justify-start" onClick={handleEditClick}>
                     <Pencil className="h-4 w-4" />
-                    {role === 'representante' && (selectedEntry && entryStatusMap.get(selectedEntry.id)?.toLowerCase() === 'fechado' || selectedChamado?.status?.toLowerCase() === 'fechado') ? 'Visualizar' : 'Editar'}
+                    {role === 'representante' && (
+                      (selectedEntry && entryStatusMap.get(selectedEntry.id)?.toLowerCase() === 'fechado') ||
+                      selectedChamado?.status?.toLowerCase() === 'fechado' ||
+                      (selectedEntry && latestEntryIdByChamado.get(selectedEntry.chamado_id) !== selectedEntry.id) ||
+                      selectedChamado?.status?.toLowerCase() !== 'em_progresso'
+                    ) ? 'Visualizar' : 'Editar'}
                   </Button>
                   {(selectedChamado.motivo.toLowerCase().includes('sd') || selectedChamado.motivo.toLowerCase().includes('solicitação de desenvolvimento')) && (
                     <Button variant="outline" size="sm" className="gap-1.5 justify-start" onClick={() => setSdpModalOpen(true)} title="Preencher / Editar Solicitação de SD">
@@ -1273,6 +1294,7 @@ export default function Historico() {
             profileMap={profileMap}
             initialDescricao={selectedEntry ? selectedEntry.descricao_ticket : undefined}
             entryStatus={selectedEntry ? entryStatusMap.get(selectedEntry.id) : undefined}
+            isLatestEntry={selectedEntry ? latestEntryIdByChamado.get(selectedEntry.chamado_id) === selectedEntry.id : true}
           />
         )}
 

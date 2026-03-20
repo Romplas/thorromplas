@@ -51,6 +51,8 @@ interface Props {
   initialDescricao?: string | null;
   /** Status da entrada selecionada no Histórico. Usado junto com chamado.status para bloquear edição (representante). */
   entryStatus?: string | null;
+  /** Se a entrada selecionada é a última atualização do ticket. Representante só pode editar a última etapa. */
+  isLatestEntry?: boolean;
 }
 
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
@@ -92,7 +94,7 @@ function getDownloadUrl(path: string, fileName: string): string {
   return url;
 }
 
-export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved, profileMap, initialDescricao, entryStatus }: Props) {
+export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved, profileMap, initialDescricao, entryStatus, isLatestEntry = true }: Props) {
   const { role } = useAuth();
   const canUpload = role === 'admin' || role === 'gestor' || role === 'supervisor';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -288,8 +290,18 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
     if (!chamado) return;
     const selectedFechado = (entryStatus ?? '')?.toLowerCase().trim() === 'fechado';
     const latestFechado = (chamado.status ?? '')?.toLowerCase().trim() === 'fechado';
+    const notLatest = isLatestEntry === false;
+    const latestNotEmProgresso = (chamado.status ?? '')?.toLowerCase().trim() !== 'em_progresso';
     if (role === 'representante' && (selectedFechado || latestFechado)) {
       toast.error('O ticket está fechado e não pode ser alterado.');
+      return;
+    }
+    if (role === 'representante' && notLatest) {
+      toast.error('O representante só pode editar a última atualização do ticket.');
+      return;
+    }
+    if (role === 'representante' && latestNotEmProgresso) {
+      toast.error('O representante só pode editar quando a última atualização estiver com Status Ticket = Em Progresso.');
       return;
     }
     setSaving(true);
@@ -449,8 +461,12 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   const gestorNome = chamado.gestor_id ? profileMap.get(chamado.gestor_id) || chamado.gestor_nome || '' : '';
   const selectedEntryFechado = (entryStatus ?? '')?.toLowerCase().trim() === 'fechado';
   const latestUpdateFechado = (chamado?.status ?? '')?.toLowerCase().trim() === 'fechado';
+  const notLatestEntry = isLatestEntry === false;
+  const latestNotEmProgresso = (chamado?.status ?? '')?.toLowerCase().trim() !== 'em_progresso';
   const isRepresentanteLockedByFechado = role === 'representante' && (selectedEntryFechado || latestUpdateFechado);
-  const isEditable = !isRepresentanteLockedByFechado;
+  const isRepresentanteLockedByNotLatest = role === 'representante' && notLatestEntry;
+  const isRepresentanteLockedByLatestNotEmProgresso = role === 'representante' && latestNotEmProgresso;
+  const isEditable = !isRepresentanteLockedByFechado && !isRepresentanteLockedByNotLatest && !isRepresentanteLockedByLatestNotEmProgresso;
 
   return (
     <>
