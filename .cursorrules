@@ -13,6 +13,14 @@ O usuário com o perfil **Representante** possui restrições específicas para 
 2.  **Etapa do Ticket:**
     * `Aguardando Resposta`
 
+
+O usuário com o perfil **Supervisora** não possui restrições
+O usuário com o perfil **Gestor** não possui restrições
+O usuário com o perfil **Administrador** não possui restrições
+
+
+
+
 ---
 
 > [!IMPORTANT]
