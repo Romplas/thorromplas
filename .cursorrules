@@ -4,7 +4,8 @@ Esta seção descreve as condições necessárias para que o perfil **Representa
 
 ## 🛠 Alteração de TicketID
 
-O usuário com o perfil **Representante** possui restrições específicas para editar ou alterar registros de `ticketID`. A operação só é permitida se **todas** as condições abaixo forem atendidas simultaneamente:
+O usuário com o perfil **Representante** possui restrições específicas para editar ou alterar registros de `ticketID`. 
+A operação só é permitida se **todas** as condições abaixo forem atendidas simultaneamente:
 
 ### Condições Obrigatórias:
 
@@ -18,10 +19,13 @@ O usuário com o perfil **Supervisora** não possui restrições
 O usuário com o perfil **Gestor** não possui restrições
 O usuário com o perfil **Administrador** não possui restrições
 
+As telas de 'Historico' o botão de editar ou o icone que aciona o formulario de editar ticketID precisa ficar desabilitado 
 
 
 
 ---
 
 > [!IMPORTANT]
-> Se o ticket estiver em qualquer outro Status Ticket (ex: Fechado) ou em outra Etapa Ticket (ex: Em Negociação), o acesso de edição para o Representante será **bloqueado**.
+> Se o ticket estiver em qualquer outro Status Ticket (ex: Fechado) ou em outra Etapa Ticket (ex: Em Negociação), 
+o acesso de edição para o Representante será **bloqueado**.
+
