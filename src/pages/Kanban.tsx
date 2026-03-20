@@ -152,6 +152,7 @@ export default function Kanban() {
     }
   }, [role, filterSupervisor, filterRepresentante, filterCliente, filterTicketId, filterMotivo, filterGestor]);
 
+  const handleClearFilters = () => {
     setFilterSupervisor('todos');
     setFilterRepresentante('todos');
     setFilterCliente('todos');
