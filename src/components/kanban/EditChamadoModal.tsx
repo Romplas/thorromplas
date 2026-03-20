@@ -284,6 +284,10 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
   const handleSave = async () => {
     if (!chamado) return;
+    if (role === 'representante' && chamado.status?.toLowerCase().trim() === 'fechado') {
+      toast.error('O ticket está fechado e não pode ser alterado.');
+      return;
+    }
     setSaving(true);
     try {
       // Get current user profile for history
@@ -439,7 +443,9 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   if (!chamado) return null;
 
   const gestorNome = chamado.gestor_id ? profileMap.get(chamado.gestor_id) || chamado.gestor_nome || '' : '';
-  const isEditable = true;
+  const isRepresentanteLockedByFechado = role === 'representante'
+    && (chamado?.status?.toLowerCase().trim() === 'fechado');
+  const isEditable = !isRepresentanteLockedByFechado;
 
   return (
     <>
