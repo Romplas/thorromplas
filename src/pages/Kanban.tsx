@@ -120,9 +120,9 @@ export default function Kanban() {
     }
   }, [chamados, editOpen, editTicket]);
 
-  // Persist filters for admin, gestor, supervisor when they change
+  // Persist filters for all roles when they change (permanecem ao trocar de tela)
   useEffect(() => {
-    if (role === 'admin' || role === 'gestor' || role === 'supervisor') {
+    if (role) {
       savePersistedFilters({
         supervisor: filterSupervisor,
         representante: filterRepresentante,
@@ -157,12 +157,10 @@ export default function Kanban() {
     setFilterTicketId('todos');
     setFilterMotivo('todos');
     setFilterGestor('todos');
-    if (role === 'admin' || role === 'gestor' || role === 'supervisor') {
-      try {
-        localStorage.removeItem(KANBAN_FILTERS_KEY);
-      } catch {
-        /* ignore */
-      }
+    try {
+      localStorage.removeItem(KANBAN_FILTERS_KEY);
+    } catch {
+      /* ignore */
     }
   };
 
@@ -294,18 +292,15 @@ export default function Kanban() {
 
     // Auto-set filters based on role
     if (!roleFilterApplied && profile) {
-      const canPersist = role === 'admin' || role === 'gestor' || role === 'supervisor';
-      if (canPersist) {
-        const persisted = loadPersistedFilters();
-        if (persisted) {
-          setFilterSupervisor(persisted.supervisor ?? 'todos');
-          setFilterRepresentante(persisted.representante ?? 'todos');
-          setFilterCliente(persisted.cliente ?? 'todos');
-          setFilterTicketId(persisted.ticketId ?? 'todos');
-          setFilterMotivo(persisted.motivo ?? 'todos');
-          setFilterGestor(persisted.gestor ?? 'todos');
-          setRoleFilterApplied(true);
-        }
+      const persisted = loadPersistedFilters();
+      if (persisted) {
+        setFilterSupervisor(persisted.supervisor ?? 'todos');
+        setFilterRepresentante(persisted.representante ?? 'todos');
+        setFilterCliente(persisted.cliente ?? 'todos');
+        setFilterTicketId(persisted.ticketId ?? 'todos');
+        setFilterMotivo(persisted.motivo ?? 'todos');
+        setFilterGestor(persisted.gestor ?? 'todos');
+        setRoleFilterApplied(true);
       }
       if (!roleFilterApplied && role === 'supervisor' && supRes.data) {
         const mySupervisor = supRes.data.find(s => s.nome.toLowerCase() === profile.nome.toLowerCase());
@@ -466,10 +461,10 @@ export default function Kanban() {
     return true;
   });
 
-  // Opções dos dropdowns: valores distintos do conjunto filtrado
-  const ticketIdOptions = [...new Set(filteredChamados.map(c => String(c.id)))];
-  const clienteOptions = [...new Set(filteredChamados.map(c => c.cliente_nome).filter(Boolean))].sort();
-  const motivoOptions = [...new Set(filteredChamados.map(c => c.motivo).filter(Boolean))].sort();
+  // Opções dos dropdowns: inclui valores selecionados para exibir corretamente ao restaurar
+  const ticketIdOptions = [...new Set([...(filterTicketId !== 'todos' ? [filterTicketId] : []), ...filteredChamados.map(c => String(c.id))])];
+  const clienteOptions = [...new Set([...(filterCliente !== 'todos' ? [filterCliente] : []), ...filteredChamados.map(c => c.cliente_nome).filter(Boolean)])].sort();
+  const motivoOptions = [...new Set([...(filterMotivo !== 'todos' ? [filterMotivo] : []), ...filteredChamados.map(c => c.motivo).filter(Boolean)])].sort();
 
   const isSupervisorSelectDisabled = role === 'supervisor' || role === 'representante'; // Supervisor vê apenas seus chamados
   const roleLabel = profile?.nome || (role === 'admin' ? 'Administrador' : role === 'gestor' ? 'Gestor' : role === 'supervisor' ? 'Supervisor' : 'Representante');
