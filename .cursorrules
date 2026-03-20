@@ -2,30 +2,42 @@
 
 Esta seção descreve as condições necessárias para que o perfil **Representante** realize alterações no sistema.
 
-## 🛠 Alteração de TicketID
+## 🛠 Alteração de TicketID (Representante)
 
-O usuário com o perfil **Representante** possui restrições específicas para editar ou alterar registros de `ticketID`. 
-A operação só é permitida se **todas** as condições abaixo forem atendidas simultaneamente:
+O usuário com o perfil **Representante** possui restrições específicas para editar registros de `ticketID`.
+A edição só é permitida quando **todas** as condições abaixo forem atendidas simultaneamente:
 
-### Condições Obrigatórias:
+### Condições para Permitir Edição:
 
-1.  **Status do Ticket:**
-    * `Pendente` OR `Em Progresso`
-2.  **Etapa do Ticket:**
-    * `Aguardando Resposta`
+1. **Última atualização** do ticket deve ter `Status Ticket = Em Progresso`
+2. A **entrada selecionada** deve ser a **última atualização** do ticket (não etapas anteriores)
+3. A **entrada selecionada** NÃO pode ter `Status Ticket = Fechado`
+4. A **última atualização** NÃO pode ter `Status Ticket = Fechado`
 
+### Condições que Bloqueiam Edição:
 
-O usuário com o perfil **Supervisora** não possui restrições
-O usuário com o perfil **Gestor** não possui restrições
-O usuário com o perfil **Administrador** não possui restrições
+| Condição | Bloqueia? |
+|----------|-----------|
+| Entrada selecionada = Fechado | Sim |
+| Última atualização = Fechado | Sim (bloqueia todas as entradas do ticket) |
+| Entrada selecionada ≠ última atualização | Sim |
+| Última atualização ≠ Em Progresso | Sim |
 
-As telas de 'Historico' o botão de editar ou o icone que aciona o formulario de editar ticketID precisa ficar desabilitado 
+### Comportamento na Interface:
 
+- Quando bloqueado: o botão exibe **"Visualizar"** e o modal abre em modo somente leitura
+- O painel de detalhes exibe **Status Ticket** e **Etapa Ticket** da entrada selecionada (card clicado), não os valores atuais
+- Na tela **Histórico**, o ícone de lápis e o botão seguem a mesma regra
 
+---
+
+## Outros Perfis
+
+- **Supervisora**: não possui restrições
+- **Gestor**: não possui restrições
+- **Administrador**: não possui restrições
 
 ---
 
 > [!IMPORTANT]
-> Se o ticket estiver em qualquer outro Status Ticket (ex: Fechado) ou em outra Etapa Ticket (ex: Em Negociação), 
-o acesso de edição para o Representante será **bloqueado**.
-
+> O representante só pode editar a **última etapa** do ticket e apenas quando a **última atualização** estiver com `Status Ticket = Em Progresso`.
