@@ -145,7 +145,8 @@ export default function Kanban() {
   // Persist filters for admin, gestor, supervisor when they change (permanecem ao trocar de tela)
   const canPersistFilters = role === 'admin' || role === 'gestor' || role === 'supervisor';
   useEffect(() => {
-    if (canPersistFilters && role && !authLoading) {
+    // Só salva após os filtros iniciais terem sido carregados (evita sobrescrever com 'todos' no mount)
+    if (canPersistFilters && role && !authLoading && roleFilterApplied) {
       savePersistedFilters(role, {
         supervisor: filterSupervisor,
         representante: filterRepresentante,
@@ -155,7 +156,7 @@ export default function Kanban() {
         gestor: filterGestor,
       });
     }
-  }, [canPersistFilters, role, authLoading, filterSupervisor, filterRepresentante, filterCliente, filterTicketId, filterMotivo, filterGestor]);
+  }, [canPersistFilters, role, authLoading, roleFilterApplied, filterSupervisor, filterRepresentante, filterCliente, filterTicketId, filterMotivo, filterGestor]);
 
   const handleClearFilters = () => {
     setFilterSupervisor('todos');
@@ -303,7 +304,7 @@ export default function Kanban() {
     if (clientesRes.data) setAllClientes(clientesRes.data as Cliente[]);
     if (motivosRes.data) setMotivos(motivosRes.data);
 
-    // Auto-set filters based on role
+    // Auto-set filters based on role (persistidos para admin/gestor/supervisor ao navegar entre telas)
     if (!roleFilterApplied && profile) {
       const persisted = (role === 'admin' || role === 'gestor' || role === 'supervisor')
         ? loadPersistedFilters(role)
@@ -331,6 +332,9 @@ export default function Kanban() {
           setFilterRepresentante(myRep.id);
           setRoleFilterApplied(true);
         }
+      } else if (role === 'admin' || role === 'gestor' || role === 'supervisor') {
+        // Sem filtros persistidos: marca como inicializado para permitir salvar futuras alterações
+        setRoleFilterApplied(true);
       }
     }
 
