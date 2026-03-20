@@ -24,4 +24,4 @@ O usuário com o perfil **Administrador** não possui restrições
 ---
 
 > [!IMPORTANT]
-> Se o ticket estiver em qualquer outro Status (ex: Concluído, Cancelado) ou em outra Etapa (ex: Em Análise), o acesso de edição para o Representante será **bloqueado**.
+> Se o ticket estiver em qualquer outro Status Ticket (ex: Fechado) ou em outra Etapa Ticket (ex: Em Negociação), o acesso de edição para o Representante será **bloqueado**.
