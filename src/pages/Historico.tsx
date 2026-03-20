@@ -368,18 +368,18 @@ export default function Historico() {
     : representantes;
 
   // Filtros individuais: cada filtro ativo restringe. Todos aplicados em AND.
-  // Gestor/Supervisor: ao filtrar só por gestor (ou qualquer outro), traz todos os matching.
+  // Quando representante está selecionado, mostra TODOS os tickets desse representante (supervisor não restringe).
   const filteredChamadoIds = new Set(
     chamados
       .filter(c => {
-        if (filterSupervisor !== 'todos') {
+        if (filterRepresentante !== 'todos' && c.representante_id !== filterRepresentante) return false;
+        if (filterSupervisor !== 'todos' && filterRepresentante === 'todos') {
           const repIdsForSupervisor = srLinks
             .filter(sr => sr.supervisor_id === filterSupervisor)
             .map(sr => sr.representante_id);
           const matchSup = c.supervisor_id === filterSupervisor || (c.representante_id && repIdsForSupervisor.includes(c.representante_id));
           if (!matchSup) return false;
         }
-        if (filterRepresentante !== 'todos' && c.representante_id !== filterRepresentante) return false;
         if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
         if (filterCliente !== 'todos' && c.cliente_nome !== filterCliente) return false;
         if (filterSubmotivo !== 'todos' && c.submotivo !== filterSubmotivo) return false;
