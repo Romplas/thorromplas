@@ -126,25 +126,6 @@ export default function Kanban() {
     }
   }, [chamados, editOpen, editTicket]);
 
-  // Persist filters for admin, gestor, supervisor when they change (permanecem ao trocar de tela)
-  const canPersistFilters = role === 'admin' || role === 'gestor' || role === 'supervisor';
-  useEffect(() => {
-    if (canPersistFilters && !authLoading) {
-      try {
-        savePersistedFilters(role!, {
-          supervisor: filterSupervisor,
-          representante: filterRepresentante,
-          cliente: filterCliente,
-          ticketId: filterTicketId,
-          motivo: filterMotivo,
-          gestor: filterGestor,
-        });
-      } catch {
-        /* ignore */
-      }
-    }
-  }, [canPersistFilters, role, authLoading, filterSupervisor, filterRepresentante, filterCliente, filterTicketId, filterMotivo, filterGestor]);
-
   // Reference data
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
   const [representantes, setRepresentantes] = useState<Representante[]>([]);
@@ -160,6 +141,21 @@ export default function Kanban() {
   const [filterTicketId, setFilterTicketId] = useState('todos');
   const [filterMotivo, setFilterMotivo] = useState('todos');
   const [filterGestor, setFilterGestor] = useState('todos');
+
+  // Persist filters for admin, gestor, supervisor when they change (permanecem ao trocar de tela)
+  const canPersistFilters = role === 'admin' || role === 'gestor' || role === 'supervisor';
+  useEffect(() => {
+    if (canPersistFilters && role && !authLoading) {
+      savePersistedFilters(role, {
+        supervisor: filterSupervisor,
+        representante: filterRepresentante,
+        cliente: filterCliente,
+        ticketId: filterTicketId,
+        motivo: filterMotivo,
+        gestor: filterGestor,
+      });
+    }
+  }, [canPersistFilters, role, authLoading, filterSupervisor, filterRepresentante, filterCliente, filterTicketId, filterMotivo, filterGestor]);
 
   const handleClearFilters = () => {
     setFilterSupervisor('todos');
@@ -320,14 +316,13 @@ export default function Kanban() {
         setFilterMotivo(persisted.motivo ?? 'todos');
         setFilterGestor(persisted.gestor ?? 'todos');
         setRoleFilterApplied(true);
-      }
-      if (!roleFilterApplied && role === 'supervisor' && supRes.data) {
+      } else if (role === 'supervisor' && supRes.data) {
         const mySupervisor = supRes.data.find(s => s.nome.toLowerCase() === profile.nome.toLowerCase());
         if (mySupervisor) {
           setFilterSupervisor(mySupervisor.id);
           setRoleFilterApplied(true);
         }
-      } else if (!roleFilterApplied && role === 'representante' && repRes.data) {
+      } else if (role === 'representante' && repRes.data) {
         const profileIdentifier = normalizeIdentifier(profile.usuario || profile.nome || '');
         const myRep = repRes.data.find((r: any) => normalizeIdentifier(r.nome) === profileIdentifier);
         if (myRep) {
