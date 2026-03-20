@@ -138,7 +138,20 @@ export default function Kanban() {
   const [filterMotivo, setFilterMotivo] = useState('todos');
   const [filterGestor, setFilterGestor] = useState('todos');
 
-  const handleClearFilters = () => {
+  // Persist filters for all roles when they change
+  useEffect(() => {
+    if (role) {
+      savePersistedFilters({
+        supervisor: filterSupervisor,
+        representante: filterRepresentante,
+        cliente: filterCliente,
+        ticketId: filterTicketId,
+        motivo: filterMotivo,
+        gestor: filterGestor,
+      });
+    }
+  }, [role, filterSupervisor, filterRepresentante, filterCliente, filterTicketId, filterMotivo, filterGestor]);
+
     setFilterSupervisor('todos');
     setFilterRepresentante('todos');
     setFilterCliente('todos');
