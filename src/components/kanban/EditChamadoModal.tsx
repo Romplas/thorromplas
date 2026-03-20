@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Save, Paperclip, Eye, Download, Upload, X, Trash2 } from 'lucide-react';
+import { Save, Paperclip, Eye, Download, Upload, X, Trash2, FileEdit } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import SDPFormModal from '@/components/chamado/SDPFormModal';
@@ -90,12 +90,14 @@ function getDownloadUrl(path: string, fileName: string): string {
   return url;
 }
 
+const DRAFT_PREFIX = 'thorromplas:edit-chamado-draft';
+
 export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved, profileMap, initialDescricao }: Props) {
   const { role, profile } = useAuth();
   const canUpload = role === 'admin' || role === 'gestor' || role === 'supervisor';
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-
+  const draftKey = chamado && profile?.id ? `${DRAFT_PREFIX}:${profile.id}:${chamado.id}` : null;
+  const prevOpenRef = useRef(false);
 
   const [descricao, setDescricao] = useState('');
   const [status, setStatus] = useState('');
@@ -157,36 +159,112 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
         .maybeSingle();
 
       if (error || !freshChamado) {
-        setDescricao(initialDescricao !== undefined ? (initialDescricao || '') : (chamado.descricao || ''));
-        setStatus(chamado.status);
-        setEtapa(chamado.etapa || 'thor');
-        setGestorId(chamado.gestor_id || 'none');
+        let restoredFromDraft = false;
+        if (draftKey) {
+          try {
+            const draftRaw = localStorage.getItem(draftKey);
+            if (draftRaw) {
+              const draft = JSON.parse(draftRaw);
+              const descVal = (draft.descricao != null && draft.descricao !== '') ? draft.descricao : (initialDescricao !== undefined ? (initialDescricao || '') : (chamado.descricao || ''));
+              setDescricao(descVal);
+              setStatus(draft.status ?? chamado.status ?? '');
+              setEtapa(draft.etapa ?? chamado.etapa ?? 'thor');
+              setGestorId(draft.gestorId ?? chamado.gestor_id ?? 'none');
+              setMetrosTotais(draft.metrosTotais ?? '');
+              setNegociadoCom(draft.negociadoCom ?? '');
+              setNfe(draft.nfe ?? '');
+              setTipoSolicitacao(draft.tipoSolicitacao ?? '');
+              setStatusAgendamento(draft.statusAgendamento ?? '');
+              restoredFromDraft = true;
+            }
+          } catch {
+            // rascunho corrompido - ignora
+          }
+        }
+        if (!restoredFromDraft) {
+          setDescricao(initialDescricao !== undefined ? (initialDescricao || '') : (chamado.descricao || ''));
+          setStatus(chamado.status);
+          setEtapa(chamado.etapa || 'thor');
+          setGestorId(chamado.gestor_id || 'none');
+        }
         loadExtraFields(chamado.id);
         resolveNames(chamado);
         loadAnexos(chamado.id);
+        if (restoredFromDraft) toast.info('Rascunho restaurado. Suas alterações anteriores foram recuperadas.');
         return;
       }
 
       const raw = freshChamado as any;
-      setDescricao(initialDescricao !== undefined ? (initialDescricao || '') : (raw.descricao || ''));
-      setStatus(raw.status || '');
-      setEtapa(raw.etapa || 'thor');
-      setGestorId(raw.gestor_id || 'none');
-      setMetrosTotais(raw.metros_totais || '');
-      setNegociadoCom(raw.negociado_com || '');
-      setNfe(raw.nfe || '');
-      setTipoSolicitacao(raw.tipo_solicitacao || '');
-      setStatusAgendamento(raw.status_agendamento || '');
+
+      let restoredFromDraft = false;
+      if (draftKey) {
+        try {
+          const draftRaw = localStorage.getItem(draftKey);
+          if (draftRaw) {
+            const draft = JSON.parse(draftRaw);
+            const descVal = (draft.descricao != null && draft.descricao !== '') ? draft.descricao : (initialDescricao !== undefined ? (initialDescricao || '') : (raw.descricao || ''));
+            setDescricao(descVal);
+            setStatus(draft.status ?? raw.status ?? '');
+            setEtapa(draft.etapa ?? raw.etapa ?? 'thor');
+            setGestorId(draft.gestorId ?? raw.gestor_id ?? 'none');
+            setMetrosTotais(draft.metrosTotais ?? raw.metros_totais ?? '');
+            setNegociadoCom(draft.negociadoCom ?? raw.negociado_com ?? '');
+            setNfe(draft.nfe ?? raw.nfe ?? '');
+            setTipoSolicitacao(draft.tipoSolicitacao ?? raw.tipo_solicitacao ?? '');
+            setStatusAgendamento(draft.statusAgendamento ?? raw.status_agendamento ?? '');
+            restoredFromDraft = true;
+          }
+        } catch {
+          // rascunho corrompido - ignora
+        }
+      }
+
+      if (!restoredFromDraft) {
+        setDescricao(initialDescricao !== undefined ? (initialDescricao || '') : (raw.descricao || ''));
+        setStatus(raw.status || '');
+        setEtapa(raw.etapa || 'thor');
+        setGestorId(raw.gestor_id || 'none');
+        setMetrosTotais(raw.metros_totais || '');
+        setNegociadoCom(raw.negociado_com || '');
+        setNfe(raw.nfe || '');
+        setTipoSolicitacao(raw.tipo_solicitacao || '');
+        setStatusAgendamento(raw.status_agendamento || '');
+      }
 
       resolveNames({ ...chamado, ...raw });
       loadAnexos(chamado.id);
+
+      if (restoredFromDraft) {
+        toast.info('Rascunho restaurado. Suas alterações anteriores foram recuperadas.');
+      }
     };
 
     loadLatestChamado();
-  }, [chamado, open, initialDescricao]);
+  }, [chamado, open, initialDescricao, draftKey]);
 
-
-
+  // Auto-salvar rascunho ao fechar o modal (evita perda se usuário fechar sem clicar no botão)
+  useEffect(() => {
+    const wasOpen = prevOpenRef.current;
+    prevOpenRef.current = open;
+    if (wasOpen && !open && draftKey) {
+      try {
+        const draft = {
+          descricao,
+          status,
+          etapa,
+          gestorId,
+          metrosTotais,
+          negociadoCom,
+          nfe,
+          tipoSolicitacao,
+          statusAgendamento,
+        };
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+      } catch {
+        // ignora
+      }
+    }
+  }, [open, draftKey, descricao, status, etapa, gestorId, metrosTotais, negociadoCom, nfe, tipoSolicitacao, statusAgendamento]);
 
   const loadExtraFields = async (chamadoId: number) => {
     const { data } = await supabase
@@ -278,6 +356,27 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
     setLoadingAnexos(false);
   };
 
+  const handleSaveDraft = () => {
+    if (!draftKey) return;
+    try {
+      const draft = {
+        descricao,
+        status,
+        etapa,
+        gestorId,
+        metrosTotais,
+        negociadoCom,
+        nfe,
+        tipoSolicitacao,
+        statusAgendamento,
+      };
+      localStorage.setItem(draftKey, JSON.stringify(draft));
+      toast.success('Rascunho salvo. Você pode fechar e voltar depois.');
+    } catch {
+      toast.error('Erro ao salvar rascunho');
+    }
+  };
+
   const handleSave = async () => {
     if (!chamado) return;
     setSaving(true);
@@ -352,8 +451,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       toast.success(`Ticket ${chamado.id} atualizado!`);
       notifyChamadoUpdated(chamado.id);
 
-
-
+      if (draftKey) localStorage.removeItem(draftKey);
 
       onSaved();
       onOpenChange(false);
@@ -713,9 +811,14 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
           <div className="sticky bottom-0 bg-card border-t px-6 py-4 flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{isEditable ? 'Cancelar' : 'Fechar'}</Button>
             {isEditable && (
-              <Button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSave(); }} disabled={saving}>
-                <Save className="h-4 w-4 mr-1.5" />{saving ? 'Salvando...' : 'Salvar'}
-              </Button>
+              <>
+                <Button type="button" variant="outline" onClick={handleSaveDraft}>
+                  <FileEdit className="h-4 w-4 mr-1.5" />Salvar como rascunho
+                </Button>
+                <Button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSave(); }} disabled={saving}>
+                  <Save className="h-4 w-4 mr-1.5" />{saving ? 'Salvando...' : 'Salvar'}
+                </Button>
+              </>
             )}
           </div>
         </DialogContent>
