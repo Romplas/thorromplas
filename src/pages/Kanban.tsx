@@ -120,19 +120,7 @@ export default function Kanban() {
     }
   }, [chamados, editOpen, editTicket]);
 
-  // Persist filters for all roles when they change (permanecem ao trocar de tela)
-  useEffect(() => {
-    if (role) {
-      savePersistedFilters({
-        supervisor: filterSupervisor,
-        representante: filterRepresentante,
-        cliente: filterCliente,
-        ticketId: filterTicketId,
-        motivo: filterMotivo,
-        gestor: filterGestor,
-      });
-    }
-  }, [role, filterSupervisor, filterRepresentante, filterCliente, filterTicketId, filterMotivo, filterGestor]);
+  // (persist filters effect moved below filter state declarations)
 
   // Reference data
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
