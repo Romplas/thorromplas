@@ -41,8 +41,34 @@ export function SearchableSelect({
   className,
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState("");
+  const listRef = React.useRef<HTMLDivElement>(null);
+  const selectedItemRef = React.useRef<HTMLDivElement>(null);
 
   const selectedLabel = options.find((o) => o.value === value)?.label;
+
+  // Ao abrir o dropdown com valor selecionado, preenche a pesquisa para filtrar e mostrar o item
+  React.useEffect(() => {
+    if (open) {
+      if (value && selectedLabel) {
+        setSearchValue(selectedLabel);
+      } else {
+        setSearchValue("");
+      }
+    } else {
+      setSearchValue("");
+    }
+  }, [open, value, selectedLabel]);
+
+  // Rola até o item selecionado quando a lista é exibida
+  React.useEffect(() => {
+    if (open && value && selectedItemRef.current && listRef.current) {
+      const timer = requestAnimationFrame(() => {
+        selectedItemRef.current?.scrollIntoView({ block: "nearest", behavior: "auto" });
+      });
+      return () => cancelAnimationFrame(timer);
+    }
+  }, [open, value, searchValue]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -66,13 +92,18 @@ export function SearchableSelect({
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
-          <CommandList>
+          <CommandInput
+            placeholder={searchPlaceholder}
+            value={searchValue}
+            onValueChange={setSearchValue}
+          />
+          <CommandList ref={listRef}>
             <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
+                  ref={value === option.value ? selectedItemRef : undefined}
                   value={option.label}
                   onSelect={() => {
                     onValueChange(option.value);
