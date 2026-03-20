@@ -97,7 +97,6 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   const canUpload = role === 'admin' || role === 'gestor' || role === 'supervisor';
   const fileInputRef = useRef<HTMLInputElement>(null);
   const draftKey = chamado && profile?.id ? `${DRAFT_PREFIX}:${profile.id}:${chamado.id}` : null;
-  const prevOpenRef = useRef(false);
 
   const [descricao, setDescricao] = useState('');
   const [status, setStatus] = useState('');
@@ -241,30 +240,6 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
     loadLatestChamado();
   }, [chamado, open, initialDescricao, draftKey]);
-
-  // Auto-salvar rascunho ao fechar o modal (evita perda se usuário fechar sem clicar no botão)
-  useEffect(() => {
-    const wasOpen = prevOpenRef.current;
-    prevOpenRef.current = open;
-    if (wasOpen && !open && draftKey) {
-      try {
-        const draft = {
-          descricao,
-          status,
-          etapa,
-          gestorId,
-          metrosTotais,
-          negociadoCom,
-          nfe,
-          tipoSolicitacao,
-          statusAgendamento,
-        };
-        localStorage.setItem(draftKey, JSON.stringify(draft));
-      } catch {
-        // ignora
-      }
-    }
-  }, [open, draftKey, descricao, status, etapa, gestorId, metrosTotais, negociadoCom, nfe, tipoSolicitacao, statusAgendamento]);
 
   const loadExtraFields = async (chamadoId: number) => {
     const { data } = await supabase
