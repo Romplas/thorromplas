@@ -295,7 +295,7 @@ export default function Kanban() {
     // Auto-set filters based on role
     if (!roleFilterApplied && profile) {
       const persisted = loadPersistedFilters();
-      if (persisted) {
+      if (persisted && (role === 'admin' || role === 'gestor' || role === 'supervisor')) {
         setFilterSupervisor(persisted.supervisor ?? 'todos');
         setFilterRepresentante(persisted.representante ?? 'todos');
         setFilterCliente(persisted.cliente ?? 'todos');
@@ -303,14 +303,13 @@ export default function Kanban() {
         setFilterMotivo(persisted.motivo ?? 'todos');
         setFilterGestor(persisted.gestor ?? 'todos');
         setRoleFilterApplied(true);
-      }
-      if (!roleFilterApplied && role === 'supervisor' && supRes.data) {
+      } else if (role === 'supervisor' && supRes.data) {
         const mySupervisor = supRes.data.find(s => s.nome.toLowerCase() === profile.nome.toLowerCase());
         if (mySupervisor) {
           setFilterSupervisor(mySupervisor.id);
           setRoleFilterApplied(true);
         }
-      } else if (!roleFilterApplied && role === 'representante' && repRes.data) {
+      } else if (role === 'representante' && repRes.data) {
         const profileIdentifier = normalizeIdentifier(profile.usuario || profile.nome || '');
         const myRep = repRes.data.find((r: any) => normalizeIdentifier(r.nome) === profileIdentifier);
         if (myRep) {
