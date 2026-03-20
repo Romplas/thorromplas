@@ -1062,9 +1062,9 @@ export default function Historico() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <ReadOnlyField label="EtapaTicket" value={etapaLabelsMap[(selectedChamado.etapa || 'thor').toLowerCase()] || selectedChamado.etapa || '—'} />
+                  <ReadOnlyField label="EtapaTicket" value={selectedEntry ? (etapaLabelsMap[(entryEtapaMap.get(selectedEntry.id) || 'thor').toLowerCase()] || entryEtapaMap.get(selectedEntry.id) || '—') : (etapaLabelsMap[(selectedChamado.etapa || 'thor').toLowerCase()] || selectedChamado.etapa || '—')} />
                   <ReadOnlyField label="Gestor" value={selectedEntry ? (entryGestorNameMap.get(selectedEntry.id) || '') : gestorNome} />
-                  <ReadOnlyField label="StatusTicket" value={statusLabels[selectedChamado.status] || selectedChamado.status} />
+                  <ReadOnlyField label="StatusTicket" value={selectedEntry ? (statusLabels[entryStatusMap.get(selectedEntry.id) || ''] || entryStatusMap.get(selectedEntry.id) || '—') : (statusLabels[selectedChamado.status] || selectedChamado.status)} />
                 </div>
 
                 <div className="space-y-1">
