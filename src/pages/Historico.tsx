@@ -1016,7 +1016,7 @@ export default function Historico() {
                                   title="Selecionar para exclusão em massa"
                                 />
                               )}
-                              <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedEntryId(entry.id); setSelectedTicketId(String(entry.chamado_id)); setEditModalOpen(true); }} aria-label={role === 'representante' && chamado?.status?.toLowerCase() === 'fechado' ? 'Visualizar' : 'Editar'}><Pencil className="h-5 w-5" /></button>
+                              <button type="button" className="min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 opacity-80 hover:opacity-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedEntryId(entry.id); setSelectedTicketId(String(entry.chamado_id)); setEditModalOpen(true); }} aria-label={role === 'representante' && entryStatus?.toLowerCase() === 'fechado' ? 'Visualizar' : 'Editar'}><Pencil className="h-5 w-5" /></button>
                               {(canDeleteTicket || canDeleteEtapa) && (
                                 <button
                                   type="button"
@@ -1078,7 +1078,7 @@ export default function Historico() {
                 <div className="flex flex-col gap-2 pt-2">
                   <Button variant="default" size="sm" className="gap-1.5 justify-start" onClick={handleEditClick}>
                     <Pencil className="h-4 w-4" />
-                    {role === 'representante' && selectedChamado?.status?.toLowerCase() === 'fechado' ? 'Visualizar' : 'Editar'}
+                    {role === 'representante' && selectedEntry && entryStatusMap.get(selectedEntry.id)?.toLowerCase() === 'fechado' ? 'Visualizar' : 'Editar'}
                   </Button>
                   {(selectedChamado.motivo.toLowerCase().includes('sd') || selectedChamado.motivo.toLowerCase().includes('solicitação de desenvolvimento')) && (
                     <Button variant="outline" size="sm" className="gap-1.5 justify-start" onClick={() => setSdpModalOpen(true)} title="Preencher / Editar Solicitação de SD">
@@ -1272,6 +1272,7 @@ export default function Historico() {
             onSaved={fetchData}
             profileMap={profileMap}
             initialDescricao={selectedEntry ? selectedEntry.descricao_ticket : undefined}
+            entryStatus={selectedEntry ? entryStatusMap.get(selectedEntry.id) : undefined}
           />
         )}
 

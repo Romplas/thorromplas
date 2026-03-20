@@ -49,6 +49,8 @@ interface Props {
   profileMap: Map<string, string>;
   /** Quando informado (ex: ao abrir do Histórico), usa esta descrição em vez da atual do banco */
   initialDescricao?: string | null;
+  /** Status da entrada selecionada no Histórico. Quando 'fechado', bloqueia edição (representante). */
+  entryStatus?: string | null;
 }
 
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
@@ -90,7 +92,7 @@ function getDownloadUrl(path: string, fileName: string): string {
   return url;
 }
 
-export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved, profileMap, initialDescricao }: Props) {
+export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved, profileMap, initialDescricao, entryStatus }: Props) {
   const { role } = useAuth();
   const canUpload = role === 'admin' || role === 'gestor' || role === 'supervisor';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -284,7 +286,8 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
   const handleSave = async () => {
     if (!chamado) return;
-    if (role === 'representante' && chamado.status?.toLowerCase().trim() === 'fechado') {
+    const statusToCheck = (entryStatus ?? chamado.status)?.toLowerCase().trim();
+    if (role === 'representante' && statusToCheck === 'fechado') {
       toast.error('O ticket está fechado e não pode ser alterado.');
       return;
     }
@@ -443,8 +446,8 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   if (!chamado) return null;
 
   const gestorNome = chamado.gestor_id ? profileMap.get(chamado.gestor_id) || chamado.gestor_nome || '' : '';
-  const isRepresentanteLockedByFechado = role === 'representante'
-    && (chamado?.status?.toLowerCase().trim() === 'fechado');
+  const statusForLock = (entryStatus ?? chamado?.status)?.toLowerCase().trim();
+  const isRepresentanteLockedByFechado = role === 'representante' && statusForLock === 'fechado';
   const isEditable = !isRepresentanteLockedByFechado;
 
   return (
