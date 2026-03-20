@@ -94,6 +94,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   const { role } = useAuth();
   const canUpload = role === 'admin' || role === 'gestor' || role === 'supervisor';
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const prevOpenRef = useRef(false);
 
   const [descricao, setDescricao] = useState('');
   const [status, setStatus] = useState('');
@@ -145,42 +146,50 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   }, []);
 
   useEffect(() => {
-    if (!chamado || !open) return;
+    if (!chamado) return;
+    const wasOpen = prevOpenRef.current;
+    prevOpenRef.current = open;
+    if (!open) return;
 
-    const loadLatestChamado = async () => {
-      const { data: freshChamado, error } = await supabase
-        .from('chamados')
-        .select('*')
-        .eq('id', chamado.id)
-        .maybeSingle();
+    const justOpened = !wasOpen && open;
 
-      if (error || !freshChamado) {
-        setDescricao(initialDescricao !== undefined ? (initialDescricao || '') : (chamado.descricao || ''));
-        setStatus(chamado.status);
-        setEtapa(chamado.etapa || 'thor');
-        setGestorId(chamado.gestor_id || 'none');
-        loadExtraFields(chamado.id);
-        resolveNames(chamado);
+    // Só recarrega quando o modal abre, preservando edições em andamento
+    if (justOpened) {
+      const loadLatestChamado = async () => {
+        const { data: freshChamado, error } = await supabase
+          .from('chamados')
+          .select('*')
+          .eq('id', chamado.id)
+          .maybeSingle();
+
+        if (error || !freshChamado) {
+          setDescricao(initialDescricao !== undefined ? (initialDescricao || '') : (chamado.descricao || ''));
+          setStatus(chamado.status);
+          setEtapa(chamado.etapa || 'thor');
+          setGestorId(chamado.gestor_id || 'none');
+          loadExtraFields(chamado.id);
+          resolveNames(chamado);
+          loadAnexos(chamado.id);
+          return;
+        }
+
+        const raw = freshChamado as any;
+        setDescricao(initialDescricao !== undefined ? (initialDescricao || '') : (raw.descricao || ''));
+        setStatus(raw.status || '');
+        setEtapa(raw.etapa || 'thor');
+        setGestorId(raw.gestor_id || 'none');
+        setMetrosTotais(raw.metros_totais || '');
+        setNegociadoCom(raw.negociado_com || '');
+        setNfe(raw.nfe || '');
+        setTipoSolicitacao(raw.tipo_solicitacao || '');
+        setStatusAgendamento(raw.status_agendamento || '');
+
+        resolveNames({ ...chamado, ...raw });
         loadAnexos(chamado.id);
-        return;
-      }
+      };
 
-      const raw = freshChamado as any;
-      setDescricao(initialDescricao !== undefined ? (initialDescricao || '') : (raw.descricao || ''));
-      setStatus(raw.status || '');
-      setEtapa(raw.etapa || 'thor');
-      setGestorId(raw.gestor_id || 'none');
-      setMetrosTotais(raw.metros_totais || '');
-      setNegociadoCom(raw.negociado_com || '');
-      setNfe(raw.nfe || '');
-      setTipoSolicitacao(raw.tipo_solicitacao || '');
-      setStatusAgendamento(raw.status_agendamento || '');
-
-      resolveNames({ ...chamado, ...raw });
-      loadAnexos(chamado.id);
-    };
-
-    loadLatestChamado();
+      loadLatestChamado();
+    }
   }, [chamado, open, initialDescricao]);
 
   const loadExtraFields = async (chamadoId: number) => {
