@@ -49,7 +49,7 @@ interface Props {
   profileMap: Map<string, string>;
   /** Quando informado (ex: ao abrir do Histórico), usa esta descrição em vez da atual do banco */
   initialDescricao?: string | null;
-  /** Status da entrada selecionada no Histórico. Quando 'fechado', bloqueia edição (representante). */
+  /** Status da entrada selecionada no Histórico. Usado junto com chamado.status para bloquear edição (representante). */
   entryStatus?: string | null;
 }
 
@@ -286,8 +286,9 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
   const handleSave = async () => {
     if (!chamado) return;
-    const statusToCheck = (entryStatus ?? chamado.status)?.toLowerCase().trim();
-    if (role === 'representante' && statusToCheck === 'fechado') {
+    const selectedFechado = (entryStatus ?? '')?.toLowerCase().trim() === 'fechado';
+    const latestFechado = (chamado.status ?? '')?.toLowerCase().trim() === 'fechado';
+    if (role === 'representante' && (selectedFechado || latestFechado)) {
       toast.error('O ticket está fechado e não pode ser alterado.');
       return;
     }
@@ -446,8 +447,9 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   if (!chamado) return null;
 
   const gestorNome = chamado.gestor_id ? profileMap.get(chamado.gestor_id) || chamado.gestor_nome || '' : '';
-  const statusForLock = (entryStatus ?? chamado?.status)?.toLowerCase().trim();
-  const isRepresentanteLockedByFechado = role === 'representante' && statusForLock === 'fechado';
+  const selectedEntryFechado = (entryStatus ?? '')?.toLowerCase().trim() === 'fechado';
+  const latestUpdateFechado = (chamado?.status ?? '')?.toLowerCase().trim() === 'fechado';
+  const isRepresentanteLockedByFechado = role === 'representante' && (selectedEntryFechado || latestUpdateFechado);
   const isEditable = !isRepresentanteLockedByFechado;
 
   return (
