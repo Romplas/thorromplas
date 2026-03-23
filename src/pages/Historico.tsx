@@ -550,7 +550,20 @@ export default function Historico() {
   })();
 
   const filteredChamadosForOptions = chamados.filter(c => filteredChamadoIds.has(c.id));
-  const uniqueClientes = [...new Set(filteredChamadosForOptions.map(c => c.cliente_nome).filter(Boolean))].sort();
+  // Clientes: incluir todos os chamados que passam nos filtros E os que têm entradas exibidas
+  // Também incluir o cliente selecionado para não desaparecer ao filtrar (como no Kanban)
+  const chamadoIdsComEntradasExibidas = new Set(filtered.map((e) => e.chamado_id));
+  const clientesDosChamadosExibidos = chamados
+    .filter((c) => chamadoIdsComEntradasExibidas.has(c.id))
+    .map((c) => c.cliente_nome)
+    .filter(Boolean);
+  const uniqueClientes = [
+    ...new Set([
+      ...(filterCliente && filterCliente !== 'todos' ? [filterCliente] : []),
+      ...clientesDosChamadosExibidos,
+      ...filteredChamadosForOptions.map((c) => c.cliente_nome).filter(Boolean),
+    ]),
+  ].sort();
 
   const filteredSubmotivos = filterMotivo !== 'todos'
     ? submotivos.filter(s => {
