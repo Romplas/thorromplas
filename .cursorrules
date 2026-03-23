@@ -41,3 +41,6 @@ A edição só é permitida quando **todas** as condições abaixo forem atendid
 
 > [!IMPORTANT]
 > O representante só pode editar a **última etapa** do ticket e apenas quando a **última atualização** estiver com `Status Ticket = Em Progresso`.
+
+
+Nova regra: Na tela de Kanban, o usuário supervisora só pode ver seus representantes vinculados a ele e não pode ver os representantes de outros supervisores.
