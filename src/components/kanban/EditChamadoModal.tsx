@@ -575,7 +575,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
                 {isEditable ? (
                   <div className="space-y-1.5">
                     <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Status Ticket</Label>
-                    <Select value={status} onValueChange={setStatus}>
+                    <Select value={status || 'pendente'} onValueChange={setStatus}>
                       <SelectTrigger className="h-[40px]"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="pendente">Pendente</SelectItem>
