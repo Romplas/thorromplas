@@ -179,11 +179,30 @@ export default function Kanban() {
   };
 
   // Derived filtered lists for cascading
-  const filteredRepresentantes = filterSupervisor !== 'todos'
-    ? representantes.filter(r =>
+  // Para supervisores: sempre mostrar apenas representantes vinculados, independente do filtro
+  const mySupervisorId = (() => {
+    if (role === 'supervisor' && profile && supervisores.length > 0) {
+      const mySup = supervisores.find(s => s.nome.toLowerCase() === profile.nome.toLowerCase());
+      return mySup?.id || null;
+    }
+    return null;
+  })();
+
+  const filteredRepresentantes = (() => {
+    // Supervisor sempre vê apenas seus representantes vinculados
+    if (role === 'supervisor' && mySupervisorId) {
+      return representantes.filter(r =>
+        srLinks.some(sr => sr.supervisor_id === mySupervisorId && sr.representante_id === r.id)
+      );
+    }
+    // Admin/Gestor: filtra por supervisor selecionado
+    if (filterSupervisor !== 'todos') {
+      return representantes.filter(r =>
         srLinks.some(sr => sr.supervisor_id === filterSupervisor && sr.representante_id === r.id)
-      )
-    : representantes;
+      );
+    }
+    return representantes;
+  })();
 
   const filteredClientes = filterRepresentante !== 'todos'
     ? allClientes.filter(c => c.representante_id === filterRepresentante)
