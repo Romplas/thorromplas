@@ -43,19 +43,28 @@ export function PWAUpdatePrompt() {
   const handleUpdate = () => {
     applyingUpdateRef.current = true;
     setSuppressPrompt(true);
-    void (async () => {
+
+    // Limpa caches e força reload
+    const forceReload = async () => {
       try {
-        await Promise.race([
-          updateServiceWorker(true),
-          new Promise<void>((_, reject) => {
-            window.setTimeout(() => reject(new Error("timeout ao aplicar atualização")), 8000);
-          }),
-        ]);
+        // Tenta ativar o novo SW
+        const reg = await navigator.serviceWorker?.getRegistration();
+        if (reg?.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+        // Limpa todos os caches do SW
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
       } catch (e) {
-        console.error("Erro ao atualizar:", e);
+        console.error("Erro ao limpar caches:", e);
       }
-      window.location.reload();
-    })();
+      // Reload forçado após breve delay para o SW ativar
+      window.setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    };
+
+    void forceReload();
   };
 
   const handleClose = () => {

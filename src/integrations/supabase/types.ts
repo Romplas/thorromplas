@@ -100,51 +100,6 @@ export type Database = {
           },
         ]
       }
-      historico_entrada_excluida: {
-        Row: {
-          id: string
-          chamado_id: number
-          historico_entrada_id: string
-          entrada: Json
-          chamado_snapshot: Json
-          etapa_entrada_label: string | null
-          etapa_entrada_key: string | null
-          status_entrada_label: string | null
-          status_entrada_key: string | null
-          motivo_exclusao: string
-          deleted_at: string
-          deleted_by: string | null
-        }
-        Insert: {
-          id?: string
-          chamado_id: number
-          historico_entrada_id: string
-          entrada: Json
-          chamado_snapshot: Json
-          etapa_entrada_label?: string | null
-          etapa_entrada_key?: string | null
-          status_entrada_label?: string | null
-          status_entrada_key?: string | null
-          motivo_exclusao: string
-          deleted_at?: string
-          deleted_by?: string | null
-        }
-        Update: {
-          id?: string
-          chamado_id?: number
-          historico_entrada_id?: string
-          entrada?: Json
-          chamado_snapshot?: Json
-          etapa_entrada_label?: string | null
-          etapa_entrada_key?: string | null
-          status_entrada_label?: string | null
-          status_entrada_key?: string | null
-          motivo_exclusao?: string
-          deleted_at?: string
-          deleted_by?: string | null
-        }
-        Relationships: []
-      }
       chamados: {
         Row: {
           atualizado_por: string | null
@@ -341,6 +296,51 @@ export type Database = {
         }
         Relationships: []
       }
+      historico_entrada_excluida: {
+        Row: {
+          chamado_id: number
+          chamado_snapshot: Json
+          deleted_at: string
+          deleted_by: string | null
+          entrada: Json
+          etapa_entrada_key: string | null
+          etapa_entrada_label: string | null
+          historico_entrada_id: string
+          id: string
+          motivo_exclusao: string
+          status_entrada_key: string | null
+          status_entrada_label: string | null
+        }
+        Insert: {
+          chamado_id: number
+          chamado_snapshot: Json
+          deleted_at?: string
+          deleted_by?: string | null
+          entrada: Json
+          etapa_entrada_key?: string | null
+          etapa_entrada_label?: string | null
+          historico_entrada_id: string
+          id?: string
+          motivo_exclusao: string
+          status_entrada_key?: string | null
+          status_entrada_label?: string | null
+        }
+        Update: {
+          chamado_id?: number
+          chamado_snapshot?: Json
+          deleted_at?: string
+          deleted_by?: string | null
+          entrada?: Json
+          etapa_entrada_key?: string | null
+          etapa_entrada_label?: string | null
+          historico_entrada_id?: string
+          id?: string
+          motivo_exclusao?: string
+          status_entrada_key?: string | null
+          status_entrada_label?: string | null
+        }
+        Relationships: []
+      }
       motivos: {
         Row: {
           created_at: string
@@ -419,36 +419,6 @@ export type Database = {
           updated_at?: string
           user_id?: string
           usuario?: string | null
-        }
-        Relationships: []
-      }
-      push_subscriptions: {
-        Row: {
-          auth: string
-          created_at: string
-          endpoint: string
-          id: string
-          p256dh: string
-          user_agent: string | null
-          user_id: string
-        }
-        Insert: {
-          auth: string
-          created_at?: string
-          endpoint: string
-          id?: string
-          p256dh: string
-          user_agent?: string | null
-          user_id: string
-        }
-        Update: {
-          auth?: string
-          created_at?: string
-          endpoint?: string
-          id?: string
-          p256dh?: string
-          user_agent?: string | null
-          user_id?: string
         }
         Relationships: []
       }
