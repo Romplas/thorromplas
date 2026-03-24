@@ -338,7 +338,7 @@ export default function Kanban() {
         setFilterTicketId(persisted.ticketId ?? 'todos');
         setFilterMotivo(persisted.motivo ?? 'todos');
         setFilterGestor(persisted.gestor ?? 'todos');
-        setRoleFilterApplied(true);
+        setFilterNegociadoCom(persisted.negociadoCom ?? 'todos');
       } else if (role === 'supervisor' && supRes.data) {
         const mySupervisor = supRes.data.find(s => s.nome.toLowerCase() === profile.nome.toLowerCase());
         if (mySupervisor) {
