@@ -25,13 +25,21 @@ export function PWAUpdatePrompt() {
     },
   });
 
-  const handleUpdate = async () => {
-    try {
-      await updateServiceWorker(true);
-    } catch (e) {
-      console.error("Erro ao atualizar:", e);
+  const handleUpdate = () => {
+    setNeedRefresh(false);
+    void (async () => {
+      try {
+        await Promise.race([
+          updateServiceWorker(true),
+          new Promise<void>((_, reject) => {
+            window.setTimeout(() => reject(new Error("timeout ao aplicar atualização")), 8000);
+          }),
+        ]);
+      } catch (e) {
+        console.error("Erro ao atualizar:", e);
+      }
       window.location.reload();
-    }
+    })();
   };
 
   const handleClose = () => {
