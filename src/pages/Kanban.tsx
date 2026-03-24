@@ -142,6 +142,7 @@ export default function Kanban() {
   const [filterTicketId, setFilterTicketId] = useState('todos');
   const [filterMotivo, setFilterMotivo] = useState('todos');
   const [filterGestor, setFilterGestor] = useState('todos');
+  const [filterNegociadoCom, setFilterNegociadoCom] = useState('todos');
 
   // Persist filters for admin, gestor, supervisor when they change (permanecem ao trocar de tela)
   const canPersistFilters = role === 'admin' || role === 'gestor' || role === 'supervisor';
