@@ -13,6 +13,13 @@ declare const __WB_MANIFEST: (string | { url: string; revision: string | null })
 cleanupOutdatedCaches();
 clientsClaim();
 
+// Permite ativar o novo SW imediatamente quando solicitado
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("push", (event: PushEvent) => {
   let payload: { title?: string; body?: string; data?: { url?: string } } = {};
   try {
