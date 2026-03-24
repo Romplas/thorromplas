@@ -100,6 +100,51 @@ export type Database = {
           },
         ]
       }
+      historico_entrada_excluida: {
+        Row: {
+          id: string
+          chamado_id: number
+          historico_entrada_id: string
+          entrada: Json
+          chamado_snapshot: Json
+          etapa_entrada_label: string | null
+          etapa_entrada_key: string | null
+          status_entrada_label: string | null
+          status_entrada_key: string | null
+          motivo_exclusao: string
+          deleted_at: string
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          chamado_id: number
+          historico_entrada_id: string
+          entrada: Json
+          chamado_snapshot: Json
+          etapa_entrada_label?: string | null
+          etapa_entrada_key?: string | null
+          status_entrada_label?: string | null
+          status_entrada_key?: string | null
+          motivo_exclusao: string
+          deleted_at?: string
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          chamado_id?: number
+          historico_entrada_id?: string
+          entrada?: Json
+          chamado_snapshot?: Json
+          etapa_entrada_label?: string | null
+          etapa_entrada_key?: string | null
+          status_entrada_label?: string | null
+          status_entrada_key?: string | null
+          motivo_exclusao?: string
+          deleted_at?: string
+          deleted_by?: string | null
+        }
+        Relationships: []
+      }
       chamados: {
         Row: {
           atualizado_por: string | null

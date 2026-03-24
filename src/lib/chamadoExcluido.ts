@@ -132,3 +132,66 @@ export async function restaurarChamadoExcluido(chamadoExcluidoId: string): Promi
 
   return { newId: novoId };
 }
+
+export type HistoricoEntradaRow = {
+  id: string;
+  chamado_id: number;
+  acao: string;
+  descricao: string | null;
+  descricao_ticket: string | null;
+  created_at: string;
+  user_id: string | null;
+};
+
+/**
+ * Registra exclusão de uma única linha de chamado_historico (etapa/grid), com justificativa.
+ * O ticket permanece ativo.
+ */
+export async function backupHistoricoEntradaBeforeDelete(
+  entrada: HistoricoEntradaRow,
+  chamado: Record<string, unknown>,
+  motivoExclusao: string,
+  etapaEntradaLabel: string,
+  etapaEntradaKey: string,
+  statusEntradaLabel: string,
+  statusEntradaKey: string
+): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const deletedBy = user?.id ?? null;
+
+  const chamadoSnapshot = {
+    cliente_nome: chamado.cliente_nome,
+    motivo: chamado.motivo,
+    submotivo: chamado.submotivo,
+    etapa: chamado.etapa,
+    status: chamado.status,
+    representante_id: chamado.representante_id,
+    supervisor_id: chamado.supervisor_id,
+    gestor_id: chamado.gestor_id,
+    descricao: chamado.descricao,
+  };
+
+  const entradaSnapshot = {
+    id: entrada.id,
+    acao: entrada.acao,
+    descricao: entrada.descricao,
+    descricao_ticket: entrada.descricao_ticket,
+    created_at: entrada.created_at,
+    user_id: entrada.user_id,
+  };
+
+  const { error } = await from('historico_entrada_excluida').insert({
+    chamado_id: entrada.chamado_id,
+    historico_entrada_id: entrada.id,
+    entrada: entradaSnapshot,
+    chamado_snapshot: chamadoSnapshot,
+    etapa_entrada_label: etapaEntradaLabel,
+    etapa_entrada_key: etapaEntradaKey,
+    status_entrada_label: statusEntradaLabel,
+    status_entrada_key: statusEntradaKey,
+    motivo_exclusao: motivoExclusao,
+    deleted_by: deletedBy,
+  });
+
+  return !error;
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Trash2, RotateCcw, Eye, CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -24,6 +24,27 @@ interface ChamadoExcluido {
   motivo_exclusao: string | null;
   deleted_by_nome?: string;
 }
+
+/** Exclusão de apenas uma linha do histórico (grid/etapa), ticket permanece ativo */
+interface EntradaExcluida {
+  id: string;
+  chamado_id: number;
+  historico_entrada_id: string;
+  entrada: Record<string, unknown>;
+  chamado_snapshot: Record<string, unknown>;
+  etapa_entrada_label: string | null;
+  etapa_entrada_key: string | null;
+  status_entrada_label: string | null;
+  status_entrada_key: string | null;
+  motivo_exclusao: string;
+  deleted_at: string;
+  deleted_by: string | null;
+  deleted_by_nome?: string;
+}
+
+type ExcluidoItem =
+  | { kind: 'ticket'; id: string; data: ChamadoExcluido }
+  | { kind: 'entrada'; id: string; data: EntradaExcluida };
 
 interface HistoricoEntry {
   id: string;
@@ -91,7 +112,9 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
 
 export default function TicketsExcluidos() {
   const [excluidos, setExcluidos] = useState<ChamadoExcluido[]>([]);
+  const [entradasExcluidas, setEntradasExcluidas] = useState<EntradaExcluida[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedKind, setSelectedKind] = useState<'ticket' | 'entrada' | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [historicoSelecionado, setHistoricoSelecionado] = useState<HistoricoEntry[]>([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
@@ -125,8 +148,9 @@ export default function TicketsExcluidos() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [excluidosRes, profilesRes, supRes, motivosRes, submotivosRes, repRes, etapasRes, srRes] = await Promise.all([
+    const [excluidosRes, entradasRes, profilesRes, supRes, motivosRes, submotivosRes, repRes, etapasRes, srRes] = await Promise.all([
       (supabase as any).from('chamados_excluidos').select('*').order('deleted_at', { ascending: false }),
+      (supabase as any).from('historico_entrada_excluida').select('*').order('deleted_at', { ascending: false }),
       supabase.from('profiles').select('id, nome, user_id'),
       supabase.from('supervisores').select('id, nome').eq('status', 'ativo').order('nome'),
       supabase.from('motivos').select('id, nome').order('nome'),
@@ -148,7 +172,13 @@ export default function TicketsExcluidos() {
       deleted_by_nome: e.deleted_by ? (pMap.get(e.deleted_by as string) || 'Desconhecido') : 'Sistema',
     })) as ChamadoExcluido[];
 
+    const entradas: EntradaExcluida[] = (entradasRes.data || []).map((e: Record<string, unknown>) => ({
+      ...e,
+      deleted_by_nome: e.deleted_by ? (pMap.get(e.deleted_by as string) || 'Desconhecido') : 'Sistema',
+    })) as EntradaExcluida[];
+
     setExcluidos(items);
+    setEntradasExcluidas(entradas);
     if (supRes.data) {
       setSupervisores(supRes.data);
       const sMap = new Map<string, string>();
@@ -173,6 +203,7 @@ export default function TicketsExcluidos() {
     const channel = supabase
       .channel('tickets-excluidos-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chamados_excluidos' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'historico_entrada_excluida' }, fetchData)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
@@ -211,9 +242,27 @@ export default function TicketsExcluidos() {
   const getSupId = (e: ChamadoExcluido) => getDados(e).supervisor_id as string | null;
   const getGestorId = (e: ChamadoExcluido) => getDados(e).gestor_id as string | null;
 
-  // Buscar todo o histórico do ticket selecionado (todas as edições, independente de quem fez)
+  const snap = (e: EntradaExcluida) => e.chamado_snapshot || {};
+  const getClienteEntrada = (e: EntradaExcluida) => String(snap(e).cliente_nome || '—');
+  const getMotivoEntrada = (e: EntradaExcluida) => String(snap(e).motivo || '—');
+  const getSubmotivoEntrada = (e: EntradaExcluida) => String(snap(e).submotivo || '—');
+  const getStatusEntradaSnap = (e: EntradaExcluida) => String(snap(e).status || 'aberto');
+  const getEtapaEntradaSnap = (e: EntradaExcluida) => (String(snap(e).etapa || 'thor')).toLowerCase();
+  const getRepIdEntrada = (e: EntradaExcluida) => snap(e).representante_id as string | null;
+  const getSupIdEntrada = (e: EntradaExcluida) => snap(e).supervisor_id as string | null;
+  const getGestorIdEntrada = (e: EntradaExcluida) => snap(e).gestor_id as string | null;
+
+  const mergedItems: ExcluidoItem[] = useMemo(() => {
+    const t = excluidos.map((e) => ({ kind: 'ticket' as const, id: e.id, data: e }));
+    const en = entradasExcluidas.map((e) => ({ kind: 'entrada' as const, id: e.id, data: e }));
+    return [...t, ...en].sort(
+      (a, b) => new Date(b.data.deleted_at).getTime() - new Date(a.data.deleted_at).getTime()
+    );
+  }, [excluidos, entradasExcluidas]);
+
+  // Buscar todo o histórico do ticket excluído completo (somente tipo "ticket")
   useEffect(() => {
-    if (!selectedId) {
+    if (!selectedId || selectedKind !== 'ticket') {
       setHistoricoSelecionado([]);
       return;
     }
@@ -242,19 +291,31 @@ export default function TicketsExcluidos() {
       setLoadingHistorico(false);
     };
     fetchHistorico();
-  }, [selectedId, profileMap]);
+  }, [selectedId, selectedKind, profileMap]);
 
-  const filtered = excluidos.filter(e => {
-    const cliente = getCliente(e);
-    const motivo = getMotivo(e);
-    const submotivo = getSubmotivo(e);
-    const status = getStatus(e);
-    const etapa = getEtapa(e);
-    const repId = getRepId(e);
-    const supId = getSupId(e);
-    const gestorId = getGestorId(e);
+  const filtered = mergedItems.filter((item) => {
+    const cliente =
+      item.kind === 'ticket' ? getCliente(item.data) : getClienteEntrada(item.data);
+    const motivo =
+      item.kind === 'ticket' ? getMotivo(item.data) : getMotivoEntrada(item.data);
+    const submotivo =
+      item.kind === 'ticket' ? getSubmotivo(item.data) : getSubmotivoEntrada(item.data);
+    const status =
+      item.kind === 'ticket'
+        ? getStatus(item.data)
+        : String((item.data as EntradaExcluida).status_entrada_key || getStatusEntradaSnap(item.data));
+    const etapa =
+      item.kind === 'ticket' ? getEtapa(item.data) : getEtapaEntradaSnap(item.data);
+    const repId =
+      item.kind === 'ticket' ? getRepId(item.data) : getRepIdEntrada(item.data);
+    const supId =
+      item.kind === 'ticket' ? getSupId(item.data) : getSupIdEntrada(item.data);
+    const gestorId =
+      item.kind === 'ticket' ? getGestorId(item.data) : getGestorIdEntrada(item.data);
 
-    if (filterTicketId !== 'todos' && String(e.id_original) !== filterTicketId) return false;
+    const ticketNum =
+      item.kind === 'ticket' ? String(item.data.id_original) : String(item.data.chamado_id);
+    if (filterTicketId !== 'todos' && ticketNum !== filterTicketId) return false;
     if (filterSupervisor !== 'todos') {
       const repIdsForSup = srLinks.filter(sr => sr.supervisor_id === filterSupervisor).map(sr => sr.representante_id);
       const matchSup = supId === filterSupervisor || (repId && repIdsForSup.includes(repId));
@@ -265,10 +326,16 @@ export default function TicketsExcluidos() {
     if (filterSubmotivo !== 'todos' && submotivo !== filterSubmotivo) return false;
     if (filterCliente !== 'todos' && cliente !== filterCliente) return false;
     if (filterStatus !== 'todos' && status !== filterStatus) return false;
-    if (filterEtapa !== 'todos' && etapa !== filterEtapa) return false;
+    if (filterEtapa !== 'todos') {
+      const etapaMatch =
+        item.kind === 'entrada'
+          ? (item.data.etapa_entrada_key || getEtapaEntradaSnap(item.data)).toLowerCase()
+          : etapa;
+      if (etapaMatch !== filterEtapa) return false;
+    }
     if (filterGestor !== 'todos' && gestorId !== filterGestor) return false;
 
-    const deletedDate = new Date(e.deleted_at);
+    const deletedDate = new Date(item.data.deleted_at);
     if (filterDateStart) {
       const start = new Date(filterDateStart);
       start.setHours(0, 0, 0, 0);
@@ -282,9 +349,26 @@ export default function TicketsExcluidos() {
     return true;
   });
 
-  const uniqueClientes = [...new Set(excluidos.map(getCliente).filter(Boolean))].sort();
+  const uniqueClientes = [
+    ...new Set([
+      ...excluidos.map(getCliente),
+      ...entradasExcluidas.map(getClienteEntrada),
+    ].filter(Boolean)),
+  ].sort();
 
-  const selected = selectedId ? excluidos.find(e => e.id === selectedId) : null;
+  const ticketIdOptions = [
+    ...new Set([
+      ...excluidos.map((e) => String(e.id_original)),
+      ...entradasExcluidas.map((e) => String(e.chamado_id)),
+    ]),
+  ].sort((a, b) => Number(a) - Number(b));
+
+  const selectedTicket = selectedId && selectedKind === 'ticket'
+    ? excluidos.find((e) => e.id === selectedId) ?? null
+    : null;
+  const selectedEntrada = selectedId && selectedKind === 'entrada'
+    ? entradasExcluidas.find((e) => e.id === selectedId) ?? null
+    : null;
 
   const handleResetFilters = () => {
     const d = new Date();
@@ -299,10 +383,12 @@ export default function TicketsExcluidos() {
     setFilterTicketId('todos');
     setFilterDateStart(new Date(d.getFullYear(), d.getMonth() - 6, 1));
     setFilterDateEnd(new Date());
+    setSelectedId(null);
+    setSelectedKind(null);
   };
 
   const handleRestaurar = async () => {
-    if (!selectedId) return;
+    if (!selectedId || selectedKind !== 'ticket') return;
     setRestoring(true);
     try {
       const result = await restaurarChamadoExcluido(selectedId);
@@ -310,6 +396,7 @@ export default function TicketsExcluidos() {
         notifyChamadoUpdated(result.newId);
         toast.success(`Ticket restaurado com sucesso! Novo ID: #${result.newId}`);
         setSelectedId(null);
+        setSelectedKind(null);
         fetchData();
       } else {
         toast.error('Erro ao restaurar ticket');
@@ -326,7 +413,7 @@ export default function TicketsExcluidos() {
       <div className="p-4">
         <h1 className="text-xl font-bold text-center mb-4">Tickets Excluídos</h1>
         <p className="text-sm text-muted-foreground text-center mb-4">
-          Visualize e restaure tickets excluídos. Disponível apenas para Administrador.
+          Tickets excluídos por completo e linhas de histórico (etapa) removidas por gestor/supervisor — com justificativa. Restauração disponível apenas para exclusão de ticket completo.
         </p>
 
         <div className="mb-4 bg-card rounded-lg shadow-sm border overflow-hidden">
@@ -381,9 +468,9 @@ export default function TicketsExcluidos() {
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">TicketID</span>
                 <SearchableSelect
-                  options={[{ value: 'todos', label: 'Todos' }, ...excluidos.map(e => ({ value: String(e.id_original), label: String(e.id_original) }))]}
+                  options={[{ value: 'todos', label: 'Todos' }, ...ticketIdOptions.map((id) => ({ value: id, label: id }))]}
                   value={filterTicketId}
-                  onValueChange={(v) => { setFilterTicketId(v); setSelectedId(null); }}
+                  onValueChange={(v) => { setFilterTicketId(v); setSelectedId(null); setSelectedKind(null); }}
                   placeholder="Todos"
                   searchPlaceholder="Pesquisar..."
                   className="h-8 w-36 text-xs"
@@ -448,7 +535,10 @@ export default function TicketsExcluidos() {
                   <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos</SelectItem>
-                    {[...new Map(excluidos.filter(e => getGestorId(e)).map(e => [getGestorId(e)!, profileMap.get(getGestorId(e)!) || 'Desconhecido'])).entries()]
+                    {[...new Map([
+                      ...excluidos.filter(e => getGestorId(e)).map(e => [getGestorId(e)!, profileMap.get(getGestorId(e)!) || 'Desconhecido'] as const),
+                      ...entradasExcluidas.filter(e => getGestorIdEntrada(e)).map(e => [getGestorIdEntrada(e)!, profileMap.get(getGestorIdEntrada(e)!) || 'Desconhecido'] as const),
+                    ]).entries()]
                       .sort((a, b) => a[1].localeCompare(b[1]))
                       .map(([id, nome]) => <SelectItem key={id} value={id}>{nome}</SelectItem>)}
                   </SelectContent>
@@ -466,39 +556,73 @@ export default function TicketsExcluidos() {
             {loading ? (
               <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
             ) : filtered.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Nenhum ticket excluído encontrado.</p>
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhum registro encontrado.</p>
             ) : (
-              filtered.map((e) => {
-                const etapa = getEtapa(e);
-                const bgColor = etapaColors[etapa] || etapaColors.thor;
-                const etapaLabel = etapaLabelsMap[etapa] || etapa;
-                const repNome = getRepId(e) ? representanteMap.get(getRepId(e)!) || '—' : '—';
-                const supNome = getSupId(e) ? supervisorMap.get(getSupId(e)!) || '—' : '—';
-                const isSelected = e.id === selectedId;
+              filtered.map((item) => {
+                const e = item.data;
+                const etapaKey =
+                  item.kind === 'ticket'
+                    ? getEtapa(e as ChamadoExcluido)
+                    : ((e as EntradaExcluida).etapa_entrada_key || getEtapaEntradaSnap(e as EntradaExcluida)).toLowerCase();
+                const bgColor = etapaColors[etapaKey] || etapaColors.thor;
+                const etapaLabel =
+                  item.kind === 'ticket'
+                    ? etapaLabelsMap[etapaKey] || etapaKey
+                    : (e as EntradaExcluida).etapa_entrada_label || etapaLabelsMap[etapaKey] || etapaKey;
+                const repNome =
+                  item.kind === 'ticket'
+                    ? getRepId(e as ChamadoExcluido)
+                      ? representanteMap.get(getRepId(e as ChamadoExcluido)!) || '—'
+                      : '—'
+                    : getRepIdEntrada(e as EntradaExcluida)
+                      ? representanteMap.get(getRepIdEntrada(e as EntradaExcluida)!) || '—'
+                      : '—';
+                const supNome =
+                  item.kind === 'ticket'
+                    ? getSupId(e as ChamadoExcluido)
+                      ? supervisorMap.get(getSupId(e as ChamadoExcluido)!) || '—'
+                      : '—'
+                    : getSupIdEntrada(e as EntradaExcluida)
+                      ? supervisorMap.get(getSupIdEntrada(e as EntradaExcluida)!) || '—'
+                      : '—';
+                const ticketIdStr =
+                  item.kind === 'ticket' ? String((e as ChamadoExcluido).id_original) : String((e as EntradaExcluida).chamado_id);
+                const isSelected = item.id === selectedId && item.kind === selectedKind;
 
                 return (
                   <div
-                    key={e.id}
+                    key={`${item.kind}-${item.id}`}
                     className={cn(
                       'rounded-lg overflow-hidden cursor-pointer transition-all shadow-md',
                       isSelected && 'ring-2 ring-primary ring-offset-2'
                     )}
-                    onClick={() => setSelectedId(e.id)}
+                    onClick={() => {
+                      setSelectedKind(item.kind);
+                      setSelectedId(item.id);
+                    }}
                   >
                     <div className={`${bgColor} text-white`}>
                       <div className="flex flex-col md:flex-row">
                         <div className="w-full md:w-[35%] px-3 py-2.5 space-y-0.5 border-b md:border-b-0 md:border-r border-white/20 text-[11px]">
-                          <p className="font-bold text-sm">TicketID: {e.id_original}</p>
-                          <p><span className="font-semibold">Cliente: </span>{getCliente(e)}</p>
+                          <p className="font-bold text-sm flex flex-wrap items-center gap-1">
+                            TicketID: {ticketIdStr}
+                            {item.kind === 'entrada' && (
+                              <span className="text-[9px] font-normal uppercase bg-white/20 px-1.5 py-0.5 rounded">Etapa histórico</span>
+                            )}
+                          </p>
+                          <p><span className="font-semibold">Cliente: </span>{item.kind === 'ticket' ? getCliente(e as ChamadoExcluido) : getClienteEntrada(e as EntradaExcluida)}</p>
                           <p><span className="font-semibold">Etapa: </span>{etapaLabel}</p>
-                          <p><span className="font-semibold">Motivo: </span>{getMotivo(e)}</p>
+                          <p><span className="font-semibold">Motivo: </span>{item.kind === 'ticket' ? getMotivo(e as ChamadoExcluido) : getMotivoEntrada(e as EntradaExcluida)}</p>
                           <p><span className="font-semibold">Representante: </span>{repNome}</p>
                           <p><span className="font-semibold">Supervisor: </span>{supNome}</p>
                         </div>
                         <div className="w-full md:w-[65%] px-3 py-2.5 text-[11px]">
                           <p><span className="font-semibold">Excluído por: </span>{e.deleted_by_nome}</p>
                           <p><span className="font-semibold">Data exclusão: </span>{formatDateTime(e.deleted_at)}</p>
-                          <p className="mt-1 truncate"><span className="font-semibold">Descrição: </span>{getDescricao(e)}</p>
+                          <p className="mt-1 truncate">
+                            <span className="font-semibold">{item.kind === 'entrada' ? 'Justificativa: ' : 'Descrição: '}</span>
+                            {item.kind === 'ticket' ? getDescricao(e as ChamadoExcluido) : (e as EntradaExcluida).motivo_exclusao}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -509,46 +633,45 @@ export default function TicketsExcluidos() {
           </div>
 
           <div className="bg-card border rounded-lg p-5 max-h-[calc(100vh-300px)] overflow-y-auto">
-            {selected ? (
+            {selectedTicket ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <ReadOnlyField label="TicketID (original)" value={String(selected.id_original)} />
+                  <ReadOnlyField label="TicketID (original)" value={String(selectedTicket.id_original)} />
                   <div className="col-span-1 sm:col-span-2">
-                    <ReadOnlyField label="Cliente" value={getCliente(selected)} />
+                    <ReadOnlyField label="Cliente" value={getCliente(selectedTicket)} />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <ReadOnlyField label="Representante" value={getRepId(selected) ? representanteMap.get(getRepId(selected)!) || '—' : '—'} />
-                  <ReadOnlyField label="Supervisor" value={getSupId(selected) ? supervisorMap.get(getSupId(selected)!) || '—' : '—'} />
+                  <ReadOnlyField label="Representante" value={getRepId(selectedTicket) ? representanteMap.get(getRepId(selectedTicket)!) || '—' : '—'} />
+                  <ReadOnlyField label="Supervisor" value={getSupId(selectedTicket) ? supervisorMap.get(getSupId(selectedTicket)!) || '—' : '—'} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <ReadOnlyField label="Motivo" value={getMotivo(selected)} />
-                  <ReadOnlyField label="Submotivo" value={getSubmotivo(selected)} />
+                  <ReadOnlyField label="Motivo" value={getMotivo(selectedTicket)} />
+                  <ReadOnlyField label="Submotivo" value={getSubmotivo(selectedTicket)} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <ReadOnlyField label="Etapa" value={etapaLabelsMap[getEtapa(selected)] || getEtapa(selected)} />
-                  <ReadOnlyField label="Status" value={statusLabels[getStatus(selected)] || getStatus(selected)} />
+                  <ReadOnlyField label="Etapa" value={etapaLabelsMap[getEtapa(selectedTicket)] || getEtapa(selectedTicket)} />
+                  <ReadOnlyField label="Status" value={statusLabels[getStatus(selectedTicket)] || getStatus(selectedTicket)} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[11px] font-semibold text-muted-foreground">Excluído por</Label>
-                  <div className="px-3 py-2 border rounded-md bg-muted/40 text-sm">{selected.deleted_by_nome}</div>
+                  <div className="px-3 py-2 border rounded-md bg-muted/40 text-sm">{selectedTicket.deleted_by_nome}</div>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[11px] font-semibold text-muted-foreground">Data da exclusão</Label>
-                  <div className="px-3 py-2 border rounded-md bg-muted/40 text-sm">{formatDateTime(selected.deleted_at)}</div>
+                  <div className="px-3 py-2 border rounded-md bg-muted/40 text-sm">{formatDateTime(selectedTicket.deleted_at)}</div>
                 </div>
-                {selected.motivo_exclusao && (
+                {selectedTicket.motivo_exclusao && (
                   <div className="space-y-1">
                     <Label className="text-[11px] font-semibold text-muted-foreground">Motivo da exclusão</Label>
-                    <div className="px-3 py-2 border rounded-md bg-muted/40 text-sm">{selected.motivo_exclusao}</div>
+                    <div className="px-3 py-2 border rounded-md bg-muted/40 text-sm">{selectedTicket.motivo_exclusao}</div>
                   </div>
                 )}
                 <div className="space-y-1">
                   <Label className="text-[11px] font-semibold text-muted-foreground">Descrição</Label>
-                  <div className="px-3 py-2 border rounded-md bg-muted/40 text-sm min-h-[80px] whitespace-pre-wrap">{getDescricao(selected)}</div>
+                  <div className="px-3 py-2 border rounded-md bg-muted/40 text-sm min-h-[80px] whitespace-pre-wrap">{getDescricao(selectedTicket)}</div>
                 </div>
 
-                {/* Histórico completo - todas as edições, independente de quem fez */}
                 <div className="space-y-2 border-t pt-4">
                   <Label className="text-[11px] font-semibold text-muted-foreground">Histórico completo de edições</Label>
                   {loadingHistorico ? (
@@ -557,7 +680,7 @@ export default function TicketsExcluidos() {
                     <p className="text-xs text-muted-foreground">Nenhum registro no histórico.</p>
                   ) : (
                     <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 border rounded-md p-2 bg-muted/20">
-                      {historicoSelecionado.map((h, i) => (
+                      {historicoSelecionado.map((h) => (
                         <div key={h.id} className="text-xs border-l-2 border-primary/50 pl-2 py-1.5 space-y-0.5">
                           <p className="font-semibold">{h.acao}</p>
                           <p className="text-muted-foreground">Por: {h.user_nome} • {formatDateTime(h.created_at)}</p>
@@ -578,6 +701,50 @@ export default function TicketsExcluidos() {
                   <RotateCcw className="h-4 w-4" />
                   {restoring ? 'Restaurando...' : 'Restaurar ticket para o ambiente do usuário'}
                 </Button>
+              </div>
+            ) : selectedEntrada ? (
+              <div className="space-y-4">
+                <p className="text-xs font-semibold text-primary uppercase tracking-wide">Exclusão de etapa do histórico (ticket permanece ativo)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <ReadOnlyField label="TicketID" value={String(selectedEntrada.chamado_id)} />
+                  <div className="col-span-1 sm:col-span-2">
+                    <ReadOnlyField label="Cliente" value={getClienteEntrada(selectedEntrada)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <ReadOnlyField label="Representante" value={getRepIdEntrada(selectedEntrada) ? representanteMap.get(getRepIdEntrada(selectedEntrada)!) || '—' : '—'} />
+                  <ReadOnlyField label="Supervisor" value={getSupIdEntrada(selectedEntrada) ? supervisorMap.get(getSupIdEntrada(selectedEntrada)!) || '—' : '—'} />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <ReadOnlyField label="Etapa (no momento da exclusão)" value={selectedEntrada.etapa_entrada_label || '—'} />
+                  <ReadOnlyField label="Status (no momento da exclusão)" value={selectedEntrada.status_entrada_label || '—'} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-muted-foreground">Justificativa da exclusão</Label>
+                  <div className="px-3 py-2 border rounded-md bg-muted/40 text-sm min-h-[60px] whitespace-pre-wrap">{selectedEntrada.motivo_exclusao}</div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-muted-foreground">Excluído por</Label>
+                  <div className="px-3 py-2 border rounded-md bg-muted/40 text-sm">{selectedEntrada.deleted_by_nome}</div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-muted-foreground">Data da exclusão</Label>
+                  <div className="px-3 py-2 border rounded-md bg-muted/40 text-sm">{formatDateTime(selectedEntrada.deleted_at)}</div>
+                </div>
+                <div className="space-y-2 border-t pt-4">
+                  <Label className="text-[11px] font-semibold text-muted-foreground">Registro da etapa removido</Label>
+                  <div className="border rounded-md p-3 bg-muted/20 text-xs space-y-1">
+                    <p><span className="font-semibold">Ação:</span> {String(selectedEntrada.entrada?.acao ?? '—')}</p>
+                    <p className="text-muted-foreground">
+                      Por: {selectedEntrada.entrada?.user_id ? profileMap.get(String(selectedEntrada.entrada.user_id)) || '—' : 'Sistema'} •{' '}
+                      {selectedEntrada.entrada?.created_at ? formatDateTime(String(selectedEntrada.entrada.created_at)) : '—'}
+                    </p>
+                    {(selectedEntrada.entrada?.descricao_ticket || selectedEntrada.entrada?.descricao) && (
+                      <p className="whitespace-pre-wrap break-words mt-2">{String(selectedEntrada.entrada.descricao_ticket || selectedEntrada.entrada.descricao)}</p>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">A restauração desta linha não está disponível; o ticket #{selectedEntrada.chamado_id} permanece no sistema.</p>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center text-muted-foreground">

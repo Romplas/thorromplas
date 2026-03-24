@@ -24,7 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { notifyChamadoUpdated, onChamadoUpdated } from '@/lib/chamadoEvents';
-import { backupChamadoBeforeDelete } from '@/lib/chamadoExcluido';
+import { backupChamadoBeforeDelete, backupHistoricoEntradaBeforeDelete } from '@/lib/chamadoExcluido';
 
 interface HistoricoEntry {
   id: string;
@@ -358,8 +358,8 @@ export default function Historico() {
   const isSupervisorLocked = role === 'supervisor' || role === 'representante';
   const isRepresentanteLocked = role === 'representante';
 
-  // Permissões de exclusão: apenas admin pode excluir. Supervisora/gestor NUNCA apagam etapas - sempre criam nova
-  const canDeleteEtapa = false; // Removido: edições sempre criam nova etapa, nunca apagam anterior
+  // Admin: exclusão do ticket inteiro. Gestor/Supervisor: apenas uma linha (grid) do histórico, com justificativa.
+  const canDeleteEtapa = role === 'gestor' || role === 'supervisor';
   const canDeleteTicket = role === 'admin';
 
   // Representantes filtered by selected supervisor
@@ -686,17 +686,58 @@ export default function Historico() {
       return;
     }
 
-    // Gestor / Supervisor: delete only the selected history entry
-    if (!canDeleteTicket && canDeleteEtapa && deleteEntryId) {
+    // Gestor / Supervisor: delete only the selected history entry (backup + justificativa em Tickets Excluídos)
+    if (!canDeleteTicket && canDeleteEtapa && deleteEntryId && deleteTicketId != null) {
+      const entry = historico.find((h) => h.id === deleteEntryId);
+      const chamado = chamados.find((c) => c.id === deleteTicketId);
+      if (!entry || !chamado) {
+        toast.error('Registro não encontrado');
+        return;
+      }
+      const entradasDoTicket = historico.filter((h) => h.chamado_id === deleteTicketId);
+      if (entradasDoTicket.length <= 1) {
+        toast.error('Não é possível remover a única entrada do histórico deste ticket.');
+        return;
+      }
+      if (entry.acao === 'Ticket Criado') {
+        toast.error('Não é permitido excluir o registro de criação do ticket.');
+        return;
+      }
+      const etapaKey = entryEtapaMap.get(entry.id) || 'thor';
+      const etapaLabel = etapaLabelsMap[etapaKey] || etapaKey;
+      const stKey = entryStatusMap.get(entry.id) || '';
+      const statusLabel = stKey ? statusLabels[stKey] || stKey : '—';
       try {
-        await supabase.from('chamado_historico').delete().eq('id', deleteEntryId);
+        const ok = await backupHistoricoEntradaBeforeDelete(
+          {
+            id: entry.id,
+            chamado_id: entry.chamado_id,
+            acao: entry.acao,
+            descricao: entry.descricao,
+            descricao_ticket: entry.descricao_ticket,
+            created_at: entry.created_at,
+            user_id: entry.user_id,
+          },
+          chamado as unknown as Record<string, unknown>,
+          deleteMotivo.trim(),
+          etapaLabel,
+          etapaKey,
+          statusLabel,
+          stKey || chamado.status || 'aberto'
+        );
+        if (!ok) {
+          toast.error('Não foi possível registrar a exclusão. Tente novamente.');
+          return;
+        }
+        const { error } = await supabase.from('chamado_historico').delete().eq('id', deleteEntryId);
+        if (error) throw error;
         toast.success('Etapa excluída com sucesso');
         setDeleteDialogOpen(false);
         setSelectedEntryId(null);
         setDeleteEntryId(null);
         fetchData();
-      } catch (err: any) {
-        toast.error('Erro ao excluir: ' + (err.message || 'Erro desconhecido'));
+      } catch (err: unknown) {
+        toast.error('Erro ao excluir: ' + (err instanceof Error ? err.message : 'Erro desconhecido'));
       }
       return;
     }
@@ -1409,12 +1450,20 @@ export default function Historico() {
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{role === 'supervisor' ? 'Confirmar exclusão da etapa' : 'Confirmar exclusão'}</AlertDialogTitle>
+              <AlertDialogTitle>
+                {canDeleteEtapa && !canDeleteTicket ? 'Confirmar exclusão da etapa' : 'Confirmar exclusão'}
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                {role === 'supervisor' 
-                  ? <>Tem certeza que deseja excluir esta etapa do chamado <strong>#{deleteTicketId}</strong>? Informe o motivo da exclusão abaixo. Esta ação não pode ser desfeita.</>
-                  : <>Tem certeza que deseja excluir o chamado <strong>#{deleteTicketId}</strong>? Informe o motivo da exclusão abaixo. Esta ação não pode ser desfeita.</>
-                }
+                {canDeleteEtapa && !canDeleteTicket ? (
+                  <>
+                    Será removida apenas esta linha do histórico do ticket <strong>#{deleteTicketId}</strong> (não o ticket inteiro).
+                    Informe a justificativa abaixo. O registro ficará disponível em Tickets Excluídos para auditoria.
+                  </>
+                ) : (
+                  <>
+                    Tem certeza que deseja excluir o chamado <strong>#{deleteTicketId}</strong>? Informe o motivo da exclusão abaixo. Esta ação não pode ser desfeita.
+                  </>
+                )}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-2 py-2">
