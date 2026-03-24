@@ -372,6 +372,7 @@ export default function Kanban() {
     setFilterMotivo('todos');
     setFilterGestor('todos');
     setFilterNegociadoCom('todos');
+  };
 
   const handleRepresentanteChange = (value: string) => {
     setFilterRepresentante(value);
