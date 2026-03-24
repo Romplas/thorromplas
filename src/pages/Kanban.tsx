@@ -156,9 +156,10 @@ export default function Kanban() {
         ticketId: filterTicketId,
         motivo: filterMotivo,
         gestor: filterGestor,
+        negociadoCom: filterNegociadoCom,
       });
     }
-  }, [canPersistFilters, role, authLoading, roleFilterApplied, filterSupervisor, filterRepresentante, filterCliente, filterTicketId, filterMotivo, filterGestor]);
+  }, [canPersistFilters, role, authLoading, roleFilterApplied, filterSupervisor, filterRepresentante, filterCliente, filterTicketId, filterMotivo, filterGestor, filterNegociadoCom]);
 
   const handleClearFilters = () => {
     setFilterSupervisor('todos');
