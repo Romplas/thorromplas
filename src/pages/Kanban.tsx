@@ -583,7 +583,16 @@ export default function Kanban() {
               </SelectContent>
             </Select>
           </div>
-          <button
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Negociado com</span>
+            <Select value={filterNegociadoCom} onValueChange={setFilterNegociadoCom}>
+              <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {negociadoComOptions.map((nome) => <SelectItem key={nome} value={nome}>{nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
             onClick={handleClearFilters}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md border border-border bg-muted/50 hover:bg-destructive/10 hover:text-destructive transition-colors"
             title="Limpar filtros"
