@@ -381,6 +381,7 @@ export default function Kanban() {
     setFilterMotivo('todos');
     setFilterGestor('todos');
     setFilterNegociadoCom('todos');
+  };
 
   const handleDelete = async (id: number, motivo: string) => {
     try {
