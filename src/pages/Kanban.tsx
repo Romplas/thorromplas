@@ -507,7 +507,7 @@ export default function Kanban() {
   const ticketIdOptions = [...new Set([...(filterTicketId && filterTicketId !== 'todos' ? [filterTicketId] : []), ...filteredChamados.map(c => String(c.id))])];
   const clienteOptions = [...new Set([...(filterCliente && filterCliente !== 'todos' ? [filterCliente] : []), ...filteredChamados.map(c => c.cliente_nome).filter(Boolean)])].sort();
   const motivoOptions = [...new Set([...(filterMotivo && filterMotivo !== 'todos' ? [filterMotivo] : []), ...filteredChamados.map(c => c.motivo).filter(Boolean)])].sort();
-
+  const negociadoComOptions = [...new Set([...(filterNegociadoCom && filterNegociadoCom !== 'todos' ? [filterNegociadoCom] : []), ...filteredChamados.map(c => (c as any).negociado_com).filter(Boolean)])].sort();
   const isSupervisorSelectDisabled = role === 'supervisor' || role === 'representante'; // Supervisor vê apenas seus chamados
   const roleLabel = profile?.nome || (role === 'admin' ? 'Administrador' : role === 'gestor' ? 'Gestor' : role === 'supervisor' ? 'Supervisor' : 'Representante');
 
