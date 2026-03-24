@@ -726,10 +726,11 @@ export default function Historico() {
           stKey || chamado.status || 'aberto'
         );
         if (!backupResult.ok) {
+          const msg = (backupResult as { ok: false; message: string }).message;
           toast.error(
-            backupResult.message.includes('relation') || backupResult.message.includes('schema cache')
+            msg.includes('relation') || msg.includes('schema cache')
               ? 'Tabela de auditoria ausente no servidor. Peça ao administrador para aplicar as migrações do Supabase (historico_entrada_excluida).'
-              : backupResult.message
+              : msg
           );
           return;
         }
