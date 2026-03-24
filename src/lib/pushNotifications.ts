@@ -60,7 +60,7 @@ export async function registerPushSubscription(): Promise<void> {
   const keys = json.keys as { p256dh?: string; auth?: string } | undefined;
   if (!json.endpoint || !keys?.p256dh || !keys?.auth) return;
 
-  const { error } = await supabase.from("push_subscriptions").upsert(
+  const { error } = await (supabase as any).from("push_subscriptions").upsert(
     {
       user_id: user.id,
       endpoint: json.endpoint,
