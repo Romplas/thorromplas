@@ -499,6 +499,7 @@ export default function Kanban() {
     if (filterTicketId !== 'todos' && String(c.id) !== filterTicketId) return false;
     if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
     if (filterGestor !== 'todos' && c.gestor_id !== filterGestor) return false;
+    if (filterNegociadoCom !== 'todos' && (c as any).negociado_com !== filterNegociadoCom) return false;
     return true;
   });
 
