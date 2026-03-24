@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,8 +26,23 @@ export function PWAUpdatePrompt() {
     },
   });
 
+  /** O hook volta a setar needRefresh=true enquanto o SW ainda está "waiting"; só "Depois" não dispara isso. */
+  const [suppressPrompt, setSuppressPrompt] = useState(false);
+  const applyingUpdateRef = useRef(false);
+  const prevNeedRefreshRef = useRef(false);
+
+  useEffect(() => {
+    if (needRefresh && !prevNeedRefreshRef.current && !applyingUpdateRef.current) {
+      setSuppressPrompt(false);
+    }
+    prevNeedRefreshRef.current = needRefresh;
+  }, [needRefresh]);
+
+  const dialogOpen = Boolean(needRefresh && !suppressPrompt);
+
   const handleUpdate = () => {
-    setNeedRefresh(false);
+    applyingUpdateRef.current = true;
+    setSuppressPrompt(true);
     void (async () => {
       try {
         await Promise.race([
@@ -44,10 +60,12 @@ export function PWAUpdatePrompt() {
 
   const handleClose = () => {
     setNeedRefresh(false);
+    setSuppressPrompt(false);
+    applyingUpdateRef.current = false;
   };
 
   return (
-    <Dialog open={!!needRefresh} onOpenChange={(open) => !open && handleClose()}>
+    <Dialog open={dialogOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent
         className="sm:max-w-md"
         onPointerDownOutside={(e) => e.preventDefault()}
@@ -67,10 +85,10 @@ export function PWAUpdatePrompt() {
           </div>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={handleClose}>
+          <Button type="button" variant="outline" onClick={handleClose}>
             Depois
           </Button>
-          <Button onClick={handleUpdate} className="gap-2">
+          <Button type="button" onClick={handleUpdate} className="gap-2">
             <RefreshCw className="h-4 w-4" />
             Atualizar agora
           </Button>
