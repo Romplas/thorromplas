@@ -27,6 +27,7 @@ interface ChamadoWithNames {
   cliente_id: string | null;
   representante_nome?: string;
   gestor_nome?: string;
+  negociado_com?: string | null;
 }
 
 interface Supervisor { id: string; nome: string }
@@ -142,6 +143,7 @@ export default function Kanban() {
   const [filterTicketId, setFilterTicketId] = useState('todos');
   const [filterMotivo, setFilterMotivo] = useState('todos');
   const [filterGestor, setFilterGestor] = useState('todos');
+  const [filterNegociadoCom, setFilterNegociadoCom] = useState('todos');
 
   // Persist filters for admin, gestor, supervisor when they change (permanecem ao trocar de tela)
   const canPersistFilters = role === 'admin' || role === 'gestor' || role === 'supervisor';
@@ -155,9 +157,10 @@ export default function Kanban() {
         ticketId: filterTicketId,
         motivo: filterMotivo,
         gestor: filterGestor,
+        negociadoCom: filterNegociadoCom,
       });
     }
-  }, [canPersistFilters, role, authLoading, roleFilterApplied, filterSupervisor, filterRepresentante, filterCliente, filterTicketId, filterMotivo, filterGestor]);
+  }, [canPersistFilters, role, authLoading, roleFilterApplied, filterSupervisor, filterRepresentante, filterCliente, filterTicketId, filterMotivo, filterGestor, filterNegociadoCom]);
 
   const handleClearFilters = () => {
     setFilterSupervisor('todos');
@@ -166,6 +169,7 @@ export default function Kanban() {
     setFilterTicketId('todos');
     setFilterMotivo('todos');
     setFilterGestor('todos');
+    setFilterNegociadoCom('todos');
     try {
       if (role) {
         localStorage.removeItem(getFiltersStorageKey(role));
@@ -336,7 +340,7 @@ export default function Kanban() {
         setFilterTicketId(persisted.ticketId ?? 'todos');
         setFilterMotivo(persisted.motivo ?? 'todos');
         setFilterGestor(persisted.gestor ?? 'todos');
-        setRoleFilterApplied(true);
+        setFilterNegociadoCom(persisted.negociadoCom ?? 'todos');
       } else if (role === 'supervisor' && supRes.data) {
         const mySupervisor = supRes.data.find(s => s.nome.toLowerCase() === profile.nome.toLowerCase());
         if (mySupervisor) {
@@ -369,6 +373,7 @@ export default function Kanban() {
     setFilterTicketId('todos');
     setFilterMotivo('todos');
     setFilterGestor('todos');
+    setFilterNegociadoCom('todos');
   };
 
   const handleRepresentanteChange = (value: string) => {
@@ -377,6 +382,7 @@ export default function Kanban() {
     setFilterTicketId('todos');
     setFilterMotivo('todos');
     setFilterGestor('todos');
+    setFilterNegociadoCom('todos');
   };
 
   const handleDelete = async (id: number, motivo: string) => {
@@ -497,6 +503,7 @@ export default function Kanban() {
     if (filterTicketId !== 'todos' && String(c.id) !== filterTicketId) return false;
     if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
     if (filterGestor !== 'todos' && c.gestor_id !== filterGestor) return false;
+    if (filterNegociadoCom !== 'todos' && c.negociado_com !== filterNegociadoCom) return false;
     return true;
   });
 
@@ -504,7 +511,7 @@ export default function Kanban() {
   const ticketIdOptions = [...new Set([...(filterTicketId && filterTicketId !== 'todos' ? [filterTicketId] : []), ...filteredChamados.map(c => String(c.id))])];
   const clienteOptions = [...new Set([...(filterCliente && filterCliente !== 'todos' ? [filterCliente] : []), ...filteredChamados.map(c => c.cliente_nome).filter(Boolean)])].sort();
   const motivoOptions = [...new Set([...(filterMotivo && filterMotivo !== 'todos' ? [filterMotivo] : []), ...filteredChamados.map(c => c.motivo).filter(Boolean)])].sort();
-
+  const negociadoComOptions = [...new Set([...(filterNegociadoCom && filterNegociadoCom !== 'todos' ? [filterNegociadoCom] : []), ...filteredChamados.map(c => c.negociado_com).filter(Boolean)])].sort();
   const isSupervisorSelectDisabled = role === 'supervisor' || role === 'representante'; // Supervisor vê apenas seus chamados
   const roleLabel = profile?.nome || (role === 'admin' ? 'Administrador' : role === 'gestor' ? 'Gestor' : role === 'supervisor' ? 'Supervisor' : 'Representante');
 
@@ -580,8 +587,17 @@ export default function Kanban() {
               </SelectContent>
             </Select>
           </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Negociado com</span>
+            <Select value={filterNegociadoCom} onValueChange={setFilterNegociadoCom}>
+              <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {negociadoComOptions.map((nome) => <SelectItem key={nome} value={nome}>{nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <button
-            onClick={handleClearFilters}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md border border-border bg-muted/50 hover:bg-destructive/10 hover:text-destructive transition-colors"
             title="Limpar filtros"
           >
