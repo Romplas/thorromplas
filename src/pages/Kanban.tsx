@@ -169,7 +169,7 @@ export default function Kanban() {
     setFilterMotivo('todos');
     setFilterGestor('todos');
     setFilterNegociadoCom('todos');
-      if (role) {
+    try {
         localStorage.removeItem(getFiltersStorageKey(role));
       } else {
         ['admin', 'gestor', 'supervisor', 'representante'].forEach(r =>
