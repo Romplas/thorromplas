@@ -1308,7 +1308,10 @@ export default function NovoChamado() {
                       <Button
                         type="button"
                         variant={specialFormFilled ? 'default' : 'outline'}
-                        className="flex-1"
+                        className={cn(
+                          'flex-1',
+                          hasSpecialForm && !specialFormFilled && 'border-destructive/50',
+                        )}
                         onClick={() => {
                           if (isSD) {
                             const repNome = representantes.find(r => r.id === selectedRepresentante)?.nome || '';
@@ -1414,7 +1417,12 @@ export default function NovoChamado() {
                     e.target.value = '';
                   }}
                 />
-                <div className="mt-1 border rounded-lg p-4 min-h-[140px] flex flex-col">
+                <div
+                  className={cn(
+                    'mt-1 border rounded-lg p-4 min-h-[140px] flex flex-col',
+                    hasSpecialForm && 'border-destructive/50',
+                  )}
+                >
                   {anexos.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
                       <p className="text-sm">Não há nada em anexo.</p>
