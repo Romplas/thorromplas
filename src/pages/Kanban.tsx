@@ -27,6 +27,7 @@ interface ChamadoWithNames {
   cliente_id: string | null;
   representante_nome?: string;
   gestor_nome?: string;
+  negociado_com?: string | null;
 }
 
 interface Supervisor { id: string; nome: string }
