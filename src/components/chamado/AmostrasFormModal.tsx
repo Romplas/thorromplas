@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { notifyChamadoPush } from '@/lib/pushNotifications';
 
 // ──── Product Catalog Data (same as AmostrasCreationForm) ────
 interface ProductEntry { name: string; numLam: number }
@@ -329,6 +330,7 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
 
       await supabase.from('chamados').update({ sdp_data: { ...form, formType: 'amostras' } as any } as any).eq('id', chamadoId);
 
+      void notifyChamadoPush(chamadoId);
       toast.success('PDF de Amostras gerado e anexado ao ticket!');
       onPdfUploaded?.();
       onOpenChange(false);

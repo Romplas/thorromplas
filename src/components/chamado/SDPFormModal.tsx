@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { notifyChamadoPush } from '@/lib/pushNotifications';
 
 interface SDFormData {
   cliente: string; representante: string; segmentoMercado: string; aplicacaoProduto: string;
@@ -252,6 +253,7 @@ export default function SDPFormModal({ open, onOpenChange, chamadoId, clienteNom
       // Save form data to DB
       await supabase.from('chamados').update({ sdp_data: sdForm as any } as any).eq('id', chamadoId);
 
+      void notifyChamadoPush(chamadoId);
       toast.success('PDF da SDP gerado e anexado ao ticket!');
       onPdfUploaded?.();
       onOpenChange(false);

@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { notifyChamadoPush } from '@/lib/pushNotifications';
 
 interface RNCProduto { produto: string; cod: string; metros: string }
 
@@ -192,6 +193,7 @@ export default function RNCFormModal({ open, onOpenChange, chamadoId, clienteNom
 
       await supabase.from('chamados').update({ sdp_data: { ...form, formType: 'rnc' } as any } as any).eq('id', chamadoId);
 
+      void notifyChamadoPush(chamadoId);
       toast.success('PDF da RNC gerado e anexado ao ticket!');
       onPdfUploaded?.();
       onOpenChange(false);

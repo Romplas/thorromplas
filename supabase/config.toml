@@ -1,1 +1,4 @@
 project_id = "dsudtuabcjhjbzlsdzza"
+
+[functions.send-chamado-push]
+verify_jwt = true

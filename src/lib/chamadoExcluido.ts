@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { notifyChamadoPush } from '@/lib/pushNotifications';
 
 // Helper to access tables that may have typing issues
 const from = (table: string) => (supabase as any).from(table);
@@ -129,6 +130,8 @@ export async function restaurarChamadoExcluido(chamadoExcluidoId: string): Promi
 
   // Remover da tabela de excluídos
   await from('chamados_excluidos').delete().eq('id', chamadoExcluidoId);
+
+  void notifyChamadoPush(novoId);
 
   return { newId: novoId };
 }

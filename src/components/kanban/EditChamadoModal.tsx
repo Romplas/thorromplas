@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { notifyChamadoUpdated } from '@/lib/chamadoEvents';
+import { notifyChamadoPush } from '@/lib/pushNotifications';
 
 interface AnexoFile { nome: string; path: string }
 
@@ -375,6 +376,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
       toast.success(`Ticket ${chamado.id} atualizado!`);
       notifyChamadoUpdated(chamado.id);
+      void notifyChamadoPush(chamado.id);
 
       onSaved();
       onOpenChange(false);

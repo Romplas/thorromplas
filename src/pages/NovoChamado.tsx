@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { onChamadoUpdated } from '@/lib/chamadoEvents';
+import { notifyChamadoPush } from '@/lib/pushNotifications';
 import Layout from '@/components/Layout';
 import ChamadoCard, { type ChamadoCriado } from '@/components/chamado/ChamadoCard';
 
@@ -717,6 +718,8 @@ export default function NovoChamado() {
         descricao_ticket: buildDescricao(isNegociacao) || null,
       } as any);
       if (histError) console.error('Erro ao inserir histórico de criação:', histError);
+
+      void notifyChamadoPush(data.id);
 
       toast.success(`Chamado #${data.id} criado com sucesso!`);
 

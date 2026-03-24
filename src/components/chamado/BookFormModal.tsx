@@ -16,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { notifyChamadoPush } from '@/lib/pushNotifications';
 
 export interface SequenciaRow { linhas: string; quantidade: string }
 
@@ -472,6 +473,7 @@ export default function BookFormModal({ open, onOpenChange, chamadoId, clienteNo
         const { error } = await supabase.storage.from('chamado-anexos').upload(filePath, pdfBlob, { contentType: 'application/pdf', upsert: true });
         if (error) throw error;
         await supabase.from('chamados').update({ sdp_data: { ...form, formType: 'book' } as any } as any).eq('id', chamadoId);
+        void notifyChamadoPush(chamadoId);
         toast.success('PDF de Book gerado e anexado ao ticket!');
         onPdfUploaded?.();
         onOpenChange(false);

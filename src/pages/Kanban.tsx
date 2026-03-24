@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { notifyChamadoUpdated, onChamadoUpdated } from '@/lib/chamadoEvents';
+import { notifyChamadoPush } from '@/lib/pushNotifications';
 import EditChamadoModal from '@/components/kanban/EditChamadoModal';
 import DeleteConfirmDialog from '@/components/kanban/DeleteConfirmDialog';
 
@@ -466,6 +467,7 @@ export default function Kanban() {
         descricao: `Etapa alterada de "${oldEtapaLabel}" para "${newEtapaLabel}" (drag-drop)`,
         descricao_ticket: ticket.descricao || null,
       } as any);
+      void notifyChamadoPush(ticket.id);
       toast({ title: `Chamado movido para ${columns.find((c) => c.key === colKey)?.label}` });
     }
   };

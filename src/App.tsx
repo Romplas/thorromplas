@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { PWAUpdatePrompt } from "@/components/pwa/PWAUpdatePrompt";
+import { PushNotificationSetup } from "@/components/push/PushNotificationSetup";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
@@ -29,6 +30,7 @@ const App = () => (
       <Sonner />
       <PWAInstallPrompt />
       <PWAUpdatePrompt />
+      <PushNotificationSetup />
       <BrowserRouter>
         <AuthProvider>
           <Routes>

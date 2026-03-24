@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { notifyChamadoUpdated } from '@/lib/chamadoEvents';
+import { notifyChamadoPush } from '@/lib/pushNotifications';
 
 export interface AnexoFile {
   nome: string;
@@ -257,6 +258,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
 
       onUpdate(draft);
       notifyChamadoUpdated(chamado.id);
+      void notifyChamadoPush(chamado.id);
       setEditing(false);
       toast.success(`Chamado #${chamado.id} atualizado!`);
     } catch (err: any) {
