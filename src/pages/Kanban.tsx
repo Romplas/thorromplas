@@ -371,7 +371,7 @@ export default function Kanban() {
     setFilterTicketId('todos');
     setFilterMotivo('todos');
     setFilterGestor('todos');
-  };
+    setFilterNegociadoCom('todos');
 
   const handleRepresentanteChange = (value: string) => {
     setFilterRepresentante(value);
