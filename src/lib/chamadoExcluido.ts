@@ -155,7 +155,7 @@ export async function backupHistoricoEntradaBeforeDelete(
   etapaEntradaKey: string,
   statusEntradaLabel: string,
   statusEntradaKey: string
-): Promise<boolean> {
+): Promise<{ ok: true } | { ok: false; message: string }> {
   const { data: { user } } = await supabase.auth.getUser();
   const deletedBy = user?.id ?? null;
 
@@ -193,5 +193,13 @@ export async function backupHistoricoEntradaBeforeDelete(
     deleted_by: deletedBy,
   });
 
-  return !error;
+  if (error) {
+    console.error('[backupHistoricoEntradaBeforeDelete]', error);
+    const msg =
+      error.message ||
+      (error as { details?: string }).details ||
+      'Erro ao salvar registro da exclusão';
+    return { ok: false, message: msg };
+  }
+  return { ok: true };
 }

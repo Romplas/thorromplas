@@ -708,7 +708,7 @@ export default function Historico() {
       const stKey = entryStatusMap.get(entry.id) || '';
       const statusLabel = stKey ? statusLabels[stKey] || stKey : '—';
       try {
-        const ok = await backupHistoricoEntradaBeforeDelete(
+        const backupResult = await backupHistoricoEntradaBeforeDelete(
           {
             id: entry.id,
             chamado_id: entry.chamado_id,
@@ -725,8 +725,12 @@ export default function Historico() {
           statusLabel,
           stKey || chamado.status || 'aberto'
         );
-        if (!ok) {
-          toast.error('Não foi possível registrar a exclusão. Tente novamente.');
+        if (!backupResult.ok) {
+          toast.error(
+            backupResult.message.includes('relation') || backupResult.message.includes('schema cache')
+              ? 'Tabela de auditoria ausente no servidor. Peça ao administrador para aplicar as migrações do Supabase (historico_entrada_excluida).'
+              : backupResult.message
+          );
           return;
         }
         const { error } = await supabase.from('chamado_historico').delete().eq('id', deleteEntryId);
@@ -739,6 +743,11 @@ export default function Historico() {
       } catch (err: unknown) {
         toast.error('Erro ao excluir: ' + (err instanceof Error ? err.message : 'Erro desconhecido'));
       }
+      return;
+    }
+
+    if (!canDeleteTicket && canDeleteEtapa) {
+      toast.error('Selecione um registro do histórico (card) antes de excluir a etapa.');
       return;
     }
 

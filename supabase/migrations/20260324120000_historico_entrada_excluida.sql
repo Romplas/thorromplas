@@ -25,12 +25,9 @@ CREATE POLICY "Admin can view historico_entrada_excluida"
   ON public.historico_entrada_excluida FOR SELECT TO authenticated
   USING (public.has_role(auth.uid(), 'admin'::app_role));
 
-CREATE POLICY "Gestor supervisor admin can insert historico_entrada_excluida"
+-- INSERT aberto para authenticated (igual chamados_excluidos); só admin lê na tela Tickets Excluídos.
+CREATE POLICY "Authenticated can insert historico_entrada_excluida"
   ON public.historico_entrada_excluida FOR INSERT TO authenticated
-  WITH CHECK (
-    public.has_role(auth.uid(), 'admin'::app_role)
-    OR public.has_role(auth.uid(), 'gestor'::app_role)
-    OR public.has_role(auth.uid(), 'supervisor'::app_role)
-  );
+  WITH CHECK (true);
 
 COMMENT ON TABLE public.historico_entrada_excluida IS 'Backup de linha excluída de chamado_historico (apenas a etapa/grid), com justificativa.';
