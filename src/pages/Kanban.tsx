@@ -596,7 +596,7 @@ export default function Kanban() {
               </SelectContent>
             </Select>
           </div>
-            onClick={handleClearFilters}
+          <button
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md border border-border bg-muted/50 hover:bg-destructive/10 hover:text-destructive transition-colors"
             title="Limpar filtros"
           >
