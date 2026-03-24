@@ -168,7 +168,7 @@ export default function Kanban() {
     setFilterTicketId('todos');
     setFilterMotivo('todos');
     setFilterGestor('todos');
-    try {
+    setFilterNegociadoCom('todos');
       if (role) {
         localStorage.removeItem(getFiltersStorageKey(role));
       } else {
