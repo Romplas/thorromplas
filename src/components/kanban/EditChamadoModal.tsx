@@ -97,7 +97,8 @@ function getDownloadUrl(path: string, fileName: string): string {
 
 export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved, profileMap, initialDescricao, entryStatus, isLatestEntry = true }: Props) {
   const { role } = useAuth();
-  const canUpload = role === 'admin' || role === 'gestor' || role === 'supervisor';
+  const canUpload =
+    role === 'admin' || role === 'gestor' || role === 'supervisor' || role === 'representante';
   const fileInputRef = useRef<HTMLInputElement>(null);
   const prevOpenRef = useRef(false);
 
@@ -469,6 +470,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   const isRepresentanteLockedByNotLatest = role === 'representante' && notLatestEntry;
   const isRepresentanteLockedByLatestNotEmProgresso = role === 'representante' && latestNotEmProgresso;
   const isEditable = !isRepresentanteLockedByFechado && !isRepresentanteLockedByNotLatest && !isRepresentanteLockedByLatestNotEmProgresso;
+  const canManageAnexos = canUpload && isEditable;
 
   return (
     <>
@@ -682,7 +684,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Anexos</Label>
-                    {canUpload && (
+                    {canManageAnexos && (
                       <>
                         <input
                           ref={fileInputRef}
@@ -724,7 +726,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(anexo)} title="Baixar">
                               <Download className="h-4 w-4" />
                             </Button>
-                            {canUpload && (
+                            {canManageAnexos && (
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteAnexo(anexo)} title="Remover">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
