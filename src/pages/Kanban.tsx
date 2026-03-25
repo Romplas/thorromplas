@@ -348,6 +348,8 @@ export default function Kanban() {
         setFilterGestor(persisted.gestor ?? 'todos');
         setFilterNegociadoCom(persisted.negociadoCom ?? 'todos');
         setFilterEtapa(persisted.etapa ?? 'todos');
+        // Obrigatório: sem isso o efeito de save nunca roda e novas alterações não persistem ao sair da tela
+        setRoleFilterApplied(true);
       } else if (role === 'supervisor' && supRes.data) {
         const mySupervisor = supRes.data.find(s => s.nome.toLowerCase() === profile.nome.toLowerCase());
         if (mySupervisor) {
