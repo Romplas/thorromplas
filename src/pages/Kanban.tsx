@@ -144,6 +144,8 @@ export default function Kanban() {
   const [filterMotivo, setFilterMotivo] = useState('todos');
   const [filterGestor, setFilterGestor] = useState('todos');
   const [filterNegociadoCom, setFilterNegociadoCom] = useState('todos');
+  const [filterEtapa, setFilterEtapa] = useState('todos');
+  const [dbEtapas, setDbEtapas] = useState<{ nome: string; label: string }[]>([]);
 
   // Persist filters for admin, gestor, supervisor when they change (permanecem ao trocar de tela)
   const canPersistFilters = role === 'admin' || role === 'gestor' || role === 'supervisor';
@@ -158,9 +160,10 @@ export default function Kanban() {
         motivo: filterMotivo,
         gestor: filterGestor,
         negociadoCom: filterNegociadoCom,
+        etapa: filterEtapa,
       });
     }
-  }, [canPersistFilters, role, authLoading, roleFilterApplied, filterSupervisor, filterRepresentante, filterCliente, filterTicketId, filterMotivo, filterGestor, filterNegociadoCom]);
+  }, [canPersistFilters, role, authLoading, roleFilterApplied, filterSupervisor, filterRepresentante, filterCliente, filterTicketId, filterMotivo, filterGestor, filterNegociadoCom, filterEtapa]);
 
   const handleClearFilters = () => {
     setFilterSupervisor('todos');
@@ -170,6 +173,7 @@ export default function Kanban() {
     setFilterMotivo('todos');
     setFilterGestor('todos');
     setFilterNegociadoCom('todos');
+    setFilterEtapa('todos');
     try {
       if (role) {
         localStorage.removeItem(getFiltersStorageKey(role));
@@ -256,7 +260,7 @@ export default function Kanban() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [chamadosRes, supRes, repRes, srRes, clientesRes, motivosRes, profilesRes, gestorRolesRes] = await Promise.all([
+    const [chamadosRes, supRes, repRes, srRes, clientesRes, motivosRes, profilesRes, gestorRolesRes, etapasRes] = await Promise.all([
       supabase.from('chamados').select('*').order('updated_at', { ascending: false }),
       supabase.from('supervisores').select('id, nome').eq('status', 'ativo').order('nome'),
       supabase.from('representantes').select('id, codigo, nome').order('nome'),
@@ -265,6 +269,7 @@ export default function Kanban() {
       supabase.from('motivos').select('id, nome').order('nome'),
       supabase.from('profiles').select('id, nome, user_id, status').eq('status', 'ativo'),
       supabase.from('user_roles').select('user_id, role').eq('role', 'gestor'),
+      supabase.from('etapas').select('nome, label').order('ordem'),
     ]);
 
     const pMap = new Map<string, string>();
@@ -327,6 +332,7 @@ export default function Kanban() {
     if (srRes.data) setSrLinks(srRes.data);
     if (clientesRes.data) setAllClientes(clientesRes.data as Cliente[]);
     if (motivosRes.data) setMotivos(motivosRes.data);
+    if (etapasRes.data) setDbEtapas(etapasRes.data);
 
     // Auto-set filters based on role (persistidos para admin/gestor/supervisor ao navegar entre telas)
     if (!roleFilterApplied && profile) {
@@ -341,6 +347,7 @@ export default function Kanban() {
         setFilterMotivo(persisted.motivo ?? 'todos');
         setFilterGestor(persisted.gestor ?? 'todos');
         setFilterNegociadoCom(persisted.negociadoCom ?? 'todos');
+        setFilterEtapa(persisted.etapa ?? 'todos');
       } else if (role === 'supervisor' && supRes.data) {
         const mySupervisor = supRes.data.find(s => s.nome.toLowerCase() === profile.nome.toLowerCase());
         if (mySupervisor) {
@@ -374,6 +381,7 @@ export default function Kanban() {
     setFilterMotivo('todos');
     setFilterGestor('todos');
     setFilterNegociadoCom('todos');
+    setFilterEtapa('todos');
   };
 
   const handleRepresentanteChange = (value: string) => {
@@ -383,6 +391,7 @@ export default function Kanban() {
     setFilterMotivo('todos');
     setFilterGestor('todos');
     setFilterNegociadoCom('todos');
+    setFilterEtapa('todos');
   };
 
   const handleDelete = async (id: number, motivo: string) => {
@@ -504,6 +513,7 @@ export default function Kanban() {
     if (filterMotivo !== 'todos' && c.motivo !== filterMotivo) return false;
     if (filterGestor !== 'todos' && c.gestor_id !== filterGestor) return false;
     if (filterNegociadoCom !== 'todos' && c.negociado_com !== filterNegociadoCom) return false;
+    if (filterEtapa !== 'todos' && getTicketColumn(c) !== filterEtapa) return false;
     return true;
   });
 
@@ -597,7 +607,21 @@ export default function Kanban() {
               </SelectContent>
             </Select>
           </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0 min-w-[100px]">Etapa Ticket</span>
+            <Select value={filterEtapa} onValueChange={setFilterEtapa}>
+              <SelectTrigger className="h-8 w-36 text-xs min-w-[140px]"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {dbEtapas.map((e) => (
+                  <SelectItem key={e.nome} value={e.nome}>{e.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <button
+            type="button"
+            onClick={handleClearFilters}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md border border-border bg-muted/50 hover:bg-destructive/10 hover:text-destructive transition-colors"
             title="Limpar filtros"
           >
