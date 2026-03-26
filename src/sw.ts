@@ -64,15 +64,12 @@ precacheAndRoute(self.__WB_MANIFEST);
 const navigationHandler = createHandlerBoundToURL("/index.html");
 registerRoute(new NavigationRoute(navigationHandler, { denylist: [/^\/~oauth/] }));
 
-registerRoute(
-  ({ url }) => url.hostname.includes("supabase.co"),
-  new NetworkFirst({
-    cacheName: "supabase-cache",
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 50,
-        maxAgeSeconds: 60 * 5,
-      }),
-    ],
-  }),
-);
+/**
+ * IMPORTANTE:
+ * Não fazemos runtime caching genérico para `*.supabase.co`.
+ *
+ * Em PWA instalado, cachear chamadas autenticadas (REST/Auth/Realtime/Functions)
+ * pode servir respostas vazias/401 do cache e causar "dados somem/voltam".
+ * Preferimos cache em memória no app (ex.: React Query) e manter o SW só para
+ * precache de assets + navegação offline.
+ */

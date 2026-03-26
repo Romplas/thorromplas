@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Pencil, Clock, Trash2, FilterX } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -102,10 +102,27 @@ export default function Kanban() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [chamados, setChamados] = useState<ChamadoWithNames[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [roleFilterApplied, setRoleFilterApplied] = useState(false);
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+
+  // Evita que respostas antigas sobrescrevam o state (race conditions)
+  const fetchSeqRef = useRef(0);
+  const debounceTimerRef = useRef<number | null>(null);
+
+  const scheduleRefresh = (reason: string) => {
+    // reason usado só para debug futuro; não logamos para não poluir.
+    void reason;
+    if (debounceTimerRef.current) {
+      window.clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = window.setTimeout(() => {
+      debounceTimerRef.current = null;
+      void fetchData({ source: 'realtime' });
+    }, 500);
+  };
 
   // Edit modal state
   const [editTicket, setEditTicket] = useState<ChamadoWithNames | null>(null);
@@ -218,10 +235,19 @@ export default function Kanban() {
     : allClientes;
 
   useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        window.clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     // Aguarda autenticação carregar para aplicar filtros corretos por papel
     if (authLoading) return;
 
-    fetchData();
+    void fetchData({ source: 'mount' });
 
     // Realtime subscription for chamados
     const channel = supabase
@@ -243,13 +269,13 @@ export default function Kanban() {
             // Also remove from local state immediately
             setChamados((prev) => prev.filter((c) => c.id !== deletedId));
           }
-          fetchData();
+          scheduleRefresh('realtime-change');
         }
       )
       .subscribe();
 
     const unsubscribe = onChamadoUpdated(() => {
-      fetchData();
+      scheduleRefresh('app-event');
     });
 
     return () => {
@@ -258,8 +284,14 @@ export default function Kanban() {
     };
   }, [authLoading, role, profile]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async ({ source }: { source: 'mount' | 'realtime' | 'manual' }) => {
+    const seq = ++fetchSeqRef.current;
+    if (source === 'mount') {
+      setInitialLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
+
     const [chamadosRes, supRes, repRes, srRes, clientesRes, motivosRes, profilesRes, gestorRolesRes, etapasRes] = await Promise.all([
       supabase.from('chamados').select('*').order('updated_at', { ascending: false }),
       supabase.from('supervisores').select('id, nome').eq('status', 'ativo').order('nome'),
@@ -324,15 +356,20 @@ export default function Kanban() {
         }
       }
 
-      setChamados(visibleChamados);
+      // Se outro fetch mais novo já terminou, ignora este resultado.
+      if (seq === fetchSeqRef.current) {
+        setChamados(visibleChamados);
+      }
     }
 
-    if (supRes.data) setSupervisores(supRes.data);
-    if (repRes.data) setRepresentantes(repRes.data);
-    if (srRes.data) setSrLinks(srRes.data);
-    if (clientesRes.data) setAllClientes(clientesRes.data as Cliente[]);
-    if (motivosRes.data) setMotivos(motivosRes.data);
-    if (etapasRes.data) setDbEtapas(etapasRes.data);
+    if (seq === fetchSeqRef.current) {
+      if (supRes.data) setSupervisores(supRes.data);
+      if (repRes.data) setRepresentantes(repRes.data);
+      if (srRes.data) setSrLinks(srRes.data);
+      if (clientesRes.data) setAllClientes(clientesRes.data as Cliente[]);
+      if (motivosRes.data) setMotivos(motivosRes.data);
+      if (etapasRes.data) setDbEtapas(etapasRes.data);
+    }
 
     // Auto-set filters based on role (persistidos para admin/gestor/supervisor ao navegar entre telas)
     if (!roleFilterApplied && profile) {
@@ -371,7 +408,10 @@ export default function Kanban() {
       }
     }
 
-    setLoading(false);
+    if (seq === fetchSeqRef.current) {
+      setInitialLoading(false);
+      setIsRefreshing(false);
+    }
   };
 
   // Cascading reset handlers
@@ -527,6 +567,16 @@ export default function Kanban() {
   const isSupervisorSelectDisabled = role === 'supervisor' || role === 'representante'; // Supervisor vê apenas seus chamados
   const roleLabel = profile?.nome || (role === 'admin' ? 'Administrador' : role === 'gestor' ? 'Gestor' : role === 'supervisor' ? 'Supervisor' : 'Representante');
 
+  const refreshingIndicator = useMemo(() => {
+    if (initialLoading) return null;
+    if (!isRefreshing) return null;
+    return (
+      <div className="mb-3 text-xs text-muted-foreground">
+        Atualizando dados…
+      </div>
+    );
+  }, [initialLoading, isRefreshing]);
+
   return (
     <Layout>
       <div className="p-4">
@@ -632,10 +682,11 @@ export default function Kanban() {
         </div>
 
         {/* Kanban Board */}
-        {loading ? (
+        {initialLoading ? (
           <div className="text-center py-12 text-muted-foreground">Carregando chamados...</div>
         ) : (
           <div className="overflow-x-auto pb-4">
+            {refreshingIndicator}
             <div className="flex gap-3" style={{ minWidth: `${columns.length * 310}px` }}>
               {columns.map((col) => {
                 const tickets = filteredChamados.filter((c) => getTicketColumn(c) === col.key);
@@ -726,7 +777,7 @@ export default function Kanban() {
         open={editOpen}
         onOpenChange={setEditOpen}
         chamado={editTicket}
-        onSaved={fetchData}
+        onSaved={() => fetchData({ source: 'manual' })}
         profileMap={profileMap}
       />
 
