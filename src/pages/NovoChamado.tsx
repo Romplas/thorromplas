@@ -874,11 +874,17 @@ export default function NovoChamado() {
                 />
               </div>
               <div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <Label className="text-xs font-semibold text-destructive">* Clientes</Label>
-                  <button type="button" title="Cadastrar novo cliente" onClick={() => setShowNewClientDialog(true)} className="text-primary hover:text-primary/80 transition-colors">
-                    <Plus className="h-4 w-4" />
-                  </button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-auto py-1.5 px-2 shrink-0 bg-[rgba(65,105,225,1)] text-[rgba(243,239,250,1)] hover:bg-[rgba(55,95,205,1)] hover:text-[rgba(243,239,250,1)]"
+                    onClick={() => setShowNewClientDialog(true)}
+                  >
+                    Cadastrar Novo Cliente
+                  </Button>
                 </div>
                 <SearchableSelect
                   className="mt-1 border-destructive/50"
