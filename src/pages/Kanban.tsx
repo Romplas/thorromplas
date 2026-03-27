@@ -525,6 +525,7 @@ export default function Kanban() {
         descricao_ticket: ticket.descricao || null,
       } as any);
       void notifyChamadoPush(ticket.id);
+      void (async () => { const { notifyN8nWebhook } = await import('@/lib/n8nWebhook'); notifyN8nWebhook(ticket.id); })();
       toast({ title: `Chamado movido para ${columns.find((c) => c.key === colKey)?.label}` });
     }
   };

@@ -283,6 +283,7 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
       onUpdate(draft);
       notifyChamadoUpdated(chamado.id);
       void notifyChamadoPush(chamado.id);
+      void (async () => { const { notifyN8nWebhook } = await import('@/lib/n8nWebhook'); notifyN8nWebhook(chamado.id); })();
       setEditing(false);
       toast.success(`Chamado #${chamado.id} atualizado!`);
     } catch (err: any) {

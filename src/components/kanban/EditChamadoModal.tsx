@@ -405,6 +405,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
       toast.success(`Ticket ${chamado.id} atualizado!`);
       notifyChamadoUpdated(chamado.id);
       void notifyChamadoPush(chamado.id);
+      void (async () => { const { notifyN8nWebhook } = await import('@/lib/n8nWebhook'); notifyN8nWebhook(chamado.id); })();
 
       onSaved();
       onOpenChange(false);
