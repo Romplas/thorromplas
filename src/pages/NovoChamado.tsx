@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import jsPDF from 'jspdf';
-import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2, Eye, Pencil, Plus, Trash2, CalendarIcon } from 'lucide-react';
+import { Paperclip, Home, Clock, RotateCcw, X, FileText, FileSpreadsheet, Film, Image, Music, File, CheckCircle2, Eye, Pencil, Plus, Trash2, CalendarIcon, MoreVertical } from 'lucide-react';
 import { format, parse, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import AmostrasCreationForm, { type AmostrasFullFormData, defaultAmostrasFullForm } from '@/components/chamado/AmostrasCreationForm';
@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -1033,35 +1034,33 @@ export default function NovoChamado() {
                   searchPlaceholder="Pesquisar cliente..."
                   options={filteredClientes.map(c => ({ value: c.id, label: c.nome }))}
                   renderOption={(opt, { close }) => (
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        title="Ver cliente"
-                        className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); close(); openViewClient(opt.value); }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        title="Editar cliente"
-                        className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); close(); openEditClient(opt.value); }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        title="Excluir cliente"
-                        className="p-1 rounded hover:bg-muted text-destructive/80 hover:text-destructive"
-                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); close(); openDeleteClient(opt.value); }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          title="Ações do cliente"
+                          className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                          onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuItem onSelect={() => { close(); openViewClient(opt.value); }}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Ver
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => { close(); openEditClient(opt.value); }}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Renomear
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => { close(); openDeleteClient(opt.value); }}>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
                 />
               </div>
