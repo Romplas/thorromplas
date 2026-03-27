@@ -254,6 +254,30 @@ export default function ChamadoCard({ chamado, onUpdate, onDelete }: ChamadoCard
           descricao: descricaoHistorico,
           descricao_ticket: draft.descricao || null,
         } as any);
+      } else {
+        const descricaoFoiAlterada = (draft.descricao || '') !== (chamado.descricao || '');
+        if (descricaoFoiAlterada) {
+          const { data: latestEntry } = await supabase
+            .from('chamado_historico')
+            .select('id')
+            .eq('chamado_id', chamado.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (latestEntry?.id) {
+            const { error: histUpdateError } = await supabase
+              .from('chamado_historico')
+              .update({ descricao_ticket: draft.descricao || null } as any)
+              .eq('id', latestEntry.id);
+            if (histUpdateError) {
+              console.error('Erro ao atualizar descrição no histórico:', histUpdateError);
+              toast.error(
+                'Descrição salva no ticket, mas o histórico não pôde ser atualizado. Peça ao administrador a migração chamado_historico_update_policy no Supabase.'
+              );
+            }
+          }
+        }
       }
 
       onUpdate(draft);

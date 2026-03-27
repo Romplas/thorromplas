@@ -48,8 +48,6 @@ interface Props {
   chamado: ChamadoFull | null;
   onSaved: () => void;
   profileMap: Map<string, string>;
-  /** Quando informado (ex: ao abrir do Histórico), usa esta descrição em vez da atual do banco */
-  initialDescricao?: string | null;
   /** Status da entrada selecionada no Histórico. Usado junto com chamado.status para bloquear edição (representante). */
   entryStatus?: string | null;
   /** Se a entrada selecionada é a última atualização do ticket. Representante só pode editar a última etapa. */
@@ -95,7 +93,7 @@ function getDownloadUrl(path: string, fileName: string): string {
   return url;
 }
 
-export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved, profileMap, initialDescricao, entryStatus, isLatestEntry = true }: Props) {
+export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved, profileMap, entryStatus, isLatestEntry = true }: Props) {
   const { role } = useAuth();
   const canUpload =
     role === 'admin' || role === 'gestor' || role === 'supervisor' || role === 'representante';
@@ -103,6 +101,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
   const prevOpenRef = useRef(false);
 
   const [descricao, setDescricao] = useState('');
+  const [descricaoOriginal, setDescricaoOriginal] = useState('');
   const [status, setStatus] = useState('');
   const [etapa, setEtapa] = useState('');
   const [gestorId, setGestorId] = useState('');
@@ -169,7 +168,9 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
           .maybeSingle();
 
         if (error || !freshChamado) {
-          setDescricao(initialDescricao !== undefined ? (initialDescricao || '') : (chamado.descricao || ''));
+          const descricaoAtual = chamado.descricao || '';
+          setDescricao(descricaoAtual);
+          setDescricaoOriginal(descricaoAtual);
           setStatus(chamado.status);
           setEtapa(chamado.etapa || 'thor');
           setGestorId(chamado.gestor_id || 'none');
@@ -180,7 +181,9 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
         }
 
         const raw = freshChamado as any;
-        setDescricao(initialDescricao !== undefined ? (initialDescricao || '') : (raw.descricao || ''));
+        const descricaoAtual = raw.descricao || '';
+        setDescricao(descricaoAtual);
+        setDescricaoOriginal(descricaoAtual);
         setStatus(raw.status || '');
         setEtapa(raw.etapa || 'thor');
         setGestorId(raw.gestor_id || 'none');
@@ -196,7 +199,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
       loadLatestChamado();
     }
-  }, [chamado, open, initialDescricao]);
+  }, [chamado, open]);
 
   const loadExtraFields = async (chamadoId: number) => {
     const { data } = await supabase
@@ -345,6 +348,7 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
 
       const acao = changeParts.length > 0 ? 'Atualização de Ticket' : 'Atualização';
       const descricaoHistorico = changeParts.length > 0 ? changeParts.join(' | ') : 'Ticket atualizado sem alterações de campos';
+      const descricaoFoiAlterada = (descricao || '') !== descricaoOriginal;
 
       const { error } = await supabase.from('chamados').update({
         descricao: descricao || null,
@@ -373,6 +377,29 @@ export default function EditChamadoModal({ open, onOpenChange, chamado, onSaved,
           descricao_ticket: descricao || null,
         } as any);
         if (histError) console.error('Erro ao inserir histórico:', histError);
+      } else if (descricaoFoiAlterada) {
+        // No fluxo pendente/pendente não criamos nova etapa no histórico,
+        // então mantemos a descrição exibida no Histórico atualizando a última entrada.
+        const { data: latestEntry } = await supabase
+          .from('chamado_historico')
+          .select('id')
+          .eq('chamado_id', chamado.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (latestEntry?.id) {
+          const { error: histUpdateError } = await supabase
+            .from('chamado_historico')
+            .update({ descricao_ticket: descricao || null } as any)
+            .eq('id', latestEntry.id);
+          if (histUpdateError) {
+            console.error('Erro ao atualizar descrição no histórico:', histUpdateError);
+            toast.error(
+              'Descrição salva no ticket, mas o histórico não pôde ser atualizado. Peça ao administrador a migração chamado_historico_update_policy no Supabase.'
+            );
+          }
+        }
       }
 
       toast.success(`Ticket ${chamado.id} atualizado!`);

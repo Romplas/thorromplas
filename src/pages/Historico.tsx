@@ -517,6 +517,16 @@ export default function Historico() {
     return map;
   })();
 
+  /** Última atualização do ticket: descrição vem de `chamados` (fonte após salvar). Demais linhas: snapshot em `descricao_ticket`. */
+  const getDescricaoHistoricoExibida = (entry: HistoricoEntry) => {
+    const c = chamados.find((x) => x.id === entry.chamado_id);
+    const isLatest = latestEntryIdByChamado.get(entry.chamado_id) === entry.id;
+    if (isLatest && c) {
+      return c.descricao ?? entry.descricao_ticket ?? '—';
+    }
+    return entry.descricao_ticket ?? '—';
+  };
+
   const filtered = (() => {
     const seenIds = new Set<string>();
     return historico
@@ -1060,7 +1070,7 @@ export default function Historico() {
                         <div className="w-full md:w-[65%] flex flex-col">
                           {/* Description box */}
                           <div className="bg-white/15 text-white px-3 py-2 mx-2 mt-2 rounded text-[11px] min-h-[60px]">
-                            <p className="font-semibold">Descrição : {entry.descricao_ticket ?? '—'}</p>
+                            <p className="font-semibold">Descrição : {getDescricaoHistoricoExibida(entry)}</p>
                           </div>
 
                           {/* Bottom status row */}
@@ -1150,7 +1160,7 @@ export default function Historico() {
                 <div className="space-y-1">
                   <Label className="text-[11px] font-semibold text-muted-foreground">Descrição</Label>
                   <div className="px-3 py-2 border border-border rounded-md bg-muted/40 text-sm min-h-[100px] whitespace-pre-wrap">
-                    {selectedEntry?.descricao_ticket ?? '—'}
+                    {selectedEntry ? getDescricaoHistoricoExibida(selectedEntry) : '—'}
                   </div>
                 </div>
 
@@ -1256,7 +1266,7 @@ export default function Historico() {
                 <td>${repNome}</td><td>${supNome}</td><td>${etapa}</td><td>${chamado?.motivo || '—'}</td>
                 <td>${chamado?.submotivo || '—'}</td><td>${status}</td><td>${gestor}</td>
                 <td>${entry.user_nome || '—'}</td><td>${entry.acao}</td>
-                <td style="max-width:280px;word-wrap:break-word;white-space:pre-wrap">${(entry.descricao_ticket ?? '—').replace(/</g, '&lt;')}</td>
+                <td style="max-width:280px;word-wrap:break-word;white-space:pre-wrap">${(getDescricaoHistoricoExibida(entry)).replace(/</g, '&lt;')}</td>
                 <td>${formatDateTime(entry.created_at)}</td>
               </tr>`;
             }).join('');
@@ -1336,7 +1346,7 @@ export default function Historico() {
                           <td className="px-2 py-1.5">{gestor}</td>
                           <td className="px-2 py-1.5">{entry.user_nome || '—'}</td>
                           <td className="px-2 py-1.5">{entry.acao}</td>
-                          <td className="px-2 py-1.5 whitespace-pre-wrap break-words max-w-[300px]">{entry.descricao_ticket ?? '—'}</td>
+                          <td className="px-2 py-1.5 whitespace-pre-wrap break-words max-w-[300px]">{getDescricaoHistoricoExibida(entry)}</td>
                           <td className="px-2 py-1.5 whitespace-nowrap">{formatDateTime(entry.created_at)}</td>
                         </tr>
                       );
@@ -1356,7 +1366,6 @@ export default function Historico() {
             chamado={selectedChamado as any}
             onSaved={fetchData}
             profileMap={profileMap}
-            initialDescricao={selectedEntry ? selectedEntry.descricao_ticket : undefined}
             entryStatus={selectedEntry ? entryStatusMap.get(selectedEntry.id) : undefined}
             isLatestEntry={selectedEntry ? latestEntryIdByChamado.get(selectedEntry.chamado_id) === selectedEntry.id : true}
           />
