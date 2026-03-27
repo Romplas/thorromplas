@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const N8N_WEBHOOK_URL = "https://automacoes-n8n.2qfd43.easypanel.host/webhook-test/8f187f65-ce32-4af9-9d25-1c8e0a3a4da3";
+const N8N_WEBHOOK_URL = "https://automacoes-n8n.2qfd43.easypanel.host/webhook/8f187f65-ce32-4af9-9d25-1c8e0a3a4da3";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
