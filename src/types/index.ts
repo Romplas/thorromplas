@@ -6,6 +6,7 @@ export interface User {
   id: string;
   nome: string;
   email: string;
+  contact_email?: string;
   usuario?: string;
   senha?: string;
   telefone?: string;

@@ -81,6 +81,7 @@ interface AmostrasFullFormData {
   transportadora: boolean;
   transportadoraNome: string;
   correio: boolean;
+  retira: boolean;
   amostraTipo: 'cartela' | 'metragem' | 'a4' | '';
   amostraQuantidade: string;
   selectedProducts: Record<string, string>;
@@ -93,7 +94,7 @@ interface AmostrasFullFormData {
 const defaultForm: AmostrasFullFormData = {
   razaoSocial: '', endereco: '', cidade: '', uf: '', cep: '',
   contato: '', inscEstadual: '', fone: '', cnpj: '', email: '',
-  transportadora: false, transportadoraNome: '', correio: false,
+  transportadora: false, transportadoraNome: '', correio: false, retira: false,
   amostraTipo: '', amostraQuantidade: '',
   selectedProducts: {},
   metragems: [{ codigo: '', cor: '' }],
@@ -242,7 +243,12 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
       // Transporte
       addSectionBox('Transporte', () => {
         doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-        doc.text(`(${form.transportadora ? 'X' : ' '}) Transportadora${form.transportadora && form.transportadoraNome ? ': ' + form.transportadoraNome : ''}    (${form.correio ? 'X' : ' '}) Correio`, margin + 3, y); y += 5;
+        doc.text(
+          `(${form.transportadora ? 'X' : ' '}) Transportadora${form.transportadora && form.transportadoraNome ? ': ' + form.transportadoraNome : ''}    (${form.correio ? 'X' : ' '}) Correio    (${form.retira ? 'X' : ' '}) Retira`,
+          margin + 3,
+          y
+        );
+        y += 5;
       });
 
       // Tipo de Amostra
@@ -431,6 +437,14 @@ export default function AmostrasFormModal({ open, onOpenChange, chamadoId, clien
                     onCheckedChange={c => setForm(p => ({ ...p, correio: !!c }))}
                   />
                   <Label htmlFor="modal-correio" className="text-xs cursor-pointer">Correio</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="modal-retira"
+                    checked={form.retira}
+                    onCheckedChange={c => setForm(p => ({ ...p, retira: !!c }))}
+                  />
+                  <Label htmlFor="modal-retira" className="text-xs cursor-pointer">Retira</Label>
                 </div>
               </div>
             </div>

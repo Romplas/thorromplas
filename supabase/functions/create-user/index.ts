@@ -40,7 +40,7 @@ serve(async (req) => {
       });
     }
 
-    const { nome, email, usuario, senha, telefone, tipo, supervisora } = await req.json();
+    const { nome, email, contact_email, usuario, senha, telefone, tipo, supervisora } = await req.json();
 
     // Create auth user
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -59,7 +59,7 @@ serve(async (req) => {
     // Update profile with extra fields
     await supabaseAdmin
       .from("profiles")
-      .update({ telefone, supervisora })
+      .update({ telefone, supervisora, contact_email: contact_email ?? email })
       .eq("user_id", newUser.user.id);
 
     // Assign role

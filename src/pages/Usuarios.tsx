@@ -19,6 +19,7 @@ interface ProfileWithRole {
   user_id: string;
   nome: string;
   email: string;
+  contact_email?: string | null;
   usuario: string | null;
   telefone: string | null;
   supervisora: string | null;
@@ -57,6 +58,7 @@ export default function Usuarios() {
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
+    contact_email: '',
     usuario: '',
     senha: '',
     telefone: '',
@@ -92,6 +94,7 @@ export default function Usuarios() {
     setFormData({
       nome: user.nome,
       email: user.email,
+      contact_email: user.contact_email || '',
       usuario: user.usuario || '',
       senha: '',
       telefone: user.telefone || '',
@@ -102,7 +105,7 @@ export default function Usuarios() {
   };
 
   const openCreate = () => {
-    setFormData({ nome: '', email: '', usuario: '', senha: '', telefone: '', tipo: 'representante', supervisora: '' });
+    setFormData({ nome: '', email: '', contact_email: '', usuario: '', senha: '', telefone: '', tipo: 'representante', supervisora: '' });
     setCreateOpen(true);
   };
 
@@ -115,6 +118,7 @@ export default function Usuarios() {
           user_id: editingUser.user_id,
           nome: formData.nome,
           email: formData.email,
+          contact_email: formData.contact_email || undefined,
           usuario: formData.usuario,
           senha: formData.senha || undefined,
           telefone: formData.telefone,
@@ -146,6 +150,7 @@ export default function Usuarios() {
         body: {
           nome: formData.nome,
           email: formData.email,
+          contact_email: formData.contact_email || undefined,
           usuario: formData.usuario,
           senha: formData.senha,
           telefone: formData.telefone,
@@ -212,10 +217,12 @@ export default function Usuarios() {
     const rows = filteredUsers.map((u, idx) => {
       const tipo = u.role ? roleLabels[u.role] : '';
       const supervisora = u.supervisora || '';
+      const contactEmail = u.contact_email || '';
       return `<tr>
         <td>${idx + 1}</td>
         <td>${u.nome || ''}</td>
         <td>${u.email || ''}</td>
+        <td>${contactEmail || ''}</td>
         <td>${u.usuario || ''}</td>
         <td>${tipo}</td>
         <td>${supervisora}</td>
@@ -242,7 +249,8 @@ export default function Usuarios() {
               <tr>
                 <th>#</th>
                 <th>Nome</th>
-                <th>Email</th>
+                <th>Email (login)</th>
+                <th>Email de contato</th>
                 <th>Usuário</th>
                 <th>Tipo</th>
                 <th>Supervisora</th>
@@ -267,8 +275,17 @@ export default function Usuarios() {
         <Input value={formData.nome} onChange={e => setFormData(p => ({ ...p, nome: e.target.value }))} />
       </div>
       <div className="space-y-2">
-        <Label>Email *</Label>
+        <Label>Email (login) *</Label>
         <Input type="email" value={formData.email} onChange={e => setFormData(p => ({ ...p, email: e.target.value }))} />
+      </div>
+      <div className="space-y-2">
+        <Label>Email de contato (pode repetir)</Label>
+        <Input
+          type="email"
+          value={formData.contact_email}
+          onChange={e => setFormData(p => ({ ...p, contact_email: e.target.value }))}
+          placeholder="opcional"
+        />
       </div>
       <div className="space-y-2">
         <Label>Usuário</Label>
@@ -368,7 +385,8 @@ export default function Usuarios() {
             <tr className="border-b bg-muted/30">
               <th className="p-4 w-10"><Checkbox /></th>
               <th className="text-left p-4 font-medium">Nome</th>
-              <th className="text-left p-4 font-medium">Email</th>
+              <th className="text-left p-4 font-medium">Email (login)</th>
+              <th className="text-left p-4 font-medium">Email de contato</th>
               <th className="text-left p-4 font-medium">Usuário</th>
               <th className="text-left p-4 font-medium">Tipo</th>
               <th className="text-left p-4 font-medium">Supervisora</th>
@@ -378,15 +396,16 @@ export default function Usuarios() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Carregando...</td></tr>
+              <tr><td colSpan={canManage ? 9 : 8} className="p-8 text-center text-muted-foreground">Carregando...</td></tr>
             ) : filteredUsers.length === 0 ? (
-              <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Nenhum usuário encontrado</td></tr>
+              <tr><td colSpan={canManage ? 9 : 8} className="p-8 text-center text-muted-foreground">Nenhum usuário encontrado</td></tr>
             ) : (
             filteredUsers.map((user) => (
                 <tr key={user.id} className="border-b hover:bg-muted/20">
                   <td className="p-4"><Checkbox /></td>
                   <td className="p-4 font-medium text-primary">{user.nome}</td>
                   <td className="p-4 text-muted-foreground">{user.email}</td>
+                  <td className="p-4 text-muted-foreground">{user.contact_email || '-'}</td>
                   <td className="p-4 text-muted-foreground">{user.usuario || '-'}</td>
                   <td className="p-4">
                     {user.role && (

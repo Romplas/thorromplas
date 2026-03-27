@@ -90,6 +90,7 @@ export interface AmostrasFullFormData {
   transportadora: boolean;
   transportadoraNome: string;
   correio: boolean;
+  retira: boolean;
   // Tipo de amostra
   amostraTipo: 'cartela' | 'metragem' | 'a4' | '';
   amostraQuantidade: string;
@@ -117,6 +118,7 @@ export const defaultAmostrasFullForm: AmostrasFullFormData = {
   transportadora: false,
   transportadoraNome: '',
   correio: false,
+  retira: false,
   amostraTipo: '',
   amostraQuantidade: '',
   selectedProducts: {},
@@ -254,7 +256,12 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
     // Transporte
     addSectionBox('Transporte', () => {
       doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-      doc.text(`(${form.transportadora ? 'X' : ' '}) Transportadora${form.transportadora && form.transportadoraNome ? ': ' + form.transportadoraNome : ''}    (${form.correio ? 'X' : ' '}) Correio`, margin + 3, y); y += 5;
+      doc.text(
+        `(${form.transportadora ? 'X' : ' '}) Transportadora${form.transportadora && form.transportadoraNome ? ': ' + form.transportadoraNome : ''}    (${form.correio ? 'X' : ' '}) Correio    (${form.retira ? 'X' : ' '}) Retira`,
+        margin + 3,
+        y
+      );
+      y += 5;
     });
 
     // Tipo de Amostra
@@ -451,6 +458,14 @@ export default function AmostrasCreationForm({ open, onOpenChange, clienteNome, 
                     onCheckedChange={c => setForm(p => ({ ...p, correio: !!c }))}
                   />
                   <Label htmlFor="correio" className="text-xs cursor-pointer">Correio</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="retira"
+                    checked={form.retira}
+                    onCheckedChange={c => setForm(p => ({ ...p, retira: !!c }))}
+                  />
+                  <Label htmlFor="retira" className="text-xs cursor-pointer">Retira</Label>
                 </div>
               </div>
             </div>

@@ -40,9 +40,9 @@ serve(async (req) => {
       });
     }
 
-    const { user_id, nome, email, usuario, senha, telefone, tipo, supervisora } = await req.json();
+    const { user_id, nome, email, contact_email, usuario, senha, telefone, tipo, supervisora } = await req.json();
 
-    // Update auth user if email or password changed
+    // Update auth user if login email or password changed
     const authUpdate: Record<string, unknown> = {};
     if (email) authUpdate.email = email;
     if (senha) authUpdate.password = senha;
@@ -53,7 +53,7 @@ serve(async (req) => {
     // Update profile
     await supabaseAdmin
       .from("profiles")
-      .update({ nome, email, usuario, telefone, supervisora })
+      .update({ nome, email, contact_email, usuario, telefone, supervisora })
       .eq("user_id", user_id);
 
     // Update role
