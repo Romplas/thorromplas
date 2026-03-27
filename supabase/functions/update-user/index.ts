@@ -70,6 +70,67 @@ serve(async (req) => {
         .neq("role", tipo);
     }
 
+    // Sync representante record + supervisor linkage when applicable.
+    // We store `representantes.id` as `profiles.id` so the app can use consistent IDs.
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("id, nome, supervisora")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+    if (prof?.id) {
+      if (tipo === "representante") {
+        const { data: existingRep } = await supabaseAdmin
+          .from("representantes")
+          .select("id, codigo")
+          .eq("id", prof.id)
+          .maybeSingle();
+
+        let codigo = existingRep?.codigo;
+        if (!codigo) {
+          const { data: maxRes } = await supabaseAdmin
+            .from("representantes")
+            .select("codigo")
+            .order("codigo", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          codigo = (maxRes?.codigo ?? 0) + 1;
+        }
+
+        await supabaseAdmin
+          .from("representantes")
+          .upsert({ id: prof.id, nome: prof.nome, codigo }, { onConflict: "id" });
+
+        const supervisoraNome = (supervisora ?? prof.supervisora ?? "").trim();
+        // Replace linkage based on current supervisor name (if provided).
+        await supabaseAdmin
+          .from("supervisor_representante")
+          .delete()
+          .eq("representante_id", prof.id);
+
+        if (supervisoraNome) {
+          const { data: sup } = await supabaseAdmin
+            .from("supervisores")
+            .select("id")
+            .ilike("nome", supervisoraNome)
+            .eq("status", "ativo")
+            .maybeSingle();
+          if (sup?.id) {
+            await supabaseAdmin
+              .from("supervisor_representante")
+              .insert({ supervisor_id: sup.id, representante_id: prof.id });
+          }
+        }
+      } else {
+        // If the user is no longer a representante, remove supervisor linkage
+        // (keep `representantes` row for historical integrity).
+        await supabaseAdmin
+          .from("supervisor_representante")
+          .delete()
+          .eq("representante_id", prof.id);
+      }
+    }
+
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

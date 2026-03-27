@@ -246,6 +246,48 @@ export default function NovoChamado() {
   const [newRedeNome, setNewRedeNome] = useState('');
   const [savingRede, setSavingRede] = useState(false);
 
+  // Client actions (view/edit/delete)
+  const [clientViewOpen, setClientViewOpen] = useState(false);
+  const [clientEditOpen, setClientEditOpen] = useState(false);
+  const [clientDeleteOpen, setClientDeleteOpen] = useState(false);
+  const [activeClientId, setActiveClientId] = useState<string>('');
+
+  const [editClientNome, setEditClientNome] = useState('');
+  const [editClientCodigo, setEditClientCodigo] = useState('');
+  const [editClientRede, setEditClientRede] = useState('');
+  const [savingClientEdit, setSavingClientEdit] = useState(false);
+  const [deletingClient, setDeletingClient] = useState(false);
+  const [showEditRedeInput, setShowEditRedeInput] = useState(false);
+  const [editRedeNome, setEditRedeNome] = useState('');
+  const [savingEditRede, setSavingEditRede] = useState(false);
+
+  const activeClient = activeClientId ? clientes.find(c => c.id === activeClientId) : undefined;
+  const activeClientRedeNome = activeClient?.rede_id ? (redes.find(r => r.id === activeClient.rede_id)?.nome || '') : '';
+  const activeClientRepresentanteNome = activeClient?.representante_id
+    ? (representantes.find(r => r.id === activeClient.representante_id)?.nome || '')
+    : '';
+
+  const openViewClient = (id: string) => {
+    setActiveClientId(id);
+    setClientViewOpen(true);
+  };
+
+  const openEditClient = (id: string) => {
+    const c = clientes.find(x => x.id === id);
+    setActiveClientId(id);
+    setEditClientNome(c?.nome || '');
+    setEditClientCodigo(c?.codigo != null ? String(c.codigo) : '');
+    setEditClientRede(c?.rede_id || '');
+    setShowEditRedeInput(false);
+    setEditRedeNome('');
+    setClientEditOpen(true);
+  };
+
+  const openDeleteClient = (id: string) => {
+    setActiveClientId(id);
+    setClientDeleteOpen(true);
+  };
+
   const isSupervisorLocked = role === 'supervisor' || role === 'representante';
   const isRepresentanteLocked = role === 'representante';
   const isRepresentante = role === 'representante';
@@ -832,6 +874,102 @@ export default function NovoChamado() {
     }
   };
 
+  const handleUpdateClient = async () => {
+    if (!activeClientId) return;
+    if (!editClientNome.trim()) {
+      toast.error('Informe o nome do cliente.');
+      return;
+    }
+
+    setSavingClientEdit(true);
+    try {
+      const payload: any = {
+        nome: editClientNome.trim(),
+        rede_id: editClientRede || null,
+      };
+      const codigoTrim = editClientCodigo.trim();
+      payload.codigo = codigoTrim ? Number(codigoTrim) : null;
+
+      const { data, error } = await supabase
+        .from('clientes')
+        .update(payload)
+        .eq('id', activeClientId)
+        .select('id, codigo, nome, representante_id, rede_id')
+        .single();
+      if (error) throw error;
+
+      setClientes(prev => prev.map(c => c.id === activeClientId ? (data as Cliente) : c));
+
+      // If edited client is selected, keep rede in sync
+      if (selectedCliente === activeClientId) {
+        setSelectedRede((data as any).rede_id || '');
+      }
+
+      toast.success('Cliente atualizado com sucesso!');
+      setClientEditOpen(false);
+    } catch (err: any) {
+      toast.error('Erro ao atualizar cliente: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+      setSavingClientEdit(false);
+    }
+  };
+
+  const handleDeleteClient = async () => {
+    if (!activeClientId) return;
+    setDeletingClient(true);
+    try {
+      const { error } = await supabase
+        .from('clientes')
+        .delete()
+        .eq('id', activeClientId);
+      if (error) throw error;
+
+      setClientes(prev => prev.filter(c => c.id !== activeClientId));
+
+      if (selectedCliente === activeClientId) {
+        setSelectedCliente('');
+        setSelectedCodigoCliente('');
+        setSelectedRede('');
+      }
+
+      toast.success('Cliente excluído com sucesso!');
+      setClientDeleteOpen(false);
+      setActiveClientId('');
+    } catch (err: any) {
+      const msg = (err?.message || '').toLowerCase();
+      if (msg.includes('foreign key') || msg.includes('violates') || msg.includes('constraint')) {
+        toast.error('Não foi possível excluir: este cliente já está vinculado a chamados.');
+      } else {
+        toast.error('Erro ao excluir cliente: ' + (err.message || 'Erro desconhecido'));
+      }
+    } finally {
+      setDeletingClient(false);
+    }
+  };
+
+  const handleCreateRedeForEdit = async () => {
+    if (!editRedeNome.trim()) return;
+    setSavingEditRede(true);
+    try {
+      const { data, error } = await supabase
+        .from('redes')
+        .insert({ nome: editRedeNome.trim() })
+        .select('id, nome')
+        .single();
+      if (error) throw error;
+
+      setRedes(prev => [...prev, data as Rede]);
+      setEditClientRede((data as any).id);
+      setEditRedeNome('');
+      setShowEditRedeInput(false);
+      toast.success(`Rede "${(data as any).nome}" cadastrada!`);
+    } catch (err: any) {
+      toast.error('Erro ao cadastrar rede: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+      setSavingEditRede(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="flex flex-col min-h-[calc(100vh-3rem-3rem)] -m-6">
@@ -894,6 +1032,37 @@ export default function NovoChamado() {
                   placeholder={selectedRepresentante ? "Selecione o Cliente" : "Selecione um representante"}
                   searchPlaceholder="Pesquisar cliente..."
                   options={filteredClientes.map(c => ({ value: c.id, label: c.nome }))}
+                  renderOption={(opt, { close }) => (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        title="Ver cliente"
+                        className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); close(); openViewClient(opt.value); }}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Editar cliente"
+                        className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); close(); openEditClient(opt.value); }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Excluir cliente"
+                        className="p-1 rounded hover:bg-muted text-destructive/80 hover:text-destructive"
+                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); close(); openDeleteClient(opt.value); }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 />
               </div>
             </div>
@@ -1625,6 +1794,132 @@ export default function NovoChamado() {
             <Button variant="outline" size="sm" onClick={() => setShowNewClientDialog(false)}>Cancelar</Button>
             <Button size="sm" onClick={handleSaveNewClient} disabled={savingClient}>
               {savingClient ? 'Salvando...' : 'Cadastrar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Ver Cliente */}
+      <Dialog open={clientViewOpen} onOpenChange={setClientViewOpen}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="text-xs font-semibold">Nome</Label>
+              <Input className="mt-1" value={activeClient?.nome || ''} disabled />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold">Código</Label>
+              <Input className="mt-1" value={activeClient?.codigo != null ? String(activeClient.codigo) : ''} disabled />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold">Rede</Label>
+              <Input className="mt-1" value={activeClientRedeNome} disabled />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold">Representante</Label>
+              <Input className="mt-1" value={activeClientRepresentanteNome} disabled />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button size="sm" variant="outline" onClick={() => setClientViewOpen(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Editar Cliente */}
+      <Dialog open={clientEditOpen} onOpenChange={setClientEditOpen}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="text-xs font-semibold">Nome do Cliente *</Label>
+              <Input className="mt-1" value={editClientNome} onChange={e => setEditClientNome(e.target.value)} placeholder="Nome do cliente" />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold">Código (opcional)</Label>
+              <Input className="mt-1" type="number" value={editClientCodigo} onChange={e => setEditClientCodigo(e.target.value)} placeholder="Código numérico" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">Rede (opcional)</Label>
+                <button
+                  type="button"
+                  onClick={() => setShowEditRedeInput(true)}
+                  className="text-primary hover:text-primary/80 transition-colors"
+                  title="Cadastrar nova rede"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+              {showEditRedeInput ? (
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    value={editRedeNome}
+                    onChange={e => setEditRedeNome(e.target.value)}
+                    placeholder="Nome da nova rede"
+                    className="flex-1"
+                  />
+                  <Button
+                    size="sm"
+                    disabled={savingEditRede || !editRedeNome.trim()}
+                    onClick={handleCreateRedeForEdit}
+                  >
+                    {savingEditRede ? '...' : 'OK'}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setShowEditRedeInput(false); setEditRedeNome(''); }}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <SearchableSelect
+                  className="mt-1"
+                  value={editClientRede}
+                  onValueChange={setEditClientRede}
+                  placeholder="Selecione a rede"
+                  searchPlaceholder="Pesquisar rede..."
+                  options={redes.map(r => ({ value: r.id, label: r.nome }))}
+                />
+              )}
+            </div>
+            {activeClientRepresentanteNome && (
+              <div>
+                <Label className="text-xs font-semibold">Representante</Label>
+                <Input className="mt-1" value={activeClientRepresentanteNome} disabled />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button size="sm" variant="outline" onClick={() => setClientEditOpen(false)}>Cancelar</Button>
+            <Button size="sm" onClick={handleUpdateClient} disabled={savingClientEdit}>
+              {savingClientEdit ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Excluir Cliente */}
+      <Dialog open={clientDeleteOpen} onOpenChange={setClientDeleteOpen}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Excluir Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="py-2 space-y-2 text-sm">
+            <p>Tem certeza que deseja excluir este cliente?</p>
+            <div className="rounded-md border bg-muted/30 p-3">
+              <p className="font-medium">{activeClient?.nome || '-'}</p>
+              <p className="text-xs text-muted-foreground">Código: {activeClient?.codigo != null ? String(activeClient.codigo) : '—'}</p>
+            </div>
+            <p className="text-xs text-muted-foreground">Esta ação não pode ser desfeita.</p>
+          </div>
+          <DialogFooter>
+            <Button size="sm" variant="outline" onClick={() => setClientDeleteOpen(false)}>Cancelar</Button>
+            <Button size="sm" variant="destructive" onClick={handleDeleteClient} disabled={deletingClient}>
+              {deletingClient ? 'Excluindo...' : 'Excluir'}
             </Button>
           </DialogFooter>
         </DialogContent>

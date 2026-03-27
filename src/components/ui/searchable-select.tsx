@@ -29,6 +29,10 @@ interface SearchableSelectProps {
   searchPlaceholder?: string;
   disabled?: boolean;
   className?: string;
+  renderOption?: (
+    option: SearchableSelectOption,
+    helpers: { close: () => void }
+  ) => React.ReactNode;
 }
 
 export function SearchableSelect({
@@ -39,6 +43,7 @@ export function SearchableSelect({
   searchPlaceholder = "Pesquisar...",
   disabled = false,
   className,
+  renderOption,
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState("");
@@ -116,7 +121,16 @@ export function SearchableSelect({
                       value === option.value ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {option.label}
+                  {renderOption ? (
+                    <div className="flex w-full items-center justify-between gap-2">
+                      <span className="truncate">{option.label}</span>
+                      <div className="shrink-0">
+                        {renderOption(option, { close: () => setOpen(false) })}
+                      </div>
+                    </div>
+                  ) : (
+                    option.label
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>

@@ -49,6 +49,26 @@ serve(async (req) => {
       });
     }
 
+    // Best-effort cleanup: remove representante + supervisor linkage
+    // (these tables do not cascade from auth deletion).
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+    if (prof?.id) {
+      await supabaseAdmin
+        .from("supervisor_representante")
+        .delete()
+        .eq("representante_id", prof.id);
+
+      await supabaseAdmin
+        .from("representantes")
+        .delete()
+        .eq("id", prof.id);
+    }
+
     // Delete auth user (cascades to profiles and user_roles)
     const { error } = await supabaseAdmin.auth.admin.deleteUser(user_id);
 

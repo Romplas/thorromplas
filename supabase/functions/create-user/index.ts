@@ -67,6 +67,63 @@ serve(async (req) => {
       .from("user_roles")
       .insert({ user_id: newUser.user.id, role: tipo });
 
+    // If the user is a representante, ensure it exists in `representantes`
+    // and keep supervisor linkage in `supervisor_representante`.
+    if (tipo === "representante") {
+      const { data: prof } = await supabaseAdmin
+        .from("profiles")
+        .select("id, nome, supervisora")
+        .eq("user_id", newUser.user.id)
+        .maybeSingle();
+
+      if (prof?.id) {
+        // Ensure a numeric codigo exists (schema requires it).
+        const { data: existingRep } = await supabaseAdmin
+          .from("representantes")
+          .select("id, codigo")
+          .eq("id", prof.id)
+          .maybeSingle();
+
+        let codigo = existingRep?.codigo;
+        if (!codigo) {
+          const { data: maxRes } = await supabaseAdmin
+            .from("representantes")
+            .select("codigo")
+            .order("codigo", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          codigo = (maxRes?.codigo ?? 0) + 1;
+        }
+
+        await supabaseAdmin
+          .from("representantes")
+          .upsert({ id: prof.id, nome: prof.nome, codigo }, { onConflict: "id" });
+
+        // Supervisor linkage by supervisor name in profile (`supervisora`)
+        const supervisoraNome = (supervisora ?? prof.supervisora ?? "").trim();
+        if (supervisoraNome) {
+          const { data: sup } = await supabaseAdmin
+            .from("supervisores")
+            .select("id")
+            .ilike("nome", supervisoraNome)
+            .eq("status", "ativo")
+            .maybeSingle();
+
+          if (sup?.id) {
+            // Replace any existing linkage for this representante
+            await supabaseAdmin
+              .from("supervisor_representante")
+              .delete()
+              .eq("representante_id", prof.id);
+
+            await supabaseAdmin
+              .from("supervisor_representante")
+              .insert({ supervisor_id: sup.id, representante_id: prof.id });
+          }
+        }
+      }
+    }
+
     return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
